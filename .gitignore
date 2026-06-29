@@ -1,0 +1,34 @@
+# Node dependencies
+node_modules/
+backend/node_modules/
+frontend/angular-app/node_modules/
+
+# Environment configurations (Contains private credentials/API keys)
+.env
+backend/.env
+
+# Angular build outputs and cache
+.angular/
+frontend/angular-app/.angular/
+dist/
+frontend/angular-app/dist/
+
+# IDE and Editor configurations
+.vscode/
+frontend/angular-app/.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Operating System temporary files
+Thumbs.db
+db.sqlite3
+.DS_Store
+
+# Build logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

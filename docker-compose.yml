@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # Database Service
+  mongodb:
+    image: mongo:latest
+    container_name: crm_nexus_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - nexus_network
+
+  # Express Backend API Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: crm_nexus_backend
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - MONGO_URI=mongodb://mongodb:27017/crm_nexus
+      - JWT_SECRET=nexus_secret_key_jwt_authentication_2026
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    depends_on:
+      - mongodb
+    networks:
+      - nexus_network
+
+  # Angular Frontend client & reverse-proxy Nginx Service
+  frontend:
+    build:
+      context: ./frontend/angular-app
+      dockerfile: Dockerfile
+    container_name: crm_nexus_frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - nexus_network
+
+volumes:
+  mongo_data:
+
+networks:
+  nexus_network:
+    driver: bridge

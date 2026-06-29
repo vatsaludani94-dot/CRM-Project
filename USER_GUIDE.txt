@@ -1,0 +1,176 @@
+GrownX CRM – Enterprise SaaS Platform User Guide & Architecture Walkthrough
+
+GrownX CRM (developed by GrownX Technologies) is an enterprise-grade, multi-tenant Customer Relationship Management (CRM) and sales automation platform. This documentation provides a comprehensive guide on running the software locally, details of all 18 core modules, role-based workflows, instructions for testing simulated integrations, and security recommendations.
+
+========================================================================
+Part 1: Architecture & Local Launch Guide
+========================================================================
+
+GrownX CRM utilizes a Node.js/Express REST API and Socket.IO server on the backend, paired with an Angular standalone client on the frontend. The database tier uses MongoDB to enforce multi-tenant isolation.
+
+Prerequisites:
+1. Node.js: Ensure Node.js (v18+) is installed on your host system.
+2. MongoDB: A local MongoDB server must be running at mongodb://127.0.0.1:27017 (default) or set custom variables in backend/.env.
+
+Running the System:
+
+Method A: Double-Click Dev Launcher (Windows)
+We provide a batch file launcher start-dev.bat in the root folder:
+1. Double-click start-dev.bat (or execute it via PowerShell: .\start-dev.bat).
+2. This opens two cmd windows:
+   * Terminal 1: Backend API & Socket server on http://localhost:3000
+   * Terminal 2: Angular dev server compiler on http://localhost:4200
+3. Navigate to http://localhost:4200 in your browser.
+
+Method B: Manual Startup
+1. Initialize the Multi-Tenant Database Seeder:
+   Navigate to the backend folder and run the seed script:
+   cd backend
+   npm run seed
+2. Run the Backend server:
+   npm run dev
+3. Run the Frontend client:
+   Open a new terminal, navigate to the client folder, and start:
+   cd frontend/angular-app
+   npm start
+
+========================================================================
+Part 2: Future SaaS Preparation & Multi-Tenant Isolation
+========================================================================
+
+GrownX CRM backend includes native architectural support for multi-tenant SaaS scaling:
+* Tenant Tiers: Supported plans include Free Plan (limited features/users), Growth Plan (standard features + SMS campaign limits), and Enterprise Plan (complete platform access, custom subdomains, and white-label branding).
+* Database Isolation: Critical collections (Lead, Customer, Ticket, Task, Document, Workflow, Website, Funnel, Form, Survey) store a tenant field pointing to a Tenant record. Every API controller includes a default database query filter tenant: req.user.tenant extracted from the decoded JWT session.
+* White Labeling: Tenant profiles support custom CSS settings, logos, and custom domain configurations.
+
+========================================================================
+Part 3: Operational Walkthrough for All 18 Expanded Modules
+========================================================================
+
+Module A: Workflow Automation Engine
+* Visual Builder: Design automated visual pipelines by connecting a Trigger to a sequence of Conditions, Actions, and Delays.
+* Triggers: Trigger automations from system events: Lead Created, Lead Converted, Customer Created, Ticket Created, Form Submitted, Survey Submitted, Appointment Booked, Email Received, WhatsApp Message Received, etc.
+* Actions: Automate responses including: Send Email, Send SMS, Send WhatsApp, Create Calendar Event, Create Task, Create Ticket, Assign Employee, Notify Team, Create Google Drive Folder, Generate Proposal, Generate Invoice, or Trigger Webhook.
+* Analytics & Logs: Track running automation counts and view step-by-step execution history (e.g., whether conditions passed or actions succeeded) under the "Execution Logs" grid.
+
+Module B: Gmail Integration Center
+* Google OAuth: Link individual email accounts by clicking the "Google OAuth Connection" button.
+* Inbox Client: Compose, send, and review emails. Includes tracking pixels that record the exact timestamp when a sent message is opened by a client.
+* Sync & Lead Auto-Creation: Sync incoming threads and automatically parse emails from new addresses to create corresponding Leads in the pipeline.
+* Templates & Sequences: Create reusable templates and queue email follow-up sequences.
+
+Module C: Google Drive Integration
+* Auto-Created Directories: Upon customer conversion or profile creation, the backend automatically triggers driveController to provision a Customer Root Folder with three nested folders: Contracts, Invoices, and Proposals.
+* File Operations: Upload contract PDFs, preview documents inside the browser, download files, and configure role-based folder permissions.
+
+Module D: Website Builder
+* Drag-and-Drop Page Creator: Build and edit customized websites. Manage sections including: Hero, Features, Pricing, Testimonials, FAQ, Contact, Footer, and Blog.
+* Templates: Choose from 6 landing page configurations: SaaS, Agency, Consulting, Corporate, Education, and Startup.
+* Publishing: Set custom SEO tags (Title, Description, Keywords), map custom domain routing, and preview live layouts.
+
+Module E: Unlimited Sales Funnel Builder
+* Funnel Stages: Chain landing pages, opt-in forms, checkout layouts, and booking calendars into high-converting sales funnels.
+* Funnel Analytics: Review visitors counts, opt-in leads, booked appointments, calculated conversion rates, and total revenue.
+* Templates: Select preconfigured funnels: Lead Generation, Appointment, Webinar, Product, Consultation, or Agency.
+
+Module F: Forms Builder
+* Field Constructor: Create forms using standard elements: Text, Email, Phone, Number, File Upload, Dropdown, Radio, Checkbox, and Signature (HTML5 canvas signing pad).
+* Conditional Logic: Configure fields to hide/show dynamically based on prior responses.
+* Action Routing: Map form submissions to automatically register Leads, Customers, or Tickets.
+
+Module G: Survey Builder
+* Surveys & Polls: Create Customer Satisfaction, NPS, Feedback, Polls, or Quizzes.
+* Branching & Scoring: Set up logic branches (jumping to questions based on choices) and enable correct-answer scoring for quizzes.
+* Reports: View graphical analytics summaries illustrating answer distributions, NPS scores, and cumulative results.
+
+Module H: SMS Marketing Platform
+* Campaign Manager: Design campaigns and broadcast text messages to target segments (e.g. "VIPs", "Leads").
+* Scheduling: Schedule campaigns for future delivery or bind SMS actions to visual workflows (e.g., sending an appointment reminder 24 hours prior).
+
+Module I: Business Command Center
+* Executive Dashboard: Visualize key executive KPIs: Revenue Today/This Month, Leads Today, Conversion Rate, Active Deals, Open Tickets, Upcoming Meetings, and Team Productivity.
+* AI-Generated Insights: The AI engine scans current records to output smart insights, such as warning that high-value leads are inactive or noting conversion rate anomalies.
+
+Module J: Task Management System
+* Task Hub: Create tasks, assign priorities (Low to Critical), set due dates, add subtasks, upload file attachments, and write comments.
+* Visual Workspace: Toggle tasks between List, Kanban, and Calendar views.
+
+Module K: Contact Timeline Engine
+* Unified chronological timeline: Customer profiles compile notes, emails, phone calls, SMS logs, WhatsApp chats, Instagram DMs, meetings, tickets, and pipeline stage changes into a single, searchable feed.
+
+Module L: Internal Team Collaboration
+* Team Chat: Create Channels (e.g., #general, #sales-alerts) or open private Direct Messages with colleagues. Supports @mentions, file uploads, and real-time push notifications.
+
+Module M: Smart Document Management
+* Document Repository: Store and track Contracts, Proposals, Invoices, Agreements, and Reports.
+* Version Control: Manage multiple document revisions, enforce view/edit permissions, and sync files to Google Drive folders.
+
+Module N: AI Sales Assistant
+* Deal Risk & Follow-ups: The AI analyzes deal values and days of inactivity to flag risk levels and output recommendations (e.g., "Lead inactive for 10 days; schedule follow-up call").
+* Sales Forecast: Generate projected revenue graphs and accuracy metrics based on current pipeline values.
+
+Module O: AI Meeting Intelligence
+* Meeting Analyzer: Paste meeting transcripts to summarize discussions, outline key decisions, flag project risks, and extract action items.
+* Auto-Save: Extracted action items are automatically logged under the corresponding customer's Customer 360 timeline.
+
+Module P: Proposal Generator
+* Sales Proposal Builder: Generate custom proposals, project scopes, and service agreements.
+* AI Support: Use AI to draft outline paragraphs and sections based on lead descriptions. Export proposals as PDF files.
+
+Module Q: Quotation & Invoicing System
+* Invoices & Quotes: Create itemized invoices. Automatically compute custom tax rates, discount values, subtotals, and net balances.
+* Tracking: Export invoices to PDF and track status states (Draft, Sent, Paid, Overdue).
+
+Module R: Public SaaS Website
+* Marketing Landing Page: Located at /home, this features a clean marketing interface for GrownX Technologies, outlining CRM features, templates, integrations, and pricing plans.
+
+========================================================================
+Part 4: Testing Call Analysis & Social Media Integrations
+========================================================================
+
+To allow seamless local operation without requiring live, paid API subscriptions, GrownX CRM uses high-fidelity simulation layers.
+
+1. WhatsApp & Instagram Webhook Simulators
+* Production Setup: In production, developers link their Meta Developer Console to point webhook endpoints to https://yourdomain.com/api/social-automation/whatsapp/webhook. Meta sends a JSON payload containing the customer's phone number, platform ID, and text string. The CRM calls the AI engine, then invokes Meta's Graph API (https://graph.facebook.com/v19.0/.../messages) to send the generated response.
+* Testing locally: Go to the Social Automation Simulator in the sidebar. Select "WhatsApp" or "Instagram", select an AI response tone (Professional, Playful, Urgent), and type a message (e.g., "What is the price of the Enterprise Plan?"). The dashboard will post a simulated Meta JSON payload to the local endpoint, and rendering the automated AI response in a chat interface.
+
+2. AI Call Analytics & Twilio Integration
+* Production Setup: The CRM integrates with Twilio Voice by configuring a webhook URL on your Twilio Phone Number. When a call is received, Twilio records the conversation. Once hung up, Twilio's webhook sends the recording audio file. The CRM submits this audio to a Speech-to-Text API (e.g., Whisper, Google Cloud Speech) to generate a transcript, which is analyzed via the CRM's AIService.analyzeCallTranscript and saved under the customer's Customer 360 profile.
+* Testing locally: Open the Caller Analysis simulator. Click a template (e.g., Sales Discovery Call) to load a call transcript, or paste a custom script. Click Analyze Call. The AI analyzes the transcript's sentiment, compiles an executive summary, and generates a list of action items.
+
+========================================================================
+Part 5: Security Advisory - Compromised Password Warning
+========================================================================
+
+If your web browser flags seeder credentials with a warning (e.g., "Compromised password detected", "Password breached"):
+1. The Cause: The seeder uses basic, simple credentials for testing purposes (admin@grownox.com / admin123, manager@grownox.com / manager123, etc.). Browsers compare passwords with public leak databases. Because millions of users have used these common passwords globally, the browser flags them as unsafe.
+2. No Data Breach: This is a browser warning about weak passwords. The local database and application have not been breached.
+3. Production Recommendations:
+   * Implement strong validation rules requiring at least 8 characters, combining uppercase, lowercase, numbers, and special symbols.
+   * Update backend/utils/seed.js to use unique, complex default hashes.
+   * Integrate two-factor authentication (2FA) for admin access.
+
+========================================================================
+Part 6: Role Demonstration Credentials
+========================================================================
+
+Use these credentials to test role-based access control (RBAC) permissions:
+
++------------------+---------------------+-------------+-------------------------------------------------------------+
+| Role Profile     | Demo Email          | Password    | Allowed Capabilities                                        |
++------------------+---------------------+-------------+-------------------------------------------------------------+
+| Super Admin      | admin@grownox.com   | admin123    | Master control, manages employees, configures payroll,      |
+|                  |                     |             | downloads reports, customizes white-labeling.               |
++------------------+---------------------+-------------+-------------------------------------------------------------+
+| Manager          | manager@grownox.com | manager123  | Department views, oversees pipelines, reviews Customer 360  |
+|                  |                     |             | profiles, maps appointments.                                |
++------------------+---------------------+-------------+-------------------------------------------------------------+
+| Sales Employee   | employee@grownox.com| employee123 | Accesses assigned pipeline leads on the Kanban board,       |
+|                  |                     |             | adds client notes, edits tasks.                             |
++------------------+---------------------+-------------+-------------------------------------------------------------+
+| Support Employee | alice@grownox.com   | employee123 | Receives real-time ticket alerts, assigns support owners,   |
+|                  |                     |             | uses AI Copilot reply suggestions.                          |
++------------------+---------------------+-------------+-------------------------------------------------------------+
+| Customer Portal  | customer@grownox.com| customer123 | Portal access, registers support tickets, views agent       |
+|                  |                     |             | comments, posts chat updates.                               |
++------------------+---------------------+-------------+-------------------------------------------------------------+
