@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "outputDirectory": "frontend/angular-app/dist/angular-app/browser",
   "rewrites": [
     {
       "source": "/(.*)",
