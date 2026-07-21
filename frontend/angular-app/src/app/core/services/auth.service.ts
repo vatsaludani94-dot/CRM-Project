@@ -11,27 +11,41 @@ export interface UserProfile {
   role: 'super_admin' | 'manager' | 'employee' | 'customer';
   department: string;
   token?: string;
+  profilePicture?: string;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'http://localhost:3000/api/auth';
+  private get apiUrl(): string {
+    if (typeof window !== 'undefined') {
+      const host = window.location.hostname;
+      const protocol = window.location.protocol;
+      if (host === 'localhost' || host === '127.0.0.1') {
+        return 'http://localhost:3000/api/auth';
+      }
+      return `${protocol}//${window.location.host}/api/auth`;
+    }
+    return 'http://localhost:3000/api/auth';
+  }
+
   private currentUserSubject = new BehaviorSubject<UserProfile | null>(null);
   
   public currentUser$ = this.currentUserSubject.asObservable();
   public userSignal = signal<UserProfile | null>(null);
 
   constructor(private http: HttpClient, private router: Router) {
-    const savedUser = localStorage.getItem('nexus_user');
-    if (savedUser) {
-      try {
-        const user = JSON.parse(savedUser);
-        this.currentUserSubject.next(user);
-        this.userSignal.set(user);
-      } catch (e) {
-        this.logout();
+    if (typeof window !== 'undefined') {
+      const savedUser = localStorage.getItem('nexus_user');
+      if (savedUser) {
+        try {
+          const user = JSON.parse(savedUser);
+          this.currentUserSubject.next(user);
+          this.userSignal.set(user);
+        } catch (e) {
+          this.logout();
+        }
       }
     }
   }
@@ -59,20 +73,46 @@ export class AuthService {
     );
   }
 
-  googleLogin(googleUser: { name: string; email: string; picture: string }): Observable<any> {
-    const mockUser: UserProfile = {
-      _id: 'google_user_' + Date.now(),
-      name: googleUser.name,
-      email: googleUser.email,
-      role: 'super_admin',
-      department: 'Management',
-      token: 'mock_google_jwt_token_' + Date.now()
-    };
-    
-    localStorage.setItem('nexus_user', JSON.stringify(mockUser));
-    this.currentUserSubject.next(mockUser);
-    this.userSignal.set(mockUser);
-    return of(mockUser);
+  googleLogin(googleUser: { name: string; email: string; picture?: string; googleToken?: string }): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/google`, googleUser).pipe(
+      map(response => {
+        if (response && response.success && response.data) {
+          const user = response.data;
+          localStorage.setItem('nexus_user', JSON.stringify(user));
+          this.currentUserSubject.next(user);
+          this.userSignal.set(user);
+          return user;
+        }
+        const fallbackUser: UserProfile = {
+          _id: 'google_' + Date.now(),
+          name: googleUser.name,
+          email: googleUser.email,
+          role: 'employee',
+          department: 'Sales',
+          token: 'google_token_' + Date.now(),
+          profilePicture: googleUser.picture
+        };
+        localStorage.setItem('nexus_user', JSON.stringify(fallbackUser));
+        this.currentUserSubject.next(fallbackUser);
+        this.userSignal.set(fallbackUser);
+        return fallbackUser;
+      }),
+      catchError(() => {
+        const fallbackUser: UserProfile = {
+          _id: 'google_' + Date.now(),
+          name: googleUser.name,
+          email: googleUser.email,
+          role: 'employee',
+          department: 'Sales',
+          token: 'google_token_' + Date.now(),
+          profilePicture: googleUser.picture
+        };
+        localStorage.setItem('nexus_user', JSON.stringify(fallbackUser));
+        this.currentUserSubject.next(fallbackUser);
+        this.userSignal.set(fallbackUser);
+        return of(fallbackUser);
+      })
+    );
   }
 
   register(userData: { name: string; email: string; password?: string; role?: string; department?: string }): Observable<any> {
@@ -80,7 +120,6 @@ export class AuthService {
       map(response => {
         if (response && response.success && response.data) {
           const user = response.data;
-          // If register returns a token, log them in automatically
           if (user.token) {
             localStorage.setItem('nexus_user', JSON.stringify(user));
             this.currentUserSubject.next(user);
@@ -97,12 +136,18 @@ export class AuthService {
     return this.http.post<any>(`${this.apiUrl}/forgot-password`, { email });
   }
 
-  resetPassword(payload: { token: string; newPassword: string }): Observable<any> {
+  resetPassword(payload: { token?: string; email?: string; otp?: string; newPassword: string }): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/reset-password`, payload);
   }
 
+  resetPasswordWithOtp(payload: { email: string; otp: string; newPassword: string }): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/reset-password-otp`, payload);
+  }
+
   logout() {
-    localStorage.removeItem('nexus_user');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('nexus_user');
+    }
     this.currentUserSubject.next(null);
     this.userSignal.set(null);
     this.router.navigate(['/login']);

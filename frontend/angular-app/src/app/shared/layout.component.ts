@@ -77,6 +77,10 @@ export interface AlertNotification {
               <span class="material-icons">insights</span>
               <span>Command Center</span>
             </a>
+            <a routerLink="/downloads" routerLinkActive="active-link" class="nav-item">
+              <span class="material-icons">download</span>
+              <span>Downloads & Licenses</span>
+            </a>
           </div>
 
           <!-- Category 2: Sales & Pipeline Engine (Grouped) -->
@@ -136,10 +140,6 @@ export interface AlertNotification {
             <a routerLink="/web-builder" routerLinkActive="active-link" class="nav-item">
               <span class="material-icons">web</span>
               <span>Website Builder</span>
-            </a>
-            <a routerLink="/funnel-builder" routerLinkActive="active-link" class="nav-item">
-              <span class="material-icons">filter_alt</span>
-              <span>Sales Funnel Builder</span>
             </a>
             <a routerLink="/forms-surveys" routerLinkActive="active-link" class="nav-item">
               <span class="material-icons">assignment</span>

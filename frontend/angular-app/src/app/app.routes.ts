@@ -103,8 +103,8 @@ export const routes: Routes = [
         loadComponent: () => import('./features/web-builder/web-builder.component').then(m => m.WebBuilderComponent)
       },
       {
-        path: 'funnel-builder',
-        loadComponent: () => import('./features/funnel-builder/funnel-builder.component').then(m => m.FunnelBuilderComponent)
+        path: 'downloads',
+        loadComponent: () => import('./features/downloads/downloads.component').then(m => m.DownloadsComponent)
       },
       {
         path: 'forms-surveys',

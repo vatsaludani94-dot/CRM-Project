@@ -58,6 +58,18 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    resetPasswordOtp: String,
+    resetPasswordOtpExpire: Date,
+    purchasedLicenses: [
+      {
+        licenseKey: String,
+        planName: String,
+        amountPaid: Number,
+        paymentId: String,
+        orderId: String,
+        purchasedAt: { type: Date, default: Date.now }
+      }
+    ],
   },
   {
     timestamps: true,

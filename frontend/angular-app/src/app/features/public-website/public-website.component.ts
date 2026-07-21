@@ -2,6 +2,7 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
+import { AuthService } from '../../core/services/auth.service';
 import { FormsModule } from '@angular/forms';
 
 interface ChatMessage {
@@ -459,76 +460,108 @@ interface ChatMessage {
         <!-- Tab: Pricing -->
         <div *ngIf="activeTab() === 'pricing'" class="space-y-12 animate-fadeIn">
           <div class="text-center max-w-2xl mx-auto space-y-4">
-            <h2 class="text-3xl font-extrabold text-[#1c1917]">Pricing Plans for Every Scale</h2>
-            <p class="text-[#44403c] text-sm">Choose a plan that matches your current business requirements. Lock in trial setups instantly.</p>
+            <span class="text-xs font-bold uppercase tracking-wider text-amber-700 bg-amber-500/10 px-4 py-1.5 rounded-full">Commercial Licenses & Standalone Suites</span>
+            <h2 class="text-3xl font-black text-[#1c1917]">Commercial Software Tiers</h2>
+            <p class="text-[#44403c] text-sm">Purchase a lifetime software license to instantly receive your license key, downloadable installer package (.ZIP), and official tax invoice.</p>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div class="border border-[#e7e5e4] bg-[#1c1917]/30 p-8 rounded-3xl space-y-6 flex flex-col justify-between">
+            <!-- Starter License Card -->
+            <div class="border border-[#e7e5e4] bg-white p-8 rounded-3xl space-y-6 flex flex-col justify-between shadow-lg">
               <div class="space-y-4">
-                <span class="text-xs font-bold text-[#1c1917] bg-indigo-500/10 px-3 py-1 rounded-full uppercase">Free Plan</span>
-                <h3 class="text-3.5xl font-black text-white">$0 <span class="text-sm font-semibold text-[#44403c]">/ forever</span></h3>
-                <p class="text-xs text-[#44403c]">Perfect for small teams and initial client pipelines.</p>
+                <span class="text-xs font-bold text-[#1c1917] bg-stone-100 border border-[#e7e5e4] px-3 py-1 rounded-full uppercase">Starter Edition</span>
+                <h3 class="text-3.5xl font-black text-[#1c1917]">₹4,999 <span class="text-xs font-semibold text-[#44403c]">/ one-time</span></h3>
+                <p class="text-xs text-[#44403c]">Essential standalone software suite for small business teams.</p>
                 <ul class="space-y-2.5 text-xs text-[#292524] pt-4">
-                  <li class="flex items-center gap-2"><span class="material-icons text-[#1c1917] text-sm">check</span> Up to 50 active contacts</li>
-                  <li class="flex items-center gap-2"><span class="material-icons text-[#1c1917] text-sm">check</span> Kanban board and basic tasks</li>
-                  <li class="flex items-center gap-2"><span class="material-icons text-[#1c1917] text-sm">check</span> Visual workflow builder (1 active)</li>
+                  <li class="flex items-center gap-2"><span class="material-icons text-amber-700 text-sm">check_circle</span> 1 Standalone Server License</li>
+                  <li class="flex items-center gap-2"><span class="material-icons text-amber-700 text-sm">check_circle</span> Kanban pipeline & Customer 360</li>
+                  <li class="flex items-center gap-2"><span class="material-icons text-amber-700 text-sm">check_circle</span> Standalone ZIP Installer Package</li>
+                  <li class="flex items-center gap-2"><span class="material-icons text-amber-700 text-sm">check_circle</span> Official Tax Invoice Email</li>
                 </ul>
               </div>
-              <button (click)="setTab('register')" class="w-full bg-[#1c1917] hover:bg-white hover:border-amber-600/50 hover:shadow-xl py-3 rounded-xl font-bold text-sm text-white border border-slate-800 transition-all mt-6 cursor-pointer">Get Started</button>
+              <button (click)="triggerBuyPlan('Starter License', 4999)" class="w-full bg-[#1c1917] hover:bg-[#292524] py-3.5 rounded-xl font-bold text-sm text-white shadow-lg transition-all mt-6 cursor-pointer">Buy Starter License</button>
             </div>
 
-            <div class="border-2 border-indigo-600 bg-[#1c1917]/60 p-8 rounded-3xl space-y-6 flex flex-col justify-between relative shadow-xl shadow-indigo-600/5">
-              <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-[#1c1917] text-white shadow-md text-white text-[9px] font-black tracking-wider px-3.5 py-1 rounded-full uppercase">Most Popular</div>
+            <!-- Growth Edition Card -->
+            <div class="border-2 border-amber-600 bg-white p-8 rounded-3xl space-y-6 flex flex-col justify-between relative shadow-2xl">
+              <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-amber-600 text-white text-[9px] font-black tracking-wider px-4 py-1 rounded-full uppercase shadow-md">Best Value</div>
               <div class="space-y-4">
-                <span class="text-xs font-bold text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full uppercase">Growth Plan</span>
-                <h3 class="text-3.5xl font-black text-white">$49 <span class="text-sm font-semibold text-[#44403c]">/ user / mo</span></h3>
-                <p class="text-xs text-[#44403c]">Built for scaling departments needing GSuite sync.</p>
+                <span class="text-xs font-bold text-amber-900 bg-amber-100 border border-amber-300 px-3 py-1 rounded-full uppercase">Growth Edition</span>
+                <h3 class="text-3.5xl font-black text-[#1c1917]">₹9,999 <span class="text-xs font-semibold text-[#44403c]">/ one-time</span></h3>
+                <p class="text-xs text-[#44403c]">Full commercial suite with Gmail OAuth & Visual Workflows.</p>
                 <ul class="space-y-2.5 text-xs text-[#292524] pt-4">
-                  <li class="flex items-center gap-2"><span class="material-icons text-[#1c1917] text-sm">check</span> Unlimited contacts and leads</li>
-                  <li class="flex items-center gap-2"><span class="material-icons text-[#1c1917] text-sm">check</span> Full Gmail OAuth & templates</li>
-                  <li class="flex items-center gap-2"><span class="material-icons text-[#1c1917] text-sm">check</span> Visual workflows (10 active)</li>
-                  <li class="flex items-center gap-2"><span class="material-icons text-[#1c1917] text-sm">check</span> Document repository & proposals</li>
+                  <li class="flex items-center gap-2"><span class="material-icons text-amber-700 text-sm">check_circle</span> Unlimited User Licenses</li>
+                  <li class="flex items-center gap-2"><span class="material-icons text-amber-700 text-sm">check_circle</span> Gmail OAuth & Gmail Center</li>
+                  <li class="flex items-center gap-2"><span class="material-icons text-amber-700 text-sm">check_circle</span> Visual Automation Workflows</li>
+                  <li class="flex items-center gap-2"><span class="material-icons text-amber-700 text-sm">check_circle</span> Instant ZIP Package & License Key</li>
+                  <li class="flex items-center gap-2"><span class="material-icons text-amber-700 text-sm">check_circle</span> Automated Dual Invoice Emails</li>
                 </ul>
               </div>
-              <button (click)="setTab('register')" class="w-full bg-[#1c1917] hover:bg-[#292524] py-3 rounded-xl font-bold text-sm text-white shadow-lg shadow-slate-900/10 transition-all mt-6 cursor-pointer">Start Trial</button>
+              <button (click)="triggerBuyPlan('Growth Edition', 9999)" class="w-full bg-amber-700 hover:bg-amber-800 py-3.5 rounded-xl font-bold text-sm text-white shadow-lg transition-all mt-6 cursor-pointer">Buy Growth Suite</button>
             </div>
 
-            <div class="border border-[#e7e5e4] bg-[#1c1917]/30 p-8 rounded-3xl space-y-6 flex flex-col justify-between">
+            <!-- Enterprise Edition Card -->
+            <div class="border border-[#e7e5e4] bg-white p-8 rounded-3xl space-y-6 flex flex-col justify-between shadow-lg">
               <div class="space-y-4">
-                <span class="text-xs font-bold text-slate-800 bg-pink-500/10 px-3 py-1 rounded-full uppercase">Enterprise Plan</span>
-                <h3 class="text-3.5xl font-black text-white">$199 <span class="text-sm font-semibold text-[#44403c]">/ user / mo</span></h3>
-                <p class="text-xs text-[#44403c]">Total solution with white-label domains and analytics.</p>
+                <span class="text-xs font-bold text-[#1c1917] bg-stone-100 border border-[#e7e5e4] px-3 py-1 rounded-full uppercase">Enterprise Edition</span>
+                <h3 class="text-3.5xl font-black text-[#1c1917]">₹19,999 <span class="text-xs font-semibold text-[#44403c]">/ one-time</span></h3>
+                <p class="text-xs text-[#44403c]">Complete source package, dedicated support, and custom domain setup.</p>
                 <ul class="space-y-2.5 text-xs text-[#292524] pt-4">
-                  <li class="flex items-center gap-2"><span class="material-icons text-[#1c1917] text-sm">check</span> White-label settings & custom domains</li>
-                  <li class="flex items-center gap-2"><span class="material-icons text-[#1c1917] text-sm">check</span> Unlimited funnels, forms, and surveys</li>
-                  <li class="flex items-center gap-2"><span class="material-icons text-[#1c1917] text-sm">check</span> Collaboration chat channels</li>
-                  <li class="flex items-center gap-2"><span class="material-icons text-[#1c1917] text-sm">check</span> Advanced AI Forecasting & summaries</li>
+                  <li class="flex items-center gap-2"><span class="material-icons text-amber-700 text-sm">check_circle</span> Full Standalone Source Code Package</li>
+                  <li class="flex items-center gap-2"><span class="material-icons text-amber-700 text-sm">check_circle</span> Dedicated Founder Setup Support</li>
+                  <li class="flex items-center gap-2"><span class="material-icons text-amber-700 text-sm">check_circle</span> Priority WhatsApp & Email SLA</li>
                 </ul>
               </div>
-              <button (click)="setTab('register')" class="w-full bg-[#1c1917] hover:bg-white hover:border-amber-600/50 hover:shadow-xl py-3 rounded-xl font-bold text-sm text-white border border-slate-800 transition-all mt-6 cursor-pointer">Contact Sales</button>
+              <button (click)="triggerBuyPlan('Enterprise Suite', 19999)" class="w-full bg-[#1c1917] hover:bg-[#292524] py-3.5 rounded-xl font-bold text-sm text-white shadow-lg transition-all mt-6 cursor-pointer">Buy Enterprise Suite</button>
             </div>
           </div>
         </div>
 
         <!-- Tab: About -->
-        <div *ngIf="activeTab() === 'about'" class="space-y-12 max-w-4xl mx-auto text-center animate-fadeIn py-12">
-          <h2 class="text-3xl font-extrabold text-[#1c1917]">About GrownX Technologies</h2>
-          <p class="text-[#44403c] leading-relaxed text-lg">
-            GrownX Technologies is a corporate SaaS provider based in Dallas, Texas. We build integrated automation systems helping scaling agencies, consultancy networks, and enterprise companies organize their customer timelines, Visual workflow charts, Gmail OAuth centers, and smart proposals with complete multi-tenant database isolation.
-          </p>
-          <div class="grid grid-cols-3 gap-8 pt-8">
-            <div class="bg-white border border-[#e7e5e4] shadow-sm p-6 rounded-2xl border border-[#e7e5e4]">
-              <h4 class="text-2xl font-black text-[#1c1917]">{{ statsContacts() }}+</h4>
-              <p class="text-xs text-[#44403c] uppercase font-bold mt-1">Active users</p>
-            </div>
-            <div class="bg-white border border-[#e7e5e4] shadow-sm p-6 rounded-2xl border border-[#e7e5e4]">
-              <h4 class="text-2xl font-black text-amber-700">99.99%</h4>
-              <p class="text-xs text-[#44403c] uppercase font-bold mt-1">Uptime SLA</p>
-            </div>
-            <div class="bg-white border border-[#e7e5e4] shadow-sm p-6 rounded-2xl border border-[#e7e5e4]">
-              <h4 class="text-2xl font-black text-slate-800">24/7</h4>
-              <p class="text-xs text-[#44403c] uppercase font-bold mt-1">Live Support</p>
+        <div *ngIf="activeTab() === 'about'" class="space-y-10 max-w-4xl mx-auto animate-fadeIn py-8">
+          <div class="text-center space-y-4">
+            <span class="text-xs font-bold uppercase tracking-wider text-amber-700 bg-amber-500/10 px-4 py-1.5 rounded-full">Company & Leadership</span>
+            <h2 class="text-3xl lg:text-4xl font-black text-[#1c1917]">About GrownX CRM</h2>
+            <p class="text-[#44403c] leading-relaxed text-md max-w-2xl mx-auto">
+              GrownX CRM is a next-generation commercial software suite designed to streamline sales pipelines, automated email communications, visual workflows, and customer account operations with absolute performance and precision.
+            </p>
+          </div>
+
+          <div class="bg-white border border-[#e7e5e4] shadow-xl p-8 rounded-3xl space-y-6">
+            <h3 class="text-xl font-extrabold text-[#1c1917] border-b border-[#e7e5e4] pb-4">Founder & Engineering Leadership</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+              <div class="space-y-3">
+                <div class="flex items-center gap-3">
+                  <div class="h-12 w-12 rounded-2xl bg-[#1c1917] text-white flex items-center justify-center font-black text-lg shadow-md">VU</div>
+                  <div>
+                    <h4 class="text-lg font-black text-[#1c1917]">Vatsal Udani</h4>
+                    <p class="text-xs font-bold text-amber-700">Founder & Lead Software Architect</p>
+                  </div>
+                </div>
+                <p class="text-xs text-[#44403c] leading-relaxed">
+                  Dedicated to delivering high-performance, easy-to-use business software engineered for modern sales teams, entrepreneurs, and growing enterprise operations.
+                </p>
+              </div>
+
+              <div class="bg-stone-50 border border-[#e7e5e4] p-5 rounded-2xl space-y-3">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-[#1c1917]">Direct Founder Contact</h4>
+                
+                <div class="flex items-center gap-3 text-xs text-[#1c1917]">
+                  <span class="material-icons text-amber-700 text-sm">email</span>
+                  <a href="mailto:vatsaludani94@gmail.com" class="font-bold hover:underline">vatsaludani94@gmail.com</a>
+                </div>
+
+                <div class="flex items-center gap-3 text-xs text-[#1c1917]">
+                  <span class="material-icons text-amber-700 text-sm">phone</span>
+                  <a href="tel:+917624026264" class="font-bold hover:underline">+91 7624026264</a>
+                </div>
+
+                <div class="flex items-center gap-3 text-xs text-[#1c1917]">
+                  <span class="material-icons text-amber-700 text-sm">location_on</span>
+                  <span class="font-medium text-[#44403c]">Gujarat, India</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -754,6 +787,7 @@ interface ChatMessage {
 })
 export class PublicWebsiteComponent implements OnInit {
   private apiService = inject(ApiService);
+  private authService = inject(AuthService);
   private router = inject(Router);
 
   activeTab = signal<string>('home');
@@ -1085,6 +1119,15 @@ export class PublicWebsiteComponent implements OnInit {
 
   goToLogin() {
     this.router.navigate(['/login']);
+  }
+
+  triggerBuyPlan(planName: string, amount: number) {
+    const user = this.authService.currentUserValue;
+    if (!user) {
+      this.router.navigate(['/register']);
+      return;
+    }
+    this.router.navigate(['/downloads']);
   }
 
   // Generates 108 website templates across categories (Enhancement 8)

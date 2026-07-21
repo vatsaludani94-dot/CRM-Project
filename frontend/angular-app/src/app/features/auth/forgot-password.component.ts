@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
@@ -9,78 +9,95 @@ import { AuthService } from '../../core/services/auth.service';
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
   template: `
-    <div class="min-h-screen flex items-center justify-center bg-slate-900 px-4 py-12 sm:px-6 lg:px-8 relative overflow-hidden">
-      <div class="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-violet-500/10 blur-3xl"></div>
-      <div class="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-indigo-500/10 blur-3xl"></div>
+    <div class="min-h-screen flex items-center justify-center bg-[#fafaf9] px-4 py-12 sm:px-6 lg:px-8 relative overflow-hidden font-sans">
+      <div class="absolute top-0 left-1/4 w-[500px] h-[500px] bg-amber-500/10 animate-floating-orb rounded-full blur-[140px] pointer-events-none"></div>
 
-      <div class="max-w-md w-full space-y-8 z-10">
-        <div class="text-center">
-          <div class="flex justify-center items-center gap-3 text-violet-400">
-            <span class="material-icons text-5xl">donut_large</span>
-          </div>
-          <h2 class="mt-4 text-3xl font-extrabold text-white tracking-tight">Grownox Technologies</h2>
-          <p class="mt-2 text-sm text-[#44403c]">
-            Recover your account password
-          </p>
+      <div class="max-w-md w-full space-y-8 z-10 animate-fadeIn">
+        <div class="text-center space-y-2">
+          <a routerLink="/" class="inline-flex justify-center items-center gap-3 text-[#1c1917]">
+            <div class="h-12 w-12 rounded-xl bg-gradient-to-br from-[#1c1917] to-[#292524] flex items-center justify-center shadow-lg shadow-slate-900/20">
+              <span class="material-icons text-white text-3xl font-black">bolt</span>
+            </div>
+            <span class="text-3xl font-black tracking-tight text-[#1c1917]">GrownX<span class="text-amber-600 font-medium">CRM</span></span>
+          </a>
+          <h2 class="text-xl font-extrabold text-[#1c1917] tracking-tight pt-2">Account Recovery & OTP Reset</h2>
+          <p class="text-xs text-[#44403c] font-medium">Reset your workspace password using a 6-digit email OTP code.</p>
         </div>
 
-        <div class="bg-slate-800/80 backdrop-blur-md border border-slate-700/60 rounded-2xl p-8 shadow-2xl">
-          <form *ngIf="!successMessage()" [formGroup]="forgotForm" (ngSubmit)="onSubmit()" class="space-y-6">
-            
-            <div *ngIf="errorMessage()" class="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-lg text-sm text-center font-medium">
-              {{ errorMessage() }}
-            </div>
+        <div class="bg-white border border-[#e7e5e4] shadow-xl rounded-2xl p-8 space-y-6">
+          
+          <div *ngIf="errorMessage()" class="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-700 rounded-xl text-xs text-center font-bold">
+            {{ errorMessage() }}
+          </div>
 
-            <!-- Email Input -->
+          <div *ngIf="successMessage()" class="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 rounded-xl text-xs text-center font-bold">
+            {{ successMessage() }}
+          </div>
+
+          <!-- Step 1: Enter Email to Receive OTP -->
+          <form *ngIf="step() === 1" [formGroup]="emailForm" (ngSubmit)="sendOtp()" class="space-y-4">
             <div>
-              <label for="email" class="block text-xs font-semibold text-[#44403c] uppercase tracking-wider">Email Address</label>
-              <div class="mt-1.5 relative">
-                <span class="material-icons absolute left-3 top-2.5 text-[#292524] text-lg">email</span>
+              <label for="email" class="block text-xs font-bold text-[#1c1917] uppercase tracking-wider mb-1">Registered Email Address</label>
+              <div class="relative">
+                <span class="material-icons absolute left-3 top-2.5 text-[#44403c] text-lg">email</span>
                 <input 
                   id="email" 
                   type="email" 
                   formControlName="email" 
-                  placeholder="name@company.com" 
-                  class="w-full pl-10 pr-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
-              </div>
-              <div *ngIf="forgotForm.get('email')?.touched && forgotForm.get('email')?.invalid" class="text-rose-400 text-xs mt-1">
-                Please enter a valid email address
+                  placeholder="vatsaludani94@gmail.com" 
+                  class="w-full pl-10 pr-4 py-2.5 bg-white border border-[#e7e5e4] text-[#1c1917] font-medium rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-600">
               </div>
             </div>
 
-            <!-- Submit Button -->
             <button 
               type="submit" 
-              [disabled]="forgotForm.invalid || isLoading()"
-              class="w-full py-2.5 px-4 bg-violet-600 hover:bg-violet-500 disabled:bg-slate-700 disabled:text-[#44403c] text-white rounded-lg text-sm font-semibold shadow-lg shadow-violet-600/20 active:scale-95 transition-all flex justify-center items-center gap-2">
+              [disabled]="emailForm.invalid || isLoading()" 
+              class="w-full py-3 bg-[#1c1917] hover:bg-[#292524] disabled:bg-stone-300 text-white font-bold text-sm rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer">
               <span *ngIf="isLoading()" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
-              <span>Send Recovery Link</span>
+              <span>Send 6-Digit Email OTP</span>
             </button>
           </form>
 
-          <!-- Mock Token Display for review speed -->
-          <div *ngIf="successMessage()" class="space-y-6 text-center">
-            <div class="inline-flex h-12 w-12 rounded-full bg-emerald-500/10 text-emerald-400 items-center justify-center">
-              <span class="material-icons text-3xl">check_circle</span>
-            </div>
+          <!-- Step 2: Enter 6-Digit OTP & New Password -->
+          <form *ngIf="step() === 2" [formGroup]="otpResetForm" (ngSubmit)="verifyOtpAndReset()" class="space-y-4">
             <div>
-              <h3 class="text-lg font-bold text-white">Reset Link Generated!</h3>
-              <p class="text-sm text-[#44403c] mt-2 leading-relaxed">
-                We have generated a mock password reset link below. Click it to navigate directly to the password updates screen:
-              </p>
+              <label for="otp" class="block text-xs font-bold text-[#1c1917] uppercase tracking-wider mb-1">Enter 6-Digit OTP Code</label>
+              <div class="relative">
+                <span class="material-icons absolute left-3 top-2.5 text-[#44403c] text-lg">pin</span>
+                <input 
+                  id="otp" 
+                  type="text" 
+                  maxlength="6"
+                  formControlName="otp" 
+                  placeholder="e.g. 842915" 
+                  class="w-full pl-10 pr-4 py-2.5 bg-white border border-[#e7e5e4] text-[#1c1917] font-black tracking-widest rounded-xl text-md focus:outline-none focus:ring-2 focus:ring-amber-600">
+              </div>
             </div>
 
-            <div class="p-4 bg-slate-900 border border-slate-700 rounded-xl">
-              <a [routerLink]="resetLink()" class="text-sky-400 hover:text-sky-300 font-semibold text-sm break-all underline">
-                Go to Reset Password Form
-              </a>
+            <div>
+              <label for="newPassword" class="block text-xs font-bold text-[#1c1917] uppercase tracking-wider mb-1">New Password</label>
+              <div class="relative">
+                <span class="material-icons absolute left-3 top-2.5 text-[#44403c] text-lg">lock</span>
+                <input 
+                  id="newPassword" 
+                  type="password" 
+                  formControlName="newPassword" 
+                  placeholder="Minimum 6 characters" 
+                  class="w-full pl-10 pr-4 py-2.5 bg-white border border-[#e7e5e4] text-[#1c1917] font-medium rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-600">
+              </div>
             </div>
 
-            <button routerLink="/login" class="text-xs text-[#44403c] hover:text-[#1c1917] font-medium">Back to Login</button>
-          </div>
+            <button 
+              type="submit" 
+              [disabled]="otpResetForm.invalid || isLoading()" 
+              class="w-full py-3 bg-amber-700 hover:bg-amber-800 disabled:bg-stone-300 text-white font-bold text-sm rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer">
+              <span *ngIf="isLoading()" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+              <span>Verify OTP & Update Password</span>
+            </button>
+          </form>
 
-          <div *ngIf="!successMessage()" class="mt-6 text-center text-xs">
-            <a routerLink="/login" class="text-[#44403c] hover:text-[#1c1917] font-semibold">Back to Login</a>
+          <div class="text-center pt-2">
+            <a routerLink="/login" class="text-xs font-bold text-[#44403c] hover:text-[#1c1917]">Back to Login</a>
           </div>
 
         </div>
@@ -91,31 +108,65 @@ import { AuthService } from '../../core/services/auth.service';
 export class ForgotPasswordComponent {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
+  private router = inject(Router);
 
+  step = signal<number>(1);
   isLoading = signal(false);
   errorMessage = signal<string | null>(null);
   successMessage = signal<string | null>(null);
-  resetLink = signal('');
 
-  forgotForm: FormGroup = this.fb.group({
+  emailForm: FormGroup = this.fb.group({
     email: ['', [Validators.required, Validators.email]]
   });
 
-  onSubmit() {
-    if (this.forgotForm.invalid) return;
+  otpResetForm: FormGroup = this.fb.group({
+    otp: ['', [Validators.required, Validators.minLength(6)]],
+    newPassword: ['', [Validators.required, Validators.minLength(6)]]
+  });
+
+  sendOtp() {
+    if (this.emailForm.invalid) return;
 
     this.isLoading.set(true);
     this.errorMessage.set(null);
+    this.successMessage.set(null);
 
-    this.authService.forgotPassword(this.forgotForm.value.email).subscribe({
+    const email = this.emailForm.value.email;
+
+    this.authService.forgotPassword(email).subscribe({
       next: (res) => {
         this.isLoading.set(false);
-        this.successMessage.set(res.message);
-        this.resetLink.set(res.resetLink);
+        this.successMessage.set(res.message || 'OTP sent to your email.');
+        this.step.set(2);
       },
       error: (err) => {
         this.isLoading.set(false);
-        this.errorMessage.set(err.message || 'Password reset request failed');
+        this.errorMessage.set(err.error?.error || 'Failed to send OTP email.');
+      }
+    });
+  }
+
+  verifyOtpAndReset() {
+    if (this.otpResetForm.invalid) return;
+
+    this.isLoading.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    const email = this.emailForm.value.email;
+    const { otp, newPassword } = this.otpResetForm.value;
+
+    this.authService.resetPasswordWithOtp({ email, otp, newPassword }).subscribe({
+      next: (res) => {
+        this.isLoading.set(false);
+        this.successMessage.set(res.message || 'Password updated successfully!');
+        setTimeout(() => {
+          this.router.navigate(['/login']);
+        }, 2000);
+      },
+      error: (err) => {
+        this.isLoading.set(false);
+        this.errorMessage.set(err.error?.error || 'Invalid or expired OTP code.');
       }
     });
   }
