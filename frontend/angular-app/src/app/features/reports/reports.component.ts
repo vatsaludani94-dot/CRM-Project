@@ -12,8 +12,8 @@ import { HttpClient } from '@angular/common/http';
       
       <!-- Header -->
       <div>
-        <h1 class="text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight">Executive Reports</h1>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Export structured directories, pipelines, and ticketing data into professional CSV/PDF files.</p>
+        <h1 class="text-2xl font-extrabold text-slate-800 text-[#1c1917] tracking-tight">Executive Reports</h1>
+        <p class="text-sm text-[#574c43] mt-1">Export structured directories, pipelines, and ticketing data into professional CSV/PDF files.</p>
       </div>
 
       <!-- Reports grid -->
@@ -24,12 +24,12 @@ import { HttpClient } from '@angular/common/http';
           <div class="h-12 w-12 rounded-xl bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-400 flex items-center justify-center mb-4">
             <span class="material-icons text-2xl">people</span>
           </div>
-          <h3 class="font-bold text-sm text-slate-800 dark:text-white uppercase tracking-wider">Customer Directory</h3>
-          <p class="text-xs text-slate-400 dark:text-slate-400 mt-2 leading-relaxed">
+          <h3 class="font-bold text-sm text-slate-800 text-[#1c1917] uppercase tracking-wider">Customer Directory</h3>
+          <p class="text-xs text-[#44403c] dark:text-[#44403c] mt-2 leading-relaxed">
             Generates a comprehensive statement listing all customer codes, company names, key contacts, emails, statuses, and total revenues generated.
           </p>
-          <div class="flex gap-3 pt-6 border-t border-slate-100 dark:border-slate-700 mt-6">
-            <button (click)="exportReport('customers', 'csv')" class="btn-export border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700">CSV Spreadsheet</button>
+          <div class="flex gap-3 pt-6 border-t border-slate-100 border-[#e7e5e4] mt-6">
+            <button (click)="exportReport('customers', 'csv')" class="btn-export border-slate-200 border-[#e7e5e4] hover:bg-slate-50 dark:hover:bg-slate-700">CSV Spreadsheet</button>
             <button (click)="exportReport('customers', 'pdf')" class="btn-export bg-sky-600 hover:bg-sky-500 text-white border-transparent">PDF Document</button>
           </div>
         </div>
@@ -39,12 +39,12 @@ import { HttpClient } from '@angular/common/http';
           <div class="h-12 w-12 rounded-xl bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-400 flex items-center justify-center mb-4">
             <span class="material-icons text-2xl">leaderboard</span>
           </div>
-          <h3 class="font-bold text-sm text-slate-800 dark:text-white uppercase tracking-wider">Sales Pipeline</h3>
-          <p class="text-xs text-slate-400 dark:text-slate-400 mt-2 leading-relaxed">
+          <h3 class="font-bold text-sm text-slate-800 text-[#1c1917] uppercase tracking-wider">Sales Pipeline</h3>
+          <p class="text-xs text-[#44403c] dark:text-[#44403c] mt-2 leading-relaxed">
             Exports active pipeline cards showing prospective companies, expected contracts value, sources, current stages, and AI conversion scores.
           </p>
-          <div class="flex gap-3 pt-6 border-t border-slate-100 dark:border-slate-700 mt-6">
-            <button (click)="exportReport('leads', 'csv')" class="btn-export border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700">CSV Spreadsheet</button>
+          <div class="flex gap-3 pt-6 border-t border-slate-100 border-[#e7e5e4] mt-6">
+            <button (click)="exportReport('leads', 'csv')" class="btn-export border-slate-200 border-[#e7e5e4] hover:bg-slate-50 dark:hover:bg-slate-700">CSV Spreadsheet</button>
             <button (click)="exportReport('leads', 'pdf')" class="btn-export bg-violet-600 hover:bg-violet-500 text-white border-transparent">PDF Document</button>
           </div>
         </div>
@@ -54,12 +54,12 @@ import { HttpClient } from '@angular/common/http';
           <div class="h-12 w-12 rounded-xl bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 flex items-center justify-center mb-4">
             <span class="material-icons text-2xl">confirmation_number</span>
           </div>
-          <h3 class="font-bold text-sm text-slate-800 dark:text-white uppercase tracking-wider">Support Ticketing</h3>
-          <p class="text-xs text-slate-400 dark:text-slate-400 mt-2 leading-relaxed">
+          <h3 class="font-bold text-sm text-slate-800 text-[#1c1917] uppercase tracking-wider">Support Ticketing</h3>
+          <p class="text-xs text-[#44403c] dark:text-[#44403c] mt-2 leading-relaxed">
             Compiles customer queries, categories, priorities (Low to Critical), open statuses, and assigned customer support personnel.
           </p>
-          <div class="flex gap-3 pt-6 border-t border-slate-100 dark:border-slate-700 mt-6">
-            <button (click)="exportReport('tickets', 'csv')" class="btn-export border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700">CSV Spreadsheet</button>
+          <div class="flex gap-3 pt-6 border-t border-slate-100 border-[#e7e5e4] mt-6">
+            <button (click)="exportReport('tickets', 'csv')" class="btn-export border-slate-200 border-[#e7e5e4] hover:bg-slate-50 dark:hover:bg-slate-700">CSV Spreadsheet</button>
             <button (click)="exportReport('tickets', 'pdf')" class="btn-export bg-rose-600 hover:bg-rose-500 text-white border-transparent">PDF Document</button>
           </div>
         </div>

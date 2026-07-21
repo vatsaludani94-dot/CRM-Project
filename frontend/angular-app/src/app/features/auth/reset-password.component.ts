@@ -19,7 +19,7 @@ import { AuthService } from '../../core/services/auth.service';
             <span class="material-icons text-5xl">donut_large</span>
           </div>
           <h2 class="mt-4 text-3xl font-extrabold text-white tracking-tight">Grownox Technologies</h2>
-          <p class="mt-2 text-sm text-slate-400">
+          <p class="mt-2 text-sm text-[#44403c]">
             Update account password credentials
           </p>
         </div>
@@ -37,9 +37,9 @@ import { AuthService } from '../../core/services/auth.service';
 
             <!-- Password Input -->
             <div>
-              <label for="password" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">New Password</label>
+              <label for="password" class="block text-xs font-semibold text-[#44403c] uppercase tracking-wider">New Password</label>
               <div class="mt-1.5 relative">
-                <span class="material-icons absolute left-3 top-2.5 text-slate-500 text-lg">lock</span>
+                <span class="material-icons absolute left-3 top-2.5 text-[#292524] text-lg">lock</span>
                 <input 
                   id="password" 
                   type="password" 
@@ -56,14 +56,14 @@ import { AuthService } from '../../core/services/auth.service';
             <button 
               type="submit" 
               [disabled]="resetForm.invalid || isLoading() || successMessage() !== null"
-              class="w-full py-2.5 px-4 bg-sky-600 hover:bg-sky-500 disabled:bg-slate-700 disabled:text-slate-400 text-white rounded-lg text-sm font-semibold shadow-lg shadow-sky-600/20 active:scale-95 transition-all flex justify-center items-center gap-2">
+              class="w-full py-2.5 px-4 bg-sky-600 hover:bg-sky-500 disabled:bg-slate-700 disabled:text-[#44403c] text-white rounded-lg text-sm font-semibold shadow-lg shadow-sky-600/20 active:scale-95 transition-all flex justify-center items-center gap-2">
               <span *ngIf="isLoading()" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
               <span>Update Password</span>
             </button>
           </form>
 
           <div class="mt-6 text-center text-xs">
-            <a routerLink="/login" class="text-slate-400 hover:text-slate-300 font-semibold">Back to Login</a>
+            <a routerLink="/login" class="text-[#44403c] hover:text-[#1c1917] font-semibold">Back to Login</a>
           </div>
 
         </div>

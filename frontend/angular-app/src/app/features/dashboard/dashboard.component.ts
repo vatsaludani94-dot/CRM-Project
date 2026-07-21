@@ -16,23 +16,24 @@ Chart.register(...registerables);
       <!-- Welcome Header -->
       <div class="flex justify-between items-center">
         <div>
-          <h1 class="text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight">Executive Dashboard</h1>
-          <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Real-time KPI metrics and sales funnel analytics</p>
+          <h1 class="text-2xl font-extrabold text-[#1c1917] tracking-tight">Executive Dashboard</h1>
+          <p class="text-sm text-[#574c43] mt-1 font-medium">Real-time KPI metrics and sales funnel analytics</p>
         </div>
-        <div class="text-xs text-slate-400 font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 px-3 py-1.5 rounded-lg shadow-sm">
-          Live sync active
+        <div class="text-xs text-[#574c43] font-semibold bg-white border border-[#e7e5e4] px-3 py-1.5 rounded-xl shadow-sm flex items-center gap-2">
+          <span class="h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span>
+          <span>Live sync active</span>
         </div>
       </div>
 
       <!-- Universal Clickable Actions System -->
       <!-- 1. Alert Banner Link -->
-      <div (click)="triggerAction('/workflows')" class="bg-gradient-to-r from-amber-500/10 via-amber-600/15 to-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-300 text-xs font-semibold py-3 px-4 rounded-xl flex justify-between items-center cursor-pointer hover:bg-amber-500/20 active:scale-[0.99] transition-all">
+      <div (click)="triggerAction('/workflows')" class="bg-amber-500/10 border border-amber-500/30 text-amber-900 text-xs font-semibold py-3 px-4 rounded-xl flex justify-between items-center cursor-pointer hover:bg-amber-500/20 active:scale-[0.99] transition-all">
         <div class="flex items-center gap-2">
-          <span class="bg-amber-500 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded">Admin Alert Action</span>
+          <span class="bg-amber-700 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded">Admin Alert Action</span>
           <span>Workflow Automation Engine requires verification: 15 pending leads need path mapping rules.</span>
         </div>
         <div class="flex items-center gap-1">
-          <span class="text-[10px] font-bold uppercase tracking-wider">Configure Automation</span>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-amber-900">Configure Automation</span>
           <span class="material-icons text-sm">arrow_forward</span>
         </div>
       </div>
@@ -40,29 +41,29 @@ Chart.register(...registerables);
       <!-- 2. CTA Cards and 3. Clickable Boxes -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- CTA Card: Proposals & Invoices -->
-        <div (click)="triggerAction('/documents-invoices')" class="bg-gradient-to-br from-indigo-50/80 to-purple-50/50 dark:from-slate-800/85 dark:to-slate-900/50 border border-indigo-100 dark:border-slate-700/60 p-5 rounded-2xl cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all group flex flex-col justify-between h-36">
+        <div (click)="triggerAction('/documents-invoices')" class="bg-white border border-[#e7e5e4] hover:border-amber-600/40 p-5 rounded-2xl cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all group flex flex-col justify-between h-36">
           <div class="flex justify-between items-start">
             <div class="space-y-1">
-              <span class="text-[9px] font-black uppercase tracking-wider text-indigo-500 dark:text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded">Universal CTA Card</span>
-              <h4 class="text-sm font-bold text-slate-800 dark:text-white mt-2 group-hover:text-indigo-500 transition-colors">Manage Proposals & Invoicing Hub</h4>
-              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Review outstanding invoices, send professional agreements, and calculate custom tax values.</p>
+              <span class="text-[9px] font-black uppercase tracking-wider text-amber-800 bg-amber-500/10 px-2 py-0.5 rounded">Universal CTA Card</span>
+              <h4 class="text-sm font-bold text-[#1c1917] mt-2 group-hover:text-amber-700 transition-colors">Manage Proposals & Invoicing Hub</h4>
+              <p class="text-[11px] text-[#574c43] mt-1">Review outstanding invoices, send professional agreements, and calculate custom tax values.</p>
             </div>
-            <span class="material-icons text-indigo-500 opacity-80 group-hover:scale-110 transition-transform">receipt_long</span>
+            <span class="material-icons text-amber-700 opacity-80 group-hover:scale-110 transition-transform">receipt_long</span>
           </div>
-          <span class="text-[10px] text-indigo-500 dark:text-indigo-400 font-bold uppercase flex items-center gap-1">Launch Module <span class="material-icons text-xs">arrow_forward</span></span>
+          <span class="text-[10px] text-amber-700 font-bold uppercase flex items-center gap-1">Launch Module <span class="material-icons text-xs">arrow_forward</span></span>
         </div>
 
         <!-- Clickable Box: Support Center -->
-        <div (click)="triggerAction('/tickets')" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 p-5 rounded-2xl cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all group flex flex-col justify-between h-36">
+        <div (click)="triggerAction('/tickets')" class="bg-white border border-[#e7e5e4] hover:border-amber-600/40 p-5 rounded-2xl cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all group flex flex-col justify-between h-36">
           <div class="flex justify-between items-start">
             <div class="space-y-1">
-              <span class="text-[9px] font-black uppercase tracking-wider text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded">Universal Action Box</span>
-              <h4 class="text-sm font-bold text-slate-900 dark:text-white mt-2 group-hover:text-rose-500 transition-colors">AI Help Support Center</h4>
-              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Classify client queries automatically and answer tickets using AI Auto-replies.</p>
+              <span class="text-[9px] font-black uppercase tracking-wider text-[#1c1917] bg-stone-200 px-2 py-0.5 rounded">Universal Action Box</span>
+              <h4 class="text-sm font-bold text-[#1c1917] mt-2 group-hover:text-amber-700 transition-colors">AI Help Support Center</h4>
+              <p class="text-[11px] text-[#574c43] mt-1">Classify client queries automatically and answer tickets using AI Auto-replies.</p>
             </div>
-            <span class="material-icons text-rose-500 opacity-80 group-hover:scale-110 transition-transform">confirmation_number</span>
+            <span class="material-icons text-[#1c1917] opacity-80 group-hover:scale-110 transition-transform">confirmation_number</span>
           </div>
-          <span class="text-[10px] text-rose-500 font-bold uppercase flex items-center gap-1">Open Tickets <span class="material-icons text-xs">arrow_forward</span></span>
+          <span class="text-[10px] text-[#1c1917] font-bold uppercase flex items-center gap-1">Open Tickets <span class="material-icons text-xs">arrow_forward</span></span>
         </div>
       </div>
 
@@ -70,59 +71,59 @@ Chart.register(...registerables);
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         
         <!-- Revenue Card -->
-        <div class="kpi-card bg-gradient-to-br from-sky-500 to-sky-600 text-white">
+        <div class="kpi-card bg-[#1c1917] text-white rounded-2xl p-5 shadow-md">
           <div class="flex justify-between items-start">
             <div>
-              <span class="text-xs font-bold uppercase tracking-wider text-sky-100">Total Revenue</span>
-              <h3 class="text-2xl font-black mt-2 tracking-tight">\${{ kpis().revenue.toLocaleString() }}</h3>
+              <span class="text-[10px] font-bold uppercase tracking-wider text-amber-400">Total Revenue</span>
+              <h3 class="text-2xl font-black mt-2 tracking-tight text-white">\${{ kpis().revenue.toLocaleString() }}</h3>
             </div>
-            <span class="material-icons text-3xl opacity-30">monetization_on</span>
+            <span class="material-icons text-3xl text-amber-400 opacity-40">monetization_on</span>
           </div>
-          <span class="text-[10px] text-sky-100 mt-4 block font-semibold">+14.2% from last month</span>
+          <span class="text-[10px] text-emerald-400 mt-4 block font-semibold">+14.2% from last month</span>
         </div>
 
         <!-- Customers Card -->
-        <div class="kpi-card bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50">
+        <div class="kpi-card bg-white border border-[#e7e5e4] rounded-2xl p-5 shadow-sm">
           <div class="flex justify-between items-start">
             <div>
-              <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Customers</span>
-              <h3 class="text-2xl font-black mt-2 text-slate-800 dark:text-white tracking-tight">{{ kpis().customers }}</h3>
+              <span class="text-[10px] font-bold uppercase tracking-wider text-[#574c43]">Customers</span>
+              <h3 class="text-2xl font-black mt-2 text-[#1c1917] tracking-tight">{{ kpis().customers }}</h3>
             </div>
-            <span class="material-icons text-3xl text-emerald-500 opacity-20">people</span>
+            <span class="material-icons text-3xl text-emerald-600 opacity-30">people</span>
           </div>
-          <span class="text-[10px] text-emerald-500 mt-4 block font-semibold">Active & VIP clients</span>
+          <span class="text-[10px] text-emerald-600 mt-4 block font-semibold">Active & VIP clients</span>
         </div>
 
         <!-- Leads Card -->
-        <div class="kpi-card bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50">
+        <div class="kpi-card bg-white border border-[#e7e5e4] rounded-2xl p-5 shadow-sm">
           <div class="flex justify-between items-start">
             <div>
-              <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Sales Leads</span>
-              <h3 class="text-2xl font-black mt-2 text-slate-800 dark:text-white tracking-tight">{{ kpis().leads }}</h3>
+              <span class="text-[10px] font-bold uppercase tracking-wider text-[#574c43]">Sales Leads</span>
+              <h3 class="text-2xl font-black mt-2 text-[#1c1917] tracking-tight">{{ kpis().leads }}</h3>
             </div>
-            <span class="material-icons text-3xl text-violet-500 opacity-20">leaderboard</span>
+            <span class="material-icons text-3xl text-amber-600 opacity-30">leaderboard</span>
           </div>
-          <span class="text-[10px] text-violet-500 mt-4 block font-semibold">Kanban pipeline active</span>
+          <span class="text-[10px] text-amber-700 mt-4 block font-semibold">Kanban pipeline active</span>
         </div>
 
         <!-- Support Tickets Card -->
-        <div class="kpi-card bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50">
+        <div class="kpi-card bg-white border border-[#e7e5e4] rounded-2xl p-5 shadow-sm">
           <div class="flex justify-between items-start">
             <div>
-              <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Support Tickets</span>
-              <h3 class="text-2xl font-black mt-2 text-slate-800 dark:text-white tracking-tight">{{ kpis().tickets }}</h3>
+              <span class="text-[10px] font-bold uppercase tracking-wider text-[#574c43]">Support Tickets</span>
+              <h3 class="text-2xl font-black mt-2 text-[#1c1917] tracking-tight">{{ kpis().tickets }}</h3>
             </div>
-            <span class="material-icons text-3xl text-rose-500 opacity-20">confirmation_number</span>
+            <span class="material-icons text-3xl text-rose-600 opacity-30">confirmation_number</span>
           </div>
-          <span class="text-[10px] text-rose-500 mt-4 block font-semibold">Real-time ticket hub</span>
+          <span class="text-[10px] text-rose-600 mt-4 block font-semibold">Real-time ticket hub</span>
         </div>
 
         <!-- Employees Card -->
-        <div class="kpi-card bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50">
+        <div class="kpi-card bg-white bg-white border border-slate-200 border-[#e7e5e4]/50">
           <div class="flex justify-between items-start">
             <div>
-              <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Employees</span>
-              <h3 class="text-2xl font-black mt-2 text-slate-800 dark:text-white tracking-tight">{{ kpis().employees }}</h3>
+              <span class="text-xs font-bold uppercase tracking-wider text-[#44403c]">Employees</span>
+              <h3 class="text-2xl font-black mt-2 text-slate-800 text-[#1c1917] tracking-tight">{{ kpis().employees }}</h3>
             </div>
             <span class="material-icons text-3xl text-amber-500 opacity-20">badge</span>
           </div>
@@ -135,32 +136,32 @@ Chart.register(...registerables);
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         <!-- Revenue Trend Chart -->
-        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 p-6 rounded-2xl shadow-sm">
-          <h4 class="font-bold text-sm text-slate-700 dark:text-white uppercase tracking-wider mb-4">Revenue Trend & Forecast</h4>
+        <div class="bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 p-6 rounded-2xl shadow-sm">
+          <h4 class="font-bold text-sm text-slate-700 text-[#1c1917] uppercase tracking-wider mb-4">Revenue Trend & Forecast</h4>
           <div class="h-64 relative">
             <canvas #revenueChart></canvas>
           </div>
         </div>
 
         <!-- Lead Funnel Stages Chart -->
-        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 p-6 rounded-2xl shadow-sm">
-          <h4 class="font-bold text-sm text-slate-700 dark:text-white uppercase tracking-wider mb-4">Lead Funnel Distribution</h4>
+        <div class="bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 p-6 rounded-2xl shadow-sm">
+          <h4 class="font-bold text-sm text-slate-700 text-[#1c1917] uppercase tracking-wider mb-4">Lead Funnel Distribution</h4>
           <div class="h-64 relative">
             <canvas #leadFunnelChart></canvas>
           </div>
         </div>
 
         <!-- Ticket Status Distribution Chart -->
-        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 p-6 rounded-2xl shadow-sm">
-          <h4 class="font-bold text-sm text-slate-700 dark:text-white uppercase tracking-wider mb-4">Ticket Status Metrics</h4>
+        <div class="bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 p-6 rounded-2xl shadow-sm">
+          <h4 class="font-bold text-sm text-slate-700 text-[#1c1917] uppercase tracking-wider mb-4">Ticket Status Metrics</h4>
           <div class="h-64 relative flex items-center justify-center">
             <canvas #ticketChart class="max-h-full"></canvas>
           </div>
         </div>
 
         <!-- Lead Sources Chart -->
-        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 p-6 rounded-2xl shadow-sm">
-          <h4 class="font-bold text-sm text-slate-700 dark:text-white uppercase tracking-wider mb-4">Lead Source Channels</h4>
+        <div class="bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 p-6 rounded-2xl shadow-sm">
+          <h4 class="font-bold text-sm text-slate-700 text-[#1c1917] uppercase tracking-wider mb-4">Lead Source Channels</h4>
           <div class="h-64 relative">
             <canvas #leadSourceChart></canvas>
           </div>
@@ -172,12 +173,12 @@ Chart.register(...registerables);
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         <!-- Recent Tickets -->
-        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 p-6 rounded-2xl shadow-sm">
-          <h4 class="font-bold text-sm text-slate-700 dark:text-white uppercase tracking-wider mb-4">Recent Support Queries</h4>
+        <div class="bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 p-6 rounded-2xl shadow-sm">
+          <h4 class="font-bold text-sm text-slate-700 text-[#1c1917] uppercase tracking-wider mb-4">Recent Support Queries</h4>
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-700">
               <thead>
-                <tr class="text-left text-xs text-slate-400 font-bold uppercase">
+                <tr class="text-left text-xs text-[#44403c] font-bold uppercase">
                   <th class="pb-3">Code</th>
                   <th class="pb-3">Title</th>
                   <th class="pb-3">Priority</th>
@@ -187,13 +188,13 @@ Chart.register(...registerables);
               <tbody class="divide-y divide-slate-100 dark:divide-slate-700 text-xs">
                 <tr *ngFor="let ticket of recentTickets()" class="hover:bg-slate-50 dark:hover:bg-slate-700/30">
                   <td class="py-3 font-semibold text-sky-500">{{ ticket.ticketCode }}</td>
-                  <td class="py-3 font-medium text-slate-700 dark:text-slate-300 truncate max-w-[150px]">{{ ticket.title }}</td>
+                  <td class="py-3 font-medium text-slate-700 dark:text-[#1c1917] truncate max-w-[150px]">{{ ticket.title }}</td>
                   <td class="py-3">
                     <span [ngClass]="{
                       'bg-rose-100 text-rose-600 dark:bg-rose-950 dark:text-rose-400': ticket.priority === 'Critical',
                       'bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400': ticket.priority === 'High',
                       'bg-sky-100 text-sky-600 dark:bg-sky-950 dark:text-sky-400': ticket.priority === 'Medium',
-                      'bg-slate-100 text-slate-600 dark:bg-slate-950 dark:text-slate-400': ticket.priority === 'Low'
+                      'bg-slate-100 text-slate-600 dark:bg-[#f8fafc] dark:text-[#44403c]': ticket.priority === 'Low'
                     }" class="px-2 py-0.5 rounded-full font-bold text-[9px] uppercase">
                       {{ ticket.priority }}
                     </span>
@@ -203,7 +204,7 @@ Chart.register(...registerables);
                       'bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400': ticket.status === 'Resolved' || ticket.status === 'Closed',
                       'bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400': ticket.status === 'In Progress',
                       'bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400': ticket.status === 'Assigned',
-                      'bg-slate-100 text-slate-600 dark:bg-slate-900 dark:text-slate-400': ticket.status === 'Open'
+                      'bg-slate-100 text-slate-600 dark:bg-white dark:text-[#44403c]': ticket.status === 'Open'
                     }" class="px-2 py-0.5 rounded-full font-bold text-[9px]">
                       {{ ticket.status }}
                     </span>
@@ -215,15 +216,15 @@ Chart.register(...registerables);
         </div>
 
         <!-- Recent Actions / Timelines -->
-        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 p-6 rounded-2xl shadow-sm">
-          <h4 class="font-bold text-sm text-slate-700 dark:text-white uppercase tracking-wider mb-4">Recent Client Activities</h4>
+        <div class="bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 p-6 rounded-2xl shadow-sm">
+          <h4 class="font-bold text-sm text-slate-700 text-[#1c1917] uppercase tracking-wider mb-4">Recent Client Activities</h4>
           <div class="space-y-4">
             <div *ngFor="let act of recentActivities()" class="flex items-start gap-3 text-xs">
-              <span class="material-icons text-slate-400 text-sm mt-0.5">history</span>
+              <span class="material-icons text-[#44403c] text-sm mt-0.5">history</span>
               <div class="flex-1">
-                <span class="font-bold text-slate-800 dark:text-white">{{ act.companyName }}</span>
-                <span class="text-slate-500 dark:text-slate-400 ml-1.5">{{ act.description }}</span>
-                <span class="text-slate-400 text-[10px] block mt-0.5">{{ act.date | date:'mediumDate' }}</span>
+                <span class="font-bold text-slate-800 text-[#1c1917]">{{ act.companyName }}</span>
+                <span class="text-[#574c43] ml-1.5">{{ act.description }}</span>
+                <span class="text-[#44403c] text-[10px] block mt-0.5">{{ act.date | date:'mediumDate' }}</span>
               </div>
             </div>
           </div>

@@ -8,7 +8,7 @@ import { AuthService } from '../../core/services/auth.service';
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: `
-    <div class="min-h-screen flex items-center justify-center bg-slate-950 px-4 py-12 sm:px-6 lg:px-8 relative overflow-hidden font-sans">
+    <div class="min-h-screen flex items-center justify-center bg-[#f8fafc] px-4 py-12 sm:px-6 lg:px-8 relative overflow-hidden font-sans">
       <!-- Ambient decorative background glows -->
       <div class="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-indigo-500/10 blur-3xl"></div>
       <div class="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-violet-500/10 blur-3xl"></div>
@@ -17,14 +17,14 @@ import { AuthService } from '../../core/services/auth.service';
         
         <!-- Brand Header -->
         <div class="text-center space-y-3">
-          <a routerLink="/" class="inline-flex justify-center items-center gap-3 text-indigo-400 group">
-            <div class="h-12 w-12 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-all">
+          <a routerLink="/" class="inline-flex justify-center items-center gap-3 text-slate-900 group">
+            <div class="h-12 w-12 rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center shadow-lg shadow-slate-900/20 group-hover:scale-105 transition-all">
               <span class="material-icons text-white text-3xl font-black">bolt</span>
             </div>
-            <span class="text-3xl font-black tracking-tight text-white">GrownX<span class="text-indigo-500 font-medium">CRM</span></span>
+            <span class="text-3xl font-black tracking-tight text-slate-900">GrownX<span class="text-amber-600 font-medium">CRM</span></span>
           </a>
-          <h2 class="text-xl font-extrabold text-slate-300 tracking-tight">Enterprise Commands Portal</h2>
-          <p class="text-sm text-slate-500 max-w-lg mx-auto">
+          <h2 class="text-xl font-extrabold text-slate-800 tracking-tight">Enterprise Commands Portal</h2>
+          <p class="text-sm text-[#292524] max-w-lg mx-auto">
             Choose a mock workspace role below or authenticate via Google to instantly access the CRM Command Center.
           </p>
         </div>
@@ -34,82 +34,82 @@ import { AuthService } from '../../core/services/auth.service';
           <!-- Column 1: One-Click Demo Role Cards -->
           <div class="md:col-span-2 space-y-6">
             <div class="flex justify-between items-center px-2">
-              <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Select Demo Profile</span>
-              <span class="text-[10px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2.5 py-0.5 rounded-full font-bold uppercase">No password required</span>
+              <span class="text-xs font-bold uppercase tracking-wider text-[#292524]">Select Demo Profile</span>
+              <span class="text-[10px] bg-slate-900 text-white border border-slate-700 px-3 py-1 rounded-full font-bold uppercase">No password required</span>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               
               <!-- Card: Super Admin -->
-              <div (click)="quickLogin('admin@grownox.com', 'admin123')" class="role-card border-red-500/20 hover:border-red-500/60 bg-slate-900/40 hover:bg-slate-900/80">
+              <div (click)="quickLogin('admin@grownox.com', 'admin123')" class="role-card bg-white border border-slate-200 hover:border-red-500/50 shadow-sm hover:shadow-xl transition-all duration-300 group">
                 <div class="flex items-center gap-3">
-                  <span class="material-icons text-red-400 bg-red-500/10 p-2.5 rounded-xl text-xl">admin_panel_settings</span>
+                  <span class="material-icons text-red-500 bg-red-500/10 p-2.5 rounded-xl text-xl">admin_panel_settings</span>
                   <div>
-                    <h4 class="text-sm font-black text-white">Super Admin</h4>
-                    <p class="text-[10px] text-red-400 font-bold">admin@grownox.com</p>
+                    <h4 class="text-sm font-black text-slate-900">Super Admin</h4>
+                    <p class="text-[10px] text-red-500 font-bold">admin@grownox.com</p>
                   </div>
                 </div>
-                <p class="text-[11px] text-slate-400 leading-relaxed pt-2">Full access to manage staff, configure payroll, download executive reports, and edit white-label settings.</p>
+                <p class="text-[11px] text-[#292524] leading-relaxed pt-2">Full access to manage staff, configure payroll, download executive reports, and edit white-label settings.</p>
               </div>
 
               <!-- Card: Company Owner -->
-              <div (click)="quickLogin('owner@grownox.com', 'owner123')" class="role-card border-violet-500/20 hover:border-violet-500/60 bg-slate-900/40 hover:bg-slate-900/80">
+              <div (click)="quickLogin('owner@grownox.com', 'owner123')" class="role-card bg-white border border-slate-200 hover:border-amber-500/50 shadow-sm hover:shadow-xl transition-all duration-300 group">
                 <div class="flex items-center gap-3">
-                  <span class="material-icons text-violet-400 bg-violet-500/10 p-2.5 rounded-xl text-xl">stars</span>
+                  <span class="material-icons text-amber-600 bg-amber-500/10 p-2.5 rounded-xl text-xl">stars</span>
                   <div>
-                    <h4 class="text-sm font-black text-white">Company Owner</h4>
-                    <p class="text-[10px] text-violet-400 font-bold">owner@grownox.com</p>
+                    <h4 class="text-sm font-black text-slate-900">Company Owner</h4>
+                    <p class="text-[10px] text-amber-600 font-bold">owner@grownox.com</p>
                   </div>
                 </div>
-                <p class="text-[11px] text-slate-400 leading-relaxed pt-2">Executive dashboard view, monitors business KPIs, visualizes forecasts, and reviews deal conversion values.</p>
+                <p class="text-[11px] text-[#292524] leading-relaxed pt-2">Executive dashboard view, monitors business KPIs, visualizes forecasts, and reviews deal conversion values.</p>
               </div>
 
               <!-- Card: Sales Manager -->
-              <div (click)="quickLogin('manager@grownox.com', 'manager123')" class="role-card border-amber-500/20 hover:border-amber-500/60 bg-slate-900/40 hover:bg-slate-900/80">
+              <div (click)="quickLogin('manager@grownox.com', 'manager123')" class="role-card bg-white border border-slate-200 hover:border-slate-700 shadow-sm hover:shadow-xl transition-all duration-300 group">
                 <div class="flex items-center gap-3">
-                  <span class="material-icons text-amber-400 bg-amber-500/10 p-2.5 rounded-xl text-xl">manage_accounts</span>
+                  <span class="material-icons text-slate-800 bg-slate-900/10 p-2.5 rounded-xl text-xl">manage_accounts</span>
                   <div>
-                    <h4 class="text-sm font-black text-white">Sales Manager</h4>
-                    <p class="text-[10px] text-amber-400 font-bold">manager@grownox.com</p>
+                    <h4 class="text-sm font-black text-slate-900">Sales Manager</h4>
+                    <p class="text-[10px] text-slate-800 font-bold">manager@grownox.com</p>
                   </div>
                 </div>
-                <p class="text-[11px] text-slate-400 leading-relaxed pt-2">Oversees sales funnel metrics, schedules manager syncs, assigns support tickets, and reviews timelines.</p>
+                <p class="text-[11px] text-[#292524] leading-relaxed pt-2">Oversees sales funnel metrics, schedules manager syncs, assigns support tickets, and reviews timelines.</p>
               </div>
 
               <!-- Card: Sales Representative -->
-              <div (click)="quickLogin('employee@grownox.com', 'employee123')" class="role-card border-indigo-500/20 hover:border-indigo-500/60 bg-slate-900/40 hover:bg-slate-900/80">
+              <div (click)="quickLogin('employee@grownox.com', 'employee123')" class="role-card bg-white border border-slate-200 hover:border-slate-700 shadow-sm hover:shadow-xl transition-all duration-300 group">
                 <div class="flex items-center gap-3">
-                  <span class="material-icons text-indigo-400 bg-indigo-500/10 p-2.5 rounded-xl text-xl">storefront</span>
+                  <span class="material-icons text-slate-700 bg-slate-100 p-2.5 rounded-xl text-xl">storefront</span>
                   <div>
-                    <h4 class="text-sm font-black text-white">Sales Rep</h4>
-                    <p class="text-[10px] text-indigo-400 font-bold">employee@grownox.com</p>
+                    <h4 class="text-sm font-black text-slate-900">Sales Rep</h4>
+                    <p class="text-[10px] text-slate-700 font-bold">employee@grownox.com</p>
                   </div>
                 </div>
-                <p class="text-[11px] text-slate-400 leading-relaxed pt-2">Manages pipeline leads on the Kanban board, adds conversation notes, and converts leads to customers.</p>
+                <p class="text-[11px] text-[#292524] leading-relaxed pt-2">Manages pipeline leads on the Kanban board, adds conversation notes, and converts leads to customers.</p>
               </div>
 
               <!-- Card: HR & Support Representative -->
-              <div (click)="quickLogin('alice@grownox.com', 'employee123')" class="role-card border-emerald-500/20 hover:border-emerald-500/60 bg-slate-900/40 hover:bg-slate-900/80">
+              <div (click)="quickLogin('alice@grownox.com', 'employee123')" class="role-card bg-white border border-slate-200 hover:border-emerald-500/50 shadow-sm hover:shadow-xl transition-all duration-300 group">
                 <div class="flex items-center gap-3">
-                  <span class="material-icons text-emerald-400 bg-emerald-500/10 p-2.5 rounded-xl text-xl">support_agent</span>
+                  <span class="material-icons text-emerald-600 bg-emerald-500/10 p-2.5 rounded-xl text-xl">support_agent</span>
                   <div>
-                    <h4 class="text-sm font-black text-white">HR & Support</h4>
-                    <p class="text-[10px] text-emerald-400 font-bold">alice@grownox.com</p>
+                    <h4 class="text-sm font-black text-slate-900">HR & Support</h4>
+                    <p class="text-[10px] text-emerald-600 font-bold">alice@grownox.com</p>
                   </div>
                 </div>
-                <p class="text-[11px] text-slate-400 leading-relaxed pt-2">Resolves support queries, views payroll summaries, and writes ticket comments with AI suggested replies.</p>
+                <p class="text-[11px] text-[#292524] leading-relaxed pt-2">Resolves support queries, views payroll summaries, and writes ticket comments with AI suggested replies.</p>
               </div>
 
               <!-- Card: Customer Portal -->
-              <div (click)="quickLogin('customer@grownox.com', 'customer123')" class="role-card border-sky-500/20 hover:border-sky-500/60 bg-slate-900/40 hover:bg-slate-900/80">
+              <div (click)="quickLogin('customer@grownox.com', 'customer123')" class="role-card bg-white border border-slate-200 hover:border-sky-500/50 shadow-sm hover:shadow-xl transition-all duration-300 group">
                 <div class="flex items-center gap-3">
-                  <span class="material-icons text-sky-400 bg-sky-500/10 p-2.5 rounded-xl text-xl">person</span>
+                  <span class="material-icons text-sky-600 bg-sky-500/10 p-2.5 rounded-xl text-xl">person</span>
                   <div>
-                    <h4 class="text-sm font-black text-white">Customer Portal</h4>
-                    <p class="text-[10px] text-sky-400 font-bold">customer@grownox.com</p>
+                    <h4 class="text-sm font-black text-slate-900">Customer Portal</h4>
+                    <p class="text-[10px] text-sky-600 font-bold">customer@grownox.com</p>
                   </div>
                 </div>
-                <p class="text-[11px] text-slate-400 leading-relaxed pt-2">Restricted customer portal. Open support requests, upload files, and reply to comments in real-time.</p>
+                <p class="text-[11px] text-[#292524] leading-relaxed pt-2">Restricted customer portal. Open support requests, upload files, and reply to comments in real-time.</p>
               </div>
 
             </div>
@@ -135,16 +135,16 @@ import { AuthService } from '../../core/services/auth.service';
           </button>
 
           <div class="text-xs text-slate-600 font-bold flex gap-4">
-            <a routerLink="/" class="hover:text-slate-400">Back to Website</a>
+            <a routerLink="/" class="hover:text-[#44403c]">Back to Website</a>
             <span>•</span>
-            <a routerLink="/register" class="hover:text-slate-400">Create New Workspace</a>
+            <a routerLink="/register" class="hover:text-[#44403c]">Create New Workspace</a>
           </div>
         </div>
 
       </div>
 
       <!-- Simulated Google OAuth Popup Modal -->
-      <div *ngIf="showGooglePopup()" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div *ngIf="showGooglePopup()" class="fixed inset-0 bg-[#f8fafc]/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-scaleIn border border-slate-200 text-slate-800">
           
           <!-- Google popup Header -->
@@ -157,7 +157,7 @@ import { AuthService } from '../../core/services/auth.service';
             </svg>
             <div class="space-y-1">
               <h3 class="text-md font-bold text-slate-900">Sign in with Google</h3>
-              <p class="text-xs text-slate-500">to continue to <strong class="text-indigo-600">GrownX Technologies</strong></p>
+              <p class="text-xs text-[#292524]">to continue to <strong class="text-indigo-600">GrownX Technologies</strong></p>
             </div>
           </div>
 
@@ -166,18 +166,18 @@ import { AuthService } from '../../core/services/auth.service';
             
             <div *ngIf="googleAuthenticating()" class="flex flex-col items-center py-8 space-y-4">
               <div class="animate-spin h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full"></div>
-              <p class="text-xs text-slate-500 font-bold">Verifying Google account credentials...</p>
+              <p class="text-xs text-[#292524] font-bold">Verifying Google account credentials...</p>
             </div>
 
             <div *ngIf="!googleAuthenticating()" class="space-y-1.5">
-              <p class="text-[10px] text-slate-400 font-bold uppercase px-2 mb-2">Choose an account</p>
+              <p class="text-[10px] text-[#44403c] font-bold uppercase px-2 mb-2">Choose an account</p>
               
               <!-- Account Item 1 -->
               <div (click)="selectGoogleAccount('Alex Morgan', 'alex.morgan@gmail.com')" class="flex items-center gap-3 p-3 hover:bg-slate-50 rounded-xl cursor-pointer transition-colors border border-transparent hover:border-slate-100">
                 <div class="h-8 w-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">AM</div>
                 <div class="flex-1 text-left">
                   <p class="text-xs font-bold text-slate-900">Alex Morgan</p>
-                  <p class="text-[10px] text-slate-500">alex.morgan@gmail.com</p>
+                  <p class="text-[10px] text-[#292524]">alex.morgan@gmail.com</p>
                 </div>
               </div>
 
@@ -186,7 +186,7 @@ import { AuthService } from '../../core/services/auth.service';
                 <div class="h-8 w-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs">TR</div>
                 <div class="flex-1 text-left">
                   <p class="text-xs font-bold text-slate-900">Taylor Reed</p>
-                  <p class="text-[10px] text-slate-500">taylor.reed@gmail.com</p>
+                  <p class="text-[10px] text-[#292524]">taylor.reed@gmail.com</p>
                 </div>
               </div>
 
@@ -202,7 +202,7 @@ import { AuthService } from '../../core/services/auth.service';
           </div>
 
           <!-- Popup Footer -->
-          <div class="bg-slate-50 px-6 py-4 border-t border-slate-100 flex justify-between items-center text-[10px] text-slate-500 font-bold">
+          <div class="bg-slate-50 px-6 py-4 border-t border-slate-100 flex justify-between items-center text-[10px] text-[#292524] font-bold">
             <button (click)="closeGooglePopup()" class="hover:text-slate-800">Cancel</button>
             <a href="#" class="hover:underline">Help & Privacy</a>
           </div>

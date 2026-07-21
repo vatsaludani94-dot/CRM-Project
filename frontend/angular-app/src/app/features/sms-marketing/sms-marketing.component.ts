@@ -13,8 +13,8 @@ import { ApiService } from '../../core/services/api.service';
       <!-- Header -->
       <div class="flex justify-between items-center">
         <div>
-          <h1 class="text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight">SMS Marketing Campaign Center</h1>
-          <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Schedule targeted text campaigns, track instant delivery rates, and synchronize segment tags.</p>
+          <h1 class="text-2xl font-extrabold text-slate-800 text-[#1c1917] tracking-tight">SMS Marketing Campaign Center</h1>
+          <p class="text-sm text-[#574c43] mt-1">Schedule targeted text campaigns, track instant delivery rates, and synchronize segment tags.</p>
         </div>
         
         <div class="flex gap-2">
@@ -25,13 +25,13 @@ import { ApiService } from '../../core/services/api.service';
       </div>
 
       <!-- Campaign List Table -->
-      <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 rounded-2xl shadow-sm p-6 overflow-hidden animate-fadeIn">
-        <h4 class="font-extrabold text-xs text-slate-400 uppercase tracking-widest mb-4">SMS Deliveries History</h4>
+      <div class="bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 rounded-2xl shadow-sm p-6 overflow-hidden animate-fadeIn">
+        <h4 class="font-extrabold text-xs text-[#44403c] uppercase tracking-widest mb-4">SMS Deliveries History</h4>
         
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-700 text-xs">
             <thead>
-              <tr class="text-left text-slate-400 font-bold uppercase tracking-wider">
+              <tr class="text-left text-[#44403c] font-bold uppercase tracking-wider">
                 <th class="pb-3">Campaign Name</th>
                 <th class="pb-3">Message template</th>
                 <th class="pb-3">Target Segments</th>
@@ -43,9 +43,9 @@ import { ApiService } from '../../core/services/api.service';
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-slate-700 font-medium">
               <tr *ngFor="let camp of campaigns()" class="hover:bg-slate-50 dark:hover:bg-slate-700/30">
-                <td class="py-4 font-bold text-slate-800 dark:text-white">{{ camp.name }}</td>
-                <td class="py-4 text-slate-500 dark:text-slate-400 max-w-[200px] truncate">{{ camp.messageTemplate }}</td>
-                <td class="py-4 text-slate-500 dark:text-slate-400 uppercase text-[10px]">
+                <td class="py-4 font-bold text-slate-800 text-[#1c1917]">{{ camp.name }}</td>
+                <td class="py-4 text-[#574c43] max-w-[200px] truncate">{{ camp.messageTemplate }}</td>
+                <td class="py-4 text-[#574c43] uppercase text-[10px]">
                   {{ camp.segments?.join(', ') || 'All Contacts' }}
                 </td>
                 <td class="py-4">
@@ -57,8 +57,8 @@ import { ApiService } from '../../core/services/api.service';
                     {{ camp.status }}
                   </span>
                 </td>
-                <td class="py-4 font-bold text-slate-700 dark:text-white">{{ camp.deliveryCount }} sent</td>
-                <td class="py-4 text-slate-400">{{ camp.scheduledAt | date:'mediumDate' }}</td>
+                <td class="py-4 font-bold text-slate-700 text-[#1c1917]">{{ camp.deliveryCount }} sent</td>
+                <td class="py-4 text-[#44403c]">{{ camp.scheduledAt | date:'mediumDate' }}</td>
                 <td class="py-4">
                   <div class="flex gap-2">
                     <button *ngIf="camp.status === 'Draft' || camp.status === 'Scheduled'" (click)="sendCampaign(camp._id)" class="bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors uppercase">
@@ -71,7 +71,7 @@ import { ApiService } from '../../core/services/api.service';
                 </td>
               </tr>
               <tr *ngIf="campaigns().length === 0">
-                <td colspan="7" class="text-center py-12 text-slate-400 font-semibold">No SMS campaigns designed yet.</td>
+                <td colspan="7" class="text-center py-12 text-[#44403c] font-semibold">No SMS campaigns designed yet.</td>
               </tr>
             </tbody>
           </table>
@@ -80,23 +80,23 @@ import { ApiService } from '../../core/services/api.service';
 
       <!-- Modal: Create SMS Campaign -->
       <div *ngIf="showCreateModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-800 border dark:border-slate-700 p-6 rounded-2xl w-full max-w-sm space-y-4 text-xs animate-fadeIn">
-          <h3 class="text-sm font-extrabold text-slate-800 dark:text-white">Create SMS Campaign</h3>
+        <div class="bg-white bg-white border border-[#e7e5e4] p-6 rounded-2xl w-full max-w-sm space-y-4 text-xs animate-fadeIn">
+          <h3 class="text-sm font-extrabold text-slate-800 text-[#1c1917]">Create SMS Campaign</h3>
           <div>
-            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Campaign Name</label>
-            <input type="text" [(ngModel)]="newCampName" placeholder="Holiday Sale Alert" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white">
+            <label class="block text-[10px] font-bold text-[#44403c] uppercase mb-1">Campaign Name</label>
+            <input type="text" [(ngModel)]="newCampName" placeholder="Holiday Sale Alert" class="w-full bg-slate-50 bg-white border border-slate-200 border-[#e7e5e4] rounded-xl px-3 py-2 text-slate-800 text-[#1c1917]">
           </div>
           <div>
-            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Target Segment</label>
-            <select (change)="toggleSegment($event)" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white">
+            <label class="block text-[10px] font-bold text-[#44403c] uppercase mb-1">Target Segment</label>
+            <select (change)="toggleSegment($event)" class="w-full bg-slate-50 bg-white border border-slate-200 border-[#e7e5e4] rounded-xl px-3 py-2 text-slate-800 text-[#1c1917]">
               <option value="Lead">Leads Segment Only</option>
               <option value="Customer">Customers Segment Only</option>
               <option value="VIP">VIP Accounts</option>
             </select>
           </div>
           <div>
-            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Message template</label>
-            <textarea [(ngModel)]="newCampBody" rows="4" placeholder="Hello! Quick update from GrownX. We are offering..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white"></textarea>
+            <label class="block text-[10px] font-bold text-[#44403c] uppercase mb-1">Message template</label>
+            <textarea [(ngModel)]="newCampBody" rows="4" placeholder="Hello! Quick update from GrownX. We are offering..." class="w-full bg-slate-50 bg-white border border-slate-200 border-[#e7e5e4] rounded-xl px-3 py-2 text-slate-800 text-[#1c1917]"></textarea>
           </div>
           <div class="flex gap-2 pt-2">
             <button (click)="closeCreateModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-700 py-2.5 rounded-xl font-bold transition-colors">Cancel</button>

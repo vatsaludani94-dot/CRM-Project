@@ -12,8 +12,8 @@ import { ApiService } from '../../core/services/api.service';
       <!-- Welcome Header -->
       <div class="flex justify-between items-center">
         <div>
-          <h1 class="text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight">Executive Command Center</h1>
-          <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">SaaS isolation diagnostics, pipeline forecasting, and real-time AI performance audits.</p>
+          <h1 class="text-2xl font-extrabold text-slate-800 text-[#1c1917] tracking-tight">Executive Command Center</h1>
+          <p class="text-sm text-[#574c43] mt-1">SaaS isolation diagnostics, pipeline forecasting, and real-time AI performance audits.</p>
         </div>
         <div class="flex gap-2">
           <button (click)="refreshInsights()" class="bg-indigo-600 hover:bg-indigo-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center gap-1.5">
@@ -31,9 +31,9 @@ import { ApiService } from '../../core/services/api.service';
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div *ngFor="let insight of aiInsights()" class="bg-slate-950/60 p-4 rounded-xl border border-slate-900/80 flex items-start gap-3">
             <span class="material-icons text-indigo-400 text-sm mt-0.5">info_outline</span>
-            <p class="text-xs text-slate-300 leading-relaxed font-medium">{{ insight }}</p>
+            <p class="text-xs text-[#1c1917] leading-relaxed font-medium">{{ insight }}</p>
           </div>
-          <div *ngIf="aiInsights().length === 0" class="col-span-3 text-center py-6 text-xs text-slate-500">
+          <div *ngIf="aiInsights().length === 0" class="col-span-3 text-center py-6 text-xs text-[#292524]">
             No audits compiled. Click "Refresh AI Audits" above to run heuristics models.
           </div>
         </div>
@@ -42,28 +42,28 @@ import { ApiService } from '../../core/services/api.service';
       <!-- KPI metrics panels -->
       <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
         
-        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 p-6 rounded-2xl shadow-sm space-y-2">
-          <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Revenue This Month</span>
-          <h3 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight">$145,280</h3>
+        <div class="bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 p-6 rounded-2xl shadow-sm space-y-2">
+          <span class="text-[10px] font-black uppercase text-[#44403c] tracking-wider">Revenue This Month</span>
+          <h3 class="text-3xl font-black text-slate-800 text-[#1c1917] tracking-tight">$145,280</h3>
           <span class="text-[9px] text-emerald-500 font-bold block">+18.4% compared to target</span>
         </div>
 
-        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 p-6 rounded-2xl shadow-sm space-y-2">
-          <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Leads Acquired Today</span>
-          <h3 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight">18</h3>
+        <div class="bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 p-6 rounded-2xl shadow-sm space-y-2">
+          <span class="text-[10px] font-black uppercase text-[#44403c] tracking-wider">Leads Acquired Today</span>
+          <h3 class="text-3xl font-black text-slate-800 text-[#1c1917] tracking-tight">18</h3>
           <span class="text-[9px] text-indigo-400 font-bold block">Source channels: Website, Form</span>
         </div>
 
-        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 p-6 rounded-2xl shadow-sm space-y-2">
-          <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Active Deals Value</span>
-          <h3 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight">$340,500</h3>
+        <div class="bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 p-6 rounded-2xl shadow-sm space-y-2">
+          <span class="text-[10px] font-black uppercase text-[#44403c] tracking-wider">Active Deals Value</span>
+          <h3 class="text-3xl font-black text-slate-800 text-[#1c1917] tracking-tight">$340,500</h3>
           <span class="text-[9px] text-indigo-400 font-bold block">In negotiations pipeline</span>
         </div>
 
-        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 p-6 rounded-2xl shadow-sm space-y-2">
-          <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Pipeline Forecasting</span>
+        <div class="bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 p-6 rounded-2xl shadow-sm space-y-2">
+          <span class="text-[10px] font-black uppercase text-[#44403c] tracking-wider">Pipeline Forecasting</span>
           <h3 class="text-3xl font-black text-emerald-500 tracking-tight">\${{ forecast().projectedRevenue?.toLocaleString() || '85,000' }}</h3>
-          <span class="text-[9px] text-slate-400 font-bold block">Confidence Level: {{ forecast().forecastAccuracy || 85 }}%</span>
+          <span class="text-[9px] text-[#44403c] font-bold block">Confidence Level: {{ forecast().forecastAccuracy || 85 }}%</span>
         </div>
 
       </div>
@@ -72,27 +72,27 @@ import { ApiService } from '../../core/services/api.service';
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         <!-- Forecasting Factors -->
-        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 p-6 rounded-2xl shadow-sm space-y-4">
-          <h4 class="font-extrabold text-sm text-slate-755 dark:text-white uppercase tracking-wider">Forecast Confidence Intervals</h4>
+        <div class="bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 p-6 rounded-2xl shadow-sm space-y-4">
+          <h4 class="font-extrabold text-sm text-slate-755 text-[#1c1917] uppercase tracking-wider">Forecast Confidence Intervals</h4>
           
-          <div class="bg-slate-50 dark:bg-slate-950 p-5 rounded-xl border dark:border-slate-700 space-y-3">
+          <div class="bg-slate-50 bg-white p-5 rounded-xl border border-[#e7e5e4] space-y-3">
             <div class="flex justify-between text-xs">
-              <span class="text-slate-500">Expected Lower Bound:</span>
-              <strong class="text-slate-800 dark:text-white">$72,250</strong>
+              <span class="text-[#292524]">Expected Lower Bound:</span>
+              <strong class="text-slate-800 text-[#1c1917]">$72,250</strong>
             </div>
             <div class="flex justify-between text-xs">
-              <span class="text-slate-500">Expected Upper Bound:</span>
-              <strong class="text-slate-800 dark:text-white">$97,750</strong>
+              <span class="text-[#292524]">Expected Upper Bound:</span>
+              <strong class="text-slate-800 text-[#1c1917]">$97,750</strong>
             </div>
-            <div class="flex justify-between text-xs pt-2 border-t dark:border-slate-800 font-bold text-slate-800 dark:text-white">
+            <div class="flex justify-between text-xs pt-2 border-t border-[#e7e5e4] font-bold text-slate-800 text-[#1c1917]">
               <span>Confidence Range:</span>
               <span>{{ forecast().confidenceInterval || '$72,250 - $97,750' }}</span>
             </div>
           </div>
 
           <div class="space-y-3">
-            <p class="text-[10px] font-black uppercase tracking-wider text-slate-400">Market Dynamics & Risks Factors</p>
-            <div *ngFor="let fact of forecast().marketFactors" class="flex items-start gap-2.5 text-xs text-slate-500 dark:text-slate-400">
+            <p class="text-[10px] font-black uppercase tracking-wider text-[#44403c]">Market Dynamics & Risks Factors</p>
+            <div *ngFor="let fact of forecast().marketFactors" class="flex items-start gap-2.5 text-xs text-[#574c43]">
               <span class="material-icons text-indigo-400 text-sm">trending_up</span>
               <span>{{ fact }}</span>
             </div>
@@ -100,14 +100,14 @@ import { ApiService } from '../../core/services/api.service';
         </div>
 
         <!-- Team Leaderboard / Performance -->
-        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 p-6 rounded-2xl shadow-sm space-y-4">
-          <h4 class="font-extrabold text-sm text-slate-755 dark:text-white uppercase tracking-wider">Campaign results distribution</h4>
+        <div class="bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 p-6 rounded-2xl shadow-sm space-y-4">
+          <h4 class="font-extrabold text-sm text-slate-755 text-[#1c1917] uppercase tracking-wider">Campaign results distribution</h4>
           
           <div class="space-y-4 text-xs font-semibold">
             <div>
               <div class="flex justify-between mb-1">
-                <span class="text-slate-600 dark:text-slate-300">Product Funnel opt-in rate</span>
-                <span class="text-slate-800 dark:text-white">62.4%</span>
+                <span class="text-[#44403c]">Product Funnel opt-in rate</span>
+                <span class="text-slate-800 text-[#1c1917]">62.4%</span>
               </div>
               <div class="w-full h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                 <div class="h-full bg-indigo-500" style="width: 62.4%"></div>
@@ -117,7 +117,7 @@ import { ApiService } from '../../core/services/api.service';
             <div>
               <div class="flex justify-between mb-1">
                 <span class="text-slate-655 dark:text-slate-355">SaaS trial to paid conversion</span>
-                <span class="text-slate-800 dark:text-white">14.2%</span>
+                <span class="text-slate-800 text-[#1c1917]">14.2%</span>
               </div>
               <div class="w-full h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                 <div class="h-full bg-violet-500" style="width: 14.2%"></div>
@@ -126,8 +126,8 @@ import { ApiService } from '../../core/services/api.service';
 
             <div>
               <div class="flex justify-between mb-1">
-                <span class="text-slate-600 dark:text-slate-300">SMS campaign delivery rate</span>
-                <span class="text-slate-800 dark:text-white">98.1%</span>
+                <span class="text-[#44403c]">SMS campaign delivery rate</span>
+                <span class="text-slate-800 text-[#1c1917]">98.1%</span>
               </div>
               <div class="w-full h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                 <div class="h-full bg-emerald-500" style="width: 98.1%"></div>

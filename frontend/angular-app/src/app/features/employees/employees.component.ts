@@ -22,8 +22,8 @@ export interface EmployeeModel {
       
       <!-- Header -->
       <div>
-        <h1 class="text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight">Staff Management</h1>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Employee directories, department configurations, and monthly productivity tracking.</p>
+        <h1 class="text-2xl font-extrabold text-slate-800 text-[#1c1917] tracking-tight">Staff Management</h1>
+        <p class="text-sm text-[#574c43] mt-1">Employee directories, department configurations, and monthly productivity tracking.</p>
       </div>
 
       <!-- Main Layout: Grid structure -->
@@ -31,15 +31,15 @@ export interface EmployeeModel {
         
         <!-- Left: Employees List (Col span 2) -->
         <div class="lg:col-span-2 space-y-4">
-          <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 rounded-2xl shadow-sm overflow-hidden">
-            <div class="p-4 bg-slate-50 dark:bg-slate-900/40 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
-              <h3 class="font-bold text-xs text-slate-700 dark:text-white uppercase tracking-wider">Employee Directory</h3>
+          <div class="bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 rounded-2xl shadow-sm overflow-hidden">
+            <div class="p-4 bg-slate-50 bg-[#fafaf9]/40 border-b border-slate-200 border-[#e7e5e4] flex justify-between items-center">
+              <h3 class="font-bold text-xs text-slate-700 text-[#1c1917] uppercase tracking-wider">Employee Directory</h3>
               
               <!-- Department filter -->
               <select 
                 [(ngModel)]="selectedDept" 
                 (change)="loadEmployees()"
-                class="px-2 py-1 border border-slate-200 dark:border-slate-700 rounded bg-white dark:bg-slate-900 text-xs focus:outline-none text-slate-700 dark:text-slate-200">
+                class="px-2 py-1 border border-slate-200 border-[#e7e5e4] rounded bg-white bg-[#fafaf9] text-xs focus:outline-none text-[#44403c]">
                 <option value="">All Departments</option>
                 <option value="Sales">Sales</option>
                 <option value="Customer Support">Customer Support</option>
@@ -51,7 +51,7 @@ export interface EmployeeModel {
             <div class="overflow-x-auto">
               <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-700 text-sm">
                 <thead>
-                  <tr class="text-left text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  <tr class="text-left text-xs font-bold text-[#44403c] uppercase tracking-wider">
                     <th class="px-6 py-3">Name</th>
                     <th class="px-6 py-3">Department</th>
                     <th class="px-6 py-3">Role</th>
@@ -62,13 +62,13 @@ export interface EmployeeModel {
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
                   <tr *ngFor="let emp of employees()" (click)="selectEmployee(emp)" [class.bg-sky-500/5]="activeEmployee()?._id === emp._id" class="hover:bg-slate-50/50 dark:hover:bg-slate-700/10 cursor-pointer transition-colors">
                     <td class="px-6 py-3">
-                      <div class="font-bold text-slate-800 dark:text-white">{{ emp.name }}</div>
-                      <div class="text-xs text-slate-400">{{ emp.email }}</div>
+                      <div class="font-bold text-slate-800 text-[#1c1917]">{{ emp.name }}</div>
+                      <div class="text-xs text-[#44403c]">{{ emp.email }}</div>
                     </td>
                     <td class="px-6 py-3 text-xs">{{ emp.department }}</td>
                     <td class="px-6 py-3 text-xs capitalize">{{ emp.role.replace('_', ' ') }}</td>
                     <td class="px-6 py-3">
-                      <span [class.bg-emerald-100]="emp.status === 'active'" [class.text-emerald-700]="emp.status === 'active'" [class.bg-slate-100]="emp.status !== 'active'" [class.text-slate-500]="emp.status !== 'active'" class="px-2 py-0.5 rounded text-[9px] font-bold uppercase">
+                      <span [class.bg-emerald-100]="emp.status === 'active'" [class.text-emerald-700]="emp.status === 'active'" [class.bg-slate-100]="emp.status !== 'active'" [class.text-[#292524]]="emp.status !== 'active'" class="px-2 py-0.5 rounded text-[9px] font-bold uppercase">
                         {{ emp.status }}
                       </span>
                     </td>
@@ -86,10 +86,10 @@ export interface EmployeeModel {
         <div class="space-y-6">
           
           <!-- Performance Review Card -->
-          <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 rounded-2xl p-6 shadow-sm space-y-4">
-            <h3 class="font-bold text-sm text-slate-700 dark:text-white uppercase tracking-wider border-b border-slate-100 dark:border-slate-700/60 pb-3">Performance Audit</h3>
+          <div class="bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 rounded-2xl p-6 shadow-sm space-y-4">
+            <h3 class="font-bold text-sm text-slate-700 text-[#1c1917] uppercase tracking-wider border-b border-slate-100 border-[#e7e5e4]/60 pb-3">Performance Audit</h3>
             
-            <div *ngIf="!performanceData()" class="text-center py-8 text-slate-400 text-xs">
+            <div *ngIf="!performanceData()" class="text-center py-8 text-[#44403c] text-xs">
               Click on an employee directory entry to view metrics.
             </div>
 
@@ -99,61 +99,61 @@ export interface EmployeeModel {
                   {{ performanceData().employee.name.charAt(0) }}
                 </div>
                 <div>
-                  <h4 class="font-bold text-xs text-slate-900 dark:text-white">{{ performanceData().employee.name }}</h4>
-                  <span class="text-[10px] text-slate-400 font-medium">{{ performanceData().employee.department }}</span>
+                  <h4 class="font-bold text-xs text-slate-900 text-[#1c1917]">{{ performanceData().employee.name }}</h4>
+                  <span class="text-[10px] text-[#44403c] font-medium">{{ performanceData().employee.department }}</span>
                 </div>
               </div>
 
               <!-- Productivity Ring/Value -->
-              <div class="p-4 bg-slate-50 dark:bg-slate-900/40 rounded-xl flex items-center justify-between">
+              <div class="p-4 bg-slate-50 bg-[#fafaf9]/40 rounded-xl flex items-center justify-between">
                 <div>
-                  <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Productivity Index</span>
+                  <span class="text-[10px] text-[#44403c] font-bold uppercase tracking-wider">Productivity Index</span>
                   <div class="text-xl font-black text-sky-500 mt-1">{{ performanceData().metrics.productivityIndex }}%</div>
                 </div>
-                <div class="text-[10px] text-slate-500 font-medium max-w-[120px] text-right">
+                <div class="text-[10px] text-[#292524] font-medium max-w-[120px] text-right">
                   Score derived from converted leads & resolved tickets.
                 </div>
               </div>
 
               <!-- Metrics Breakdown -->
               <div class="grid grid-cols-2 gap-3 text-xs">
-                <div class="p-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl">
-                  <span class="text-slate-400 font-semibold block text-[10px] uppercase">Leads Assigned</span>
-                  <span class="font-bold text-slate-900 dark:text-white text-base mt-1 block">{{ performanceData().metrics.leadsAssigned }}</span>
+                <div class="p-3 bg-slate-50 bg-[#fafaf9]/40 rounded-xl">
+                  <span class="text-[#44403c] font-semibold block text-[10px] uppercase">Leads Assigned</span>
+                  <span class="font-bold text-slate-900 text-[#1c1917] text-base mt-1 block">{{ performanceData().metrics.leadsAssigned }}</span>
                 </div>
-                <div class="p-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl">
-                  <span class="text-slate-400 font-semibold block text-[10px] uppercase">Leads Converted</span>
+                <div class="p-3 bg-slate-50 bg-[#fafaf9]/40 rounded-xl">
+                  <span class="text-[#44403c] font-semibold block text-[10px] uppercase">Leads Converted</span>
                   <span class="font-bold text-emerald-600 dark:text-emerald-400 text-base mt-1 block">{{ performanceData().metrics.leadsConverted }}</span>
                 </div>
-                <div class="p-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl">
-                  <span class="text-slate-400 font-semibold block text-[10px] uppercase">Tickets Resolved</span>
+                <div class="p-3 bg-slate-50 bg-[#fafaf9]/40 rounded-xl">
+                  <span class="text-[#44403c] font-semibold block text-[10px] uppercase">Tickets Resolved</span>
                   <span class="font-bold text-indigo-500 text-base mt-1 block">{{ performanceData().metrics.ticketsResolved }}</span>
                 </div>
-                <div class="p-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl">
-                  <span class="text-slate-400 font-semibold block text-[10px] uppercase">Tickets Claimed</span>
-                  <span class="font-bold text-slate-900 dark:text-white text-base mt-1 block">{{ performanceData().metrics.ticketsAssigned }}</span>
+                <div class="p-3 bg-slate-50 bg-[#fafaf9]/40 rounded-xl">
+                  <span class="text-[#44403c] font-semibold block text-[10px] uppercase">Tickets Claimed</span>
+                  <span class="font-bold text-slate-900 text-[#1c1917] text-base mt-1 block">{{ performanceData().metrics.ticketsAssigned }}</span>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Leaderboard -->
-          <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 rounded-2xl p-6 shadow-sm space-y-4">
-            <h3 class="font-bold text-sm text-slate-700 dark:text-white uppercase tracking-wider mb-2">Team Leaderboard</h3>
+          <div class="bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 rounded-2xl p-6 shadow-sm space-y-4">
+            <h3 class="font-bold text-sm text-slate-700 text-[#1c1917] uppercase tracking-wider mb-2">Team Leaderboard</h3>
             <div class="space-y-3">
-              <div *ngFor="let leader of leaderboard(); let idx = index" class="flex items-center justify-between text-xs p-2.5 bg-slate-50 dark:bg-slate-900/30 rounded-xl border border-slate-100 dark:border-slate-700">
+              <div *ngFor="let leader of leaderboard(); let idx = index" class="flex items-center justify-between text-xs p-2.5 bg-slate-50 bg-[#fafaf9]/30 rounded-xl border border-slate-100 border-[#e7e5e4]">
                 <div class="flex items-center gap-2.5">
                   <span [ngClass]="{
                     'bg-amber-400 text-white': idx === 0,
                     'bg-slate-300 text-slate-700': idx === 1,
                     'bg-amber-600 text-white': idx === 2,
-                    'bg-slate-200 text-slate-500': idx > 2
+                    'bg-slate-200 text-[#292524]': idx > 2
                   }" class="h-5 w-5 rounded-full flex items-center justify-center font-bold text-[10px]">
                     {{ idx + 1 }}
                   </span>
                   <div>
-                    <div class="font-bold text-slate-800 dark:text-white">{{ leader.name }}</div>
-                    <span class="text-[9px] text-slate-400 font-semibold uppercase">{{ leader.department }}</span>
+                    <div class="font-bold text-slate-800 text-[#1c1917]">{{ leader.name }}</div>
+                    <span class="text-[9px] text-[#44403c] font-semibold uppercase">{{ leader.department }}</span>
                   </div>
                 </div>
                 <div class="text-right">

@@ -31,8 +31,8 @@ export interface PayrollModel {
       <!-- Header -->
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 class="text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight">Payroll Hub</h1>
-          <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Configure compensation structures, record performance bonuses, and retrieve payslips.</p>
+          <h1 class="text-2xl font-extrabold text-slate-800 text-[#1c1917] tracking-tight">Payroll Hub</h1>
+          <p class="text-sm text-[#574c43] mt-1">Configure compensation structures, record performance bonuses, and retrieve payslips.</p>
         </div>
         
         <button 
@@ -45,26 +45,26 @@ export interface PayrollModel {
       </div>
 
       <!-- Toolbar filter -->
-      <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 p-4 rounded-xl shadow-sm flex gap-4 items-center justify-between">
+      <div class="bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 p-4 rounded-xl shadow-sm flex gap-4 items-center justify-between">
         <div class="flex items-center gap-2 text-xs">
-          <span class="text-slate-400 font-bold uppercase">Statement Month:</span>
+          <span class="text-[#44403c] font-bold uppercase">Statement Month:</span>
           <input 
             type="month" 
             [(ngModel)]="selectedMonth" 
             (change)="loadPayroll()"
-            class="px-2.5 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500">
+            class="px-2.5 py-1.5 border border-slate-200 border-[#e7e5e4] rounded-lg bg-slate-50 bg-[#fafaf9] text-slate-700 text-[#1c1917] focus:outline-none focus:ring-2 focus:ring-sky-500">
         </div>
         
-        <div class="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">
+        <div class="text-[10px] text-[#44403c] dark:text-[#292524] font-semibold">
           Showing statements for {{ selectedMonth }}
         </div>
       </div>
 
       <!-- Payroll List Table -->
-      <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 rounded-2xl shadow-sm overflow-hidden">
+      <div class="bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 rounded-2xl shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-700 text-sm">
-            <thead class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400">
+            <thead class="bg-slate-50 bg-[#fafaf9]/50 text-[#574c43]">
               <tr class="text-left text-xs font-bold uppercase tracking-wider">
                 <th class="px-6 py-4">Employee</th>
                 <th class="px-6 py-4">Month</th>
@@ -77,19 +77,19 @@ export interface PayrollModel {
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
-              <tr *ngIf="payrolls().length === 0" class="text-center text-slate-400 p-8">
+              <tr *ngIf="payrolls().length === 0" class="text-center text-[#44403c] p-8">
                 <td colspan="8" class="py-8">No payroll statements logged for this month</td>
               </tr>
               <tr *ngFor="let p of payrolls()" class="hover:bg-slate-50/50 dark:hover:bg-slate-700/10 transition-colors">
                 <td class="px-6 py-4">
-                  <div class="font-bold text-slate-900 dark:text-white">{{ p.employee?.name }}</div>
-                  <div class="text-xs text-slate-400">{{ p.employee?.department }}</div>
+                  <div class="font-bold text-slate-900 text-[#1c1917]">{{ p.employee?.name }}</div>
+                  <div class="text-xs text-[#44403c]">{{ p.employee?.department }}</div>
                 </td>
                 <td class="px-6 py-4 text-xs font-semibold">{{ p.month }}</td>
                 <td class="px-6 py-4 font-medium">\${{ p.baseSalary.toLocaleString() }}</td>
                 <td class="px-6 py-4 text-emerald-500 font-semibold">+\${{ p.bonus.toLocaleString() }}</td>
                 <td class="px-6 py-4 text-rose-500 font-semibold">-\${{ p.deductions.toLocaleString() }}</td>
-                <td class="px-6 py-4 font-black text-slate-800 dark:text-white">\${{ p.netSalary.toLocaleString() }}</td>
+                <td class="px-6 py-4 font-black text-slate-800 text-[#1c1917]">\${{ p.netSalary.toLocaleString() }}</td>
                 <td class="px-6 py-4">
                   <span [ngClass]="{
                     'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400': p.status === 'Paid',
@@ -120,45 +120,45 @@ export interface PayrollModel {
 
       <!-- Add Payroll Modal Overlay -->
       <div *ngIf="isModalOpen()" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
-        <div class="w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-2xl space-y-6">
-          <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
-            <h3 class="text-base font-bold text-slate-800 dark:text-white">Configure Employee Compensation</h3>
-            <button (click)="closeModal()" class="text-slate-400 hover:text-slate-600"><span class="material-icons">close</span></button>
+        <div class="w-full max-w-md bg-white bg-white rounded-2xl p-6 shadow-2xl space-y-6">
+          <div class="flex justify-between items-center border-b border-slate-100 border-[#e7e5e4] pb-3">
+            <h3 class="text-base font-bold text-slate-800 text-[#1c1917]">Configure Employee Compensation</h3>
+            <button (click)="closeModal()" class="text-[#44403c] hover:text-slate-600"><span class="material-icons">close</span></button>
           </div>
-          <form class="space-y-4 text-xs text-slate-700 dark:text-slate-200">
+          <form class="space-y-4 text-xs text-[#44403c]">
             <div>
-              <label class="block font-semibold uppercase tracking-wider text-slate-400">Select Employee</label>
+              <label class="block font-semibold uppercase tracking-wider text-[#44403c]">Select Employee</label>
               <select [(ngModel)]="formModel.employeeId" name="employeeId" class="modal-input">
                 <option *ngFor="let emp of staffList()" [value]="emp._id">{{ emp.name }} ({{ emp.department }})</option>
               </select>
             </div>
             <div>
-              <label class="block font-semibold uppercase tracking-wider text-slate-400">Salary Statement Month</label>
+              <label class="block font-semibold uppercase tracking-wider text-[#44403c]">Salary Statement Month</label>
               <input type="month" [(ngModel)]="formModel.month" name="month" class="modal-input">
             </div>
             <div class="grid grid-cols-3 gap-3">
               <div>
-                <label class="block font-semibold uppercase tracking-wider text-slate-400">Base Pay ($)</label>
+                <label class="block font-semibold uppercase tracking-wider text-[#44403c]">Base Pay ($)</label>
                 <input type="number" [(ngModel)]="formModel.baseSalary" name="baseSalary" class="modal-input">
               </div>
               <div>
-                <label class="block font-semibold uppercase tracking-wider text-slate-400">Bonus ($)</label>
+                <label class="block font-semibold uppercase tracking-wider text-[#44403c]">Bonus ($)</label>
                 <input type="number" [(ngModel)]="formModel.bonus" name="bonus" class="modal-input">
               </div>
               <div>
-                <label class="block font-semibold uppercase tracking-wider text-slate-400">Deductions ($)</label>
+                <label class="block font-semibold uppercase tracking-wider text-[#44403c]">Deductions ($)</label>
                 <input type="number" [(ngModel)]="formModel.deductions" name="deductions" class="modal-input">
               </div>
             </div>
             <div>
-              <label class="block font-semibold uppercase tracking-wider text-slate-400">Status</label>
+              <label class="block font-semibold uppercase tracking-wider text-[#44403c]">Status</label>
               <select [(ngModel)]="formModel.status" name="status" class="modal-input">
                 <option value="Draft">Draft</option>
                 <option value="Paid">Released & Paid</option>
               </select>
             </div>
           </form>
-          <div class="flex gap-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+          <div class="flex gap-3 pt-3 border-t border-slate-100 border-[#e7e5e4]">
             <button (click)="closeModal()" class="flex-1 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg font-bold">Cancel</button>
             <button (click)="submitForm()" class="flex-1 py-2 bg-sky-600 hover:bg-sky-500 rounded-lg text-white font-bold">Log Record</button>
           </div>

@@ -19,7 +19,7 @@ import { AuthService } from '../../core/services/auth.service';
             <span class="material-icons text-5xl">donut_large</span>
           </div>
           <h2 class="mt-4 text-3xl font-extrabold text-white tracking-tight">Grownox Technologies</h2>
-          <p class="mt-2 text-sm text-slate-400">
+          <p class="mt-2 text-sm text-[#44403c]">
             Recover your account password
           </p>
         </div>
@@ -33,9 +33,9 @@ import { AuthService } from '../../core/services/auth.service';
 
             <!-- Email Input -->
             <div>
-              <label for="email" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Email Address</label>
+              <label for="email" class="block text-xs font-semibold text-[#44403c] uppercase tracking-wider">Email Address</label>
               <div class="mt-1.5 relative">
-                <span class="material-icons absolute left-3 top-2.5 text-slate-500 text-lg">email</span>
+                <span class="material-icons absolute left-3 top-2.5 text-[#292524] text-lg">email</span>
                 <input 
                   id="email" 
                   type="email" 
@@ -52,7 +52,7 @@ import { AuthService } from '../../core/services/auth.service';
             <button 
               type="submit" 
               [disabled]="forgotForm.invalid || isLoading()"
-              class="w-full py-2.5 px-4 bg-violet-600 hover:bg-violet-500 disabled:bg-slate-700 disabled:text-slate-400 text-white rounded-lg text-sm font-semibold shadow-lg shadow-violet-600/20 active:scale-95 transition-all flex justify-center items-center gap-2">
+              class="w-full py-2.5 px-4 bg-violet-600 hover:bg-violet-500 disabled:bg-slate-700 disabled:text-[#44403c] text-white rounded-lg text-sm font-semibold shadow-lg shadow-violet-600/20 active:scale-95 transition-all flex justify-center items-center gap-2">
               <span *ngIf="isLoading()" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
               <span>Send Recovery Link</span>
             </button>
@@ -65,7 +65,7 @@ import { AuthService } from '../../core/services/auth.service';
             </div>
             <div>
               <h3 class="text-lg font-bold text-white">Reset Link Generated!</h3>
-              <p class="text-sm text-slate-400 mt-2 leading-relaxed">
+              <p class="text-sm text-[#44403c] mt-2 leading-relaxed">
                 We have generated a mock password reset link below. Click it to navigate directly to the password updates screen:
               </p>
             </div>
@@ -76,11 +76,11 @@ import { AuthService } from '../../core/services/auth.service';
               </a>
             </div>
 
-            <button routerLink="/login" class="text-xs text-slate-400 hover:text-slate-300 font-medium">Back to Login</button>
+            <button routerLink="/login" class="text-xs text-[#44403c] hover:text-[#1c1917] font-medium">Back to Login</button>
           </div>
 
           <div *ngIf="!successMessage()" class="mt-6 text-center text-xs">
-            <a routerLink="/login" class="text-slate-400 hover:text-slate-300 font-semibold">Back to Login</a>
+            <a routerLink="/login" class="text-[#44403c] hover:text-[#1c1917] font-semibold">Back to Login</a>
           </div>
 
         </div>

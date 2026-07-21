@@ -29,8 +29,8 @@ interface SurveyQuestion {
       <!-- Header -->
       <div class="flex justify-between items-center">
         <div>
-          <h1 class="text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight">Forms & Surveys</h1>
-          <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Design signature-ready client forms, deploy NPS surveys, and audit customer satisfaction feedback.</p>
+          <h1 class="text-2xl font-extrabold text-slate-800 text-[#1c1917] tracking-tight">Forms & Surveys</h1>
+          <p class="text-sm text-[#574c43] mt-1">Design signature-ready client forms, deploy NPS surveys, and audit customer satisfaction feedback.</p>
         </div>
         
         <div class="flex gap-2">
@@ -45,23 +45,23 @@ interface SurveyQuestion {
 
       <!-- View: Forms list -->
       <div *ngIf="activeView() === 'forms_list'" class="space-y-6 animate-fadeIn">
-        <div class="flex justify-between items-center bg-white dark:bg-slate-800 px-6 py-4 rounded-xl border border-slate-205 dark:border-slate-700/60 shadow-sm">
-          <h4 class="font-extrabold text-sm text-slate-700 dark:text-white uppercase tracking-wider">Active Web Forms</h4>
+        <div class="flex justify-between items-center bg-white bg-white px-6 py-4 rounded-xl border border-slate-205 border-[#e7e5e4]/60 shadow-sm">
+          <h4 class="font-extrabold text-sm text-slate-700 text-[#1c1917] uppercase tracking-wider">Active Web Forms</h4>
           <button (click)="startNewForm()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all flex items-center gap-1">
             <span class="material-icons text-sm">add</span> Create Form
           </button>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div *ngFor="let fm of forms()" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 p-6 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
+          <div *ngFor="let fm of forms()" class="bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 p-6 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
             <div class="space-y-2">
               <span class="text-[9px] font-black uppercase tracking-wider bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 px-2.5 py-1 rounded-md">{{ fm.submissionAction }} Action</span>
-              <h3 class="text-md font-bold text-slate-800 dark:text-white pt-2">{{ fm.name }}</h3>
-              <p class="text-xs text-slate-400">Total Fields configured: {{ fm.fields?.length || 0 }}</p>
+              <h3 class="text-md font-bold text-slate-800 text-[#1c1917] pt-2">{{ fm.name }}</h3>
+              <p class="text-xs text-[#44403c]">Total Fields configured: {{ fm.fields?.length || 0 }}</p>
             </div>
             
-            <div class="flex gap-2 pt-2 border-t border-slate-100 dark:border-slate-700">
-              <button (click)="openFormSimulator(fm)" class="flex-1 bg-slate-105 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold py-2 rounded-xl transition-all">
+            <div class="flex gap-2 pt-2 border-t border-slate-100 border-[#e7e5e4]">
+              <button (click)="openFormSimulator(fm)" class="flex-1 bg-slate-105 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-700 text-[#44403c] text-xs font-bold py-2 rounded-xl transition-all">
                 Test / Fill
               </button>
               <button (click)="deleteForm(fm._id)" class="bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/40 text-rose-600 dark:text-rose-400 px-3 py-2 rounded-xl transition-colors">
@@ -69,7 +69,7 @@ interface SurveyQuestion {
               </button>
             </div>
           </div>
-          <div *ngIf="forms().length === 0" class="col-span-3 text-center py-12 text-slate-400 font-semibold">No web forms available. Click Create Form.</div>
+          <div *ngIf="forms().length === 0" class="col-span-3 text-center py-12 text-[#44403c] font-semibold">No web forms available. Click Create Form.</div>
         </div>
       </div>
 
@@ -97,13 +97,13 @@ interface SurveyQuestion {
               
               <div class="space-y-1">
                 <label class="block text-xs font-bold text-slate-700">{{ field.label }} <span *ngIf="field.required" class="text-rose-500">*</span></label>
-                <div class="w-full bg-slate-50 border border-slate-200 rounded-lg h-9 px-3 flex items-center text-xs text-slate-400">
+                <div class="w-full bg-slate-50 border border-slate-200 rounded-lg h-9 px-3 flex items-center text-xs text-[#44403c]">
                   {{ field.placeholder || ('Placeholder for ' + field.type) }}
                 </div>
               </div>
             </div>
 
-            <div *ngIf="formFields().length === 0" class="text-center py-12 text-slate-400 text-xs">
+            <div *ngIf="formFields().length === 0" class="text-center py-12 text-[#44403c] text-xs">
               No fields added. Click buttons below to construct the web form.
             </div>
           </div>
@@ -126,27 +126,27 @@ interface SurveyQuestion {
         </div>
 
         <!-- Right Panel: Field Details configuration -->
-        <div class="lg:col-span-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 p-6 rounded-2xl shadow-sm space-y-4">
-          <h3 class="text-sm font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
+        <div class="lg:col-span-4 bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 p-6 rounded-2xl shadow-sm space-y-4">
+          <h3 class="text-sm font-extrabold text-slate-800 text-[#1c1917] flex items-center gap-2">
             <span class="material-icons text-indigo-500">settings</span> Field Details
           </h3>
 
-          <div *ngIf="selectedFieldIdx() === null" class="text-center py-16 text-slate-400 text-xs">
+          <div *ngIf="selectedFieldIdx() === null" class="text-center py-16 text-[#44403c] text-xs">
             Select a field in the form preview container to edit labels, placeholders, and validation flags.
           </div>
 
           <div *ngIf="selectedFieldIdx() !== null" class="space-y-4 text-xs animate-fadeIn">
             <div>
-              <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Field Label / Name</label>
-              <input type="text" [(ngModel)]="getSelectedField()!.label" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white">
+              <label class="block text-[10px] font-bold text-[#44403c] uppercase mb-1">Field Label / Name</label>
+              <input type="text" [(ngModel)]="getSelectedField()!.label" class="w-full bg-slate-50 bg-white border border-slate-200 border-[#e7e5e4] rounded-xl px-3 py-2 text-slate-800 text-[#1c1917]">
             </div>
             <div>
-              <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Placeholder Text</label>
-              <input type="text" [(ngModel)]="getSelectedField()!.placeholder" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white">
+              <label class="block text-[10px] font-bold text-[#44403c] uppercase mb-1">Placeholder Text</label>
+              <input type="text" [(ngModel)]="getSelectedField()!.placeholder" class="w-full bg-slate-50 bg-white border border-slate-200 border-[#e7e5e4] rounded-xl px-3 py-2 text-slate-800 text-[#1c1917]">
             </div>
             <div class="flex items-center gap-2.5 pt-2">
               <input type="checkbox" [(ngModel)]="getSelectedField()!.required" id="fieldRequired" class="rounded border-slate-700 text-indigo-600 h-4 w-4 bg-slate-950">
-              <label for="fieldRequired" class="font-bold text-slate-600 dark:text-slate-300 cursor-pointer">Required Field</label>
+              <label for="fieldRequired" class="font-bold text-[#44403c] cursor-pointer">Required Field</label>
             </div>
           </div>
         </div>
@@ -154,23 +154,23 @@ interface SurveyQuestion {
 
       <!-- View: Surveys list -->
       <div *ngIf="activeView() === 'surveys_list'" class="space-y-6 animate-fadeIn">
-        <div class="flex justify-between items-center bg-white dark:bg-slate-800 px-6 py-4 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-sm">
-          <h4 class="font-extrabold text-sm text-slate-700 dark:text-white uppercase tracking-wider">Active NPS & Quizzes</h4>
+        <div class="flex justify-between items-center bg-white bg-white px-6 py-4 rounded-xl border border-slate-200 border-[#e7e5e4]/60 shadow-sm">
+          <h4 class="font-extrabold text-sm text-slate-700 text-[#1c1917] uppercase tracking-wider">Active NPS & Quizzes</h4>
           <button (click)="startNewSurvey()" class="bg-indigo-600 hover:bg-indigo-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center gap-1">
             <span class="material-icons text-sm">add</span> Create Survey
           </button>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div *ngFor="let sv of surveys()" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 p-6 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
+          <div *ngFor="let sv of surveys()" class="bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 p-6 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
             <div class="space-y-2">
               <span class="text-[9px] font-black uppercase tracking-wider bg-violet-500/10 text-violet-500 dark:text-violet-400 px-2.5 py-1 rounded-md">{{ sv.type }}</span>
-              <h3 class="text-md font-bold text-slate-800 dark:text-white pt-2">{{ sv.name }}</h3>
-              <p class="text-xs text-slate-400">Total Questions: {{ sv.questions?.length || 0 }}</p>
+              <h3 class="text-md font-bold text-slate-800 text-[#1c1917] pt-2">{{ sv.name }}</h3>
+              <p class="text-xs text-[#44403c]">Total Questions: {{ sv.questions?.length || 0 }}</p>
             </div>
             
-            <div class="flex gap-2 pt-2 border-t border-slate-100 dark:border-slate-700">
-              <button (click)="openSurveyAnalytics(sv)" class="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold py-2 rounded-xl transition-all">
+            <div class="flex gap-2 pt-2 border-t border-slate-100 border-[#e7e5e4]">
+              <button (click)="openSurveyAnalytics(sv)" class="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-700 text-[#44403c] text-xs font-bold py-2 rounded-xl transition-all">
                 Analytics Report
               </button>
               <button (click)="deleteSurvey(sv._id)" class="bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/40 text-rose-600 dark:text-rose-400 px-3 py-2 rounded-xl transition-colors">
@@ -178,7 +178,7 @@ interface SurveyQuestion {
               </button>
             </div>
           </div>
-          <div *ngIf="surveys().length === 0" class="col-span-3 text-center py-12 text-slate-400 font-semibold">No active surveys found. Click Create Survey.</div>
+          <div *ngIf="surveys().length === 0" class="col-span-3 text-center py-12 text-[#44403c] font-semibold">No active surveys found. Click Create Survey.</div>
         </div>
       </div>
 
@@ -186,44 +186,44 @@ interface SurveyQuestion {
       <div *ngIf="activeView() === 'survey_analytics' && selectedSurvey()" class="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fadeIn">
         
         <!-- Left Panel: NPS/Quiz KPI Dials -->
-        <div class="lg:col-span-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 p-6 rounded-2xl shadow-sm space-y-6">
-          <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-4">
+        <div class="lg:col-span-8 bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 p-6 rounded-2xl shadow-sm space-y-6">
+          <div class="flex justify-between items-center border-b border-slate-100 border-[#e7e5e4] pb-4">
             <div class="flex items-center gap-3">
-              <button (click)="setView('surveys_list')" class="text-slate-400 hover:text-white">
+              <button (click)="setView('surveys_list')" class="text-[#44403c] hover:text-white">
                 <span class="material-icons">arrow_back</span>
               </button>
-              <h3 class="text-md font-extrabold text-slate-800 dark:text-white">{{ selectedSurvey().name }} Report</h3>
+              <h3 class="text-md font-extrabold text-slate-800 text-[#1c1917]">{{ selectedSurvey().name }} Report</h3>
             </div>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
             
             <!-- NPS score dial -->
-            <div class="bg-slate-50 dark:bg-slate-950 p-6 rounded-xl border dark:border-slate-700">
-              <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Net Promoter Score</p>
+            <div class="bg-slate-50 bg-white p-6 rounded-xl border border-[#e7e5e4]">
+              <p class="text-[10px] font-black uppercase text-[#44403c] tracking-wider">Net Promoter Score</p>
               <h4 class="text-4xl font-black text-indigo-500 mt-2">{{ surveyAnalytics()?.npsScore || 0 }}</h4>
-              <p class="text-[9px] text-slate-400 mt-1">Scale (-100 to 100)</p>
+              <p class="text-[9px] text-[#44403c] mt-1">Scale (-100 to 100)</p>
             </div>
 
             <!-- Total submissions -->
-            <div class="bg-slate-50 dark:bg-slate-950 p-6 rounded-xl border dark:border-slate-700">
-              <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Total Responses</p>
-              <h4 class="text-4xl font-black text-slate-800 dark:text-white mt-2">{{ surveyAnalytics()?.totalSubmissions || 0 }}</h4>
-              <p class="text-[9px] text-slate-400 mt-1">Submissions synced</p>
+            <div class="bg-slate-50 bg-white p-6 rounded-xl border border-[#e7e5e4]">
+              <p class="text-[10px] font-black uppercase text-[#44403c] tracking-wider">Total Responses</p>
+              <h4 class="text-4xl font-black text-slate-800 text-[#1c1917] mt-2">{{ surveyAnalytics()?.totalSubmissions || 0 }}</h4>
+              <p class="text-[9px] text-[#44403c] mt-1">Submissions synced</p>
             </div>
 
             <!-- Quiz Average score -->
-            <div class="bg-slate-50 dark:bg-slate-950 p-6 rounded-xl border dark:border-slate-700">
-              <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Average Quiz Score</p>
+            <div class="bg-slate-50 bg-white p-6 rounded-xl border border-[#e7e5e4]">
+              <p class="text-[10px] font-black uppercase text-[#44403c] tracking-wider">Average Quiz Score</p>
               <h4 class="text-4xl font-black text-emerald-500 mt-2">{{ surveyAnalytics()?.averageQuizScore || 0 }}</h4>
-              <p class="text-[9px] text-slate-400 mt-1">Correct answers average</p>
+              <p class="text-[9px] text-[#44403c] mt-1">Correct answers average</p>
             </div>
 
           </div>
 
           <!-- NPS Breakdown chart logs -->
-          <div class="bg-slate-50 dark:bg-slate-950 p-6 rounded-xl border dark:border-slate-700 space-y-3">
-            <h5 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider">Promoters & Detractors breakdown</h5>
+          <div class="bg-slate-50 bg-white p-6 rounded-xl border border-[#e7e5e4] space-y-3">
+            <h5 class="text-xs font-bold text-slate-800 text-[#1c1917] uppercase tracking-wider">Promoters & Detractors breakdown</h5>
             <div class="space-y-2 text-xs">
               <div class="flex justify-between font-bold">
                 <span class="text-emerald-400">Promoters (9-10):</span>
@@ -242,22 +242,22 @@ interface SurveyQuestion {
         </div>
 
         <!-- Right Panel: Mock respondent simulator submission -->
-        <div class="lg:col-span-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 p-6 rounded-2xl shadow-sm space-y-4 text-xs font-semibold">
-          <h4 class="font-extrabold text-sm text-slate-800 dark:text-white uppercase tracking-wider mb-2">Simulate Survey Response</h4>
-          <p class="text-slate-400">Generate a mock survey submission to verify charts calculation formulas.</p>
+        <div class="lg:col-span-4 bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 p-6 rounded-2xl shadow-sm space-y-4 text-xs font-semibold">
+          <h4 class="font-extrabold text-sm text-slate-800 text-[#1c1917] uppercase tracking-wider mb-2">Simulate Survey Response</h4>
+          <p class="text-[#44403c]">Generate a mock survey submission to verify charts calculation formulas.</p>
           
           <div class="space-y-3 pt-2">
             <div>
-              <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Respondent Email Address</label>
-              <input type="email" [(ngModel)]="mockSurveyEmail" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white">
+              <label class="block text-[10px] font-bold text-[#44403c] uppercase mb-1">Respondent Email Address</label>
+              <input type="email" [(ngModel)]="mockSurveyEmail" class="w-full bg-slate-50 bg-white border border-slate-200 border-[#e7e5e4] rounded-xl px-3 py-2 text-slate-800 text-[#1c1917]">
             </div>
             <div>
-              <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">NPS Rating Score (0-10)</label>
-              <input type="number" min="0" max="10" [(ngModel)]="mockSurveyNps" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white">
+              <label class="block text-[10px] font-bold text-[#44403c] uppercase mb-1">NPS Rating Score (0-10)</label>
+              <input type="number" min="0" max="10" [(ngModel)]="mockSurveyNps" class="w-full bg-slate-50 bg-white border border-slate-200 border-[#e7e5e4] rounded-xl px-3 py-2 text-slate-800 text-[#1c1917]">
             </div>
             <div>
-              <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Correct Quiz answers score</label>
-              <input type="number" [(ngModel)]="mockSurveyQuizScore" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white">
+              <label class="block text-[10px] font-bold text-[#44403c] uppercase mb-1">Correct Quiz answers score</label>
+              <input type="number" [(ngModel)]="mockSurveyQuizScore" class="w-full bg-slate-50 bg-white border border-slate-200 border-[#e7e5e4] rounded-xl px-3 py-2 text-slate-800 text-[#1c1917]">
             </div>
           </div>
 
@@ -288,24 +288,24 @@ interface SurveyQuestion {
               <span class="material-icons text-sm">remove_circle</span>
             </button>
             <p class="font-bold text-slate-700">Q{{ idx + 1 }}: {{ q.text }}</p>
-            <p class="text-[10px] text-slate-400 uppercase mt-0.5">Type: {{ q.type }}</p>
+            <p class="text-[10px] text-[#44403c] uppercase mt-0.5">Type: {{ q.type }}</p>
           </div>
 
-          <div *ngIf="surveyQuestions().length === 0" class="text-center py-12 text-slate-400">
+          <div *ngIf="surveyQuestions().length === 0" class="text-center py-12 text-[#44403c]">
             No questions configured yet. Type a question below.
           </div>
         </div>
 
         <!-- Add Question Form -->
         <div class="space-y-4 border-t border-slate-800 pt-6 mt-6 max-w-lg mx-auto w-full">
-          <p class="font-bold text-slate-300">Add Question Details</p>
+          <p class="font-bold text-[#1c1917]">Add Question Details</p>
           <div class="grid grid-cols-1 gap-3">
             <div>
-              <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Question Text</label>
+              <label class="block text-[10px] font-bold text-[#44403c] uppercase mb-1">Question Text</label>
               <input type="text" [(ngModel)]="newQText" placeholder="How likely are you to recommend us?" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white">
             </div>
             <div>
-              <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Question Type</label>
+              <label class="block text-[10px] font-bold text-[#44403c] uppercase mb-1">Question Type</label>
               <select [(ngModel)]="newQType" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white">
                 <option value="Text">Free Text Answer</option>
                 <option value="Multiple Choice">Multiple Choice Option</option>
@@ -328,10 +328,10 @@ interface SurveyQuestion {
       </div>
 
       <!-- View: Active Form submission test simulator -->
-      <div *ngIf="activeView() === 'form_simulator' && activeSimForm()" class="max-w-md mx-auto bg-white dark:bg-slate-800 border dark:border-slate-700 p-6 rounded-2xl shadow-sm space-y-6 text-xs font-semibold animate-fadeIn">
+      <div *ngIf="activeView() === 'form_simulator' && activeSimForm()" class="max-w-md mx-auto bg-white bg-white border border-[#e7e5e4] p-6 rounded-2xl shadow-sm space-y-6 text-xs font-semibold animate-fadeIn">
         <div class="flex justify-between items-center border-b pb-3">
-          <h3 class="text-sm font-extrabold text-slate-800 dark:text-white">Form: {{ activeSimForm().name }}</h3>
-          <button (click)="setView('forms_list')" class="text-slate-400 hover:text-slate-600">
+          <h3 class="text-sm font-extrabold text-slate-800 text-[#1c1917]">Form: {{ activeSimForm().name }}</h3>
+          <button (click)="setView('forms_list')" class="text-[#44403c] hover:text-slate-600">
             <span class="material-icons">close</span>
           </button>
         </div>
@@ -339,8 +339,8 @@ interface SurveyQuestion {
         <!-- Render fields -->
         <div class="space-y-4">
           <div *ngFor="let field of activeSimForm().fields">
-            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">{{ field.label }} <span *ngIf="field.required" class="text-rose-500">*</span></label>
-            <input type="text" [(ngModel)]="simFormAnswers[field.label]" placeholder="{{ field.placeholder }}" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-white">
+            <label class="block text-[10px] font-bold text-[#44403c] uppercase mb-1">{{ field.label }} <span *ngIf="field.required" class="text-rose-500">*</span></label>
+            <input type="text" [(ngModel)]="simFormAnswers[field.label]" placeholder="{{ field.placeholder }}" class="w-full bg-slate-50 bg-white border border-slate-205 border-[#e7e5e4] rounded-xl px-3 py-2.5 text-slate-900 text-[#1c1917]">
           </div>
         </div>
 

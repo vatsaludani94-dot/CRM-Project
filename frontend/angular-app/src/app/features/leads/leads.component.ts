@@ -41,8 +41,8 @@ export interface LeadModel {
       <!-- Header -->
       <div class="flex justify-between items-center">
         <div>
-          <h1 class="text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight">Sales Pipeline</h1>
-          <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Drag and drop leads to advance stages. Real-time AI scoring guides conversion.</p>
+          <h1 class="text-2xl font-extrabold text-slate-800 text-[#1c1917] tracking-tight">Sales Pipeline</h1>
+          <p class="text-sm text-[#574c43] mt-1">Drag and drop leads to advance stages. Real-time AI scoring guides conversion.</p>
         </div>
         
         <button 
@@ -57,17 +57,17 @@ export interface LeadModel {
       <div class="flex gap-4 overflow-x-auto pb-6 select-none" cdkDropListGroup>
         
         <!-- Column Stages -->
-        <div *ngFor="let col of boardColumns" class="flex-1 min-w-[280px] max-w-[320px] bg-slate-100/70 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 p-3 rounded-2xl flex flex-col h-[70vh]">
+        <div *ngFor="let col of boardColumns" class="flex-1 min-w-[280px] max-w-[320px] bg-slate-100/70 bg-[#fafaf9]/40 border border-slate-200 border-[#e7e5e4] p-3 rounded-2xl flex flex-col h-[70vh]">
           
           <!-- Column Header -->
           <div class="flex justify-between items-center mb-3 px-1">
-            <span class="font-bold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+            <span class="font-bold text-xs uppercase tracking-wider text-[#1c1917] dark:text-[#44403c] flex items-center gap-1.5">
               <span>{{ col.name }}</span>
-              <span class="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-500 font-bold">
+              <span class="bg-slate-200 bg-white px-1.5 py-0.5 rounded text-[10px] text-[#292524] font-bold">
                 {{ getLeadsByStage(col.stage).length }}
               </span>
             </span>
-            <span class="text-[10px] font-extrabold text-slate-400 dark:text-slate-500">
+            <span class="text-[10px] font-extrabold text-[#44403c] dark:text-[#292524]">
               \${{ getExpectedRevenueSum(col.stage).toLocaleString() }}
             </span>
           </div>
@@ -85,7 +85,7 @@ export interface LeadModel {
               *ngFor="let lead of getLeadsByStage(col.stage)"
               cdkDrag
               (click)="openDrawer(lead)"
-              class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 p-4 rounded-xl shadow-sm hover:shadow-md cursor-grab active:cursor-grabbing hover:border-sky-500/35 transition-all space-y-3">
+              class="bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 p-4 rounded-xl shadow-sm hover:shadow-md cursor-grab active:cursor-grabbing hover:border-sky-500/35 transition-all space-y-3">
               
               <div class="flex justify-between items-start gap-2">
                 <h4 class="font-bold text-xs text-slate-900 dark:text-slate-100 truncate flex-1">{{ lead.company }}</h4>
@@ -100,18 +100,18 @@ export interface LeadModel {
               </div>
 
               <!-- Contact & Deal size -->
-              <div class="text-[11px] text-slate-600 dark:text-slate-400">
-                <div class="font-semibold text-slate-700 dark:text-slate-300">{{ lead.contactName }}</div>
+              <div class="text-[11px] text-[#1c1917] dark:text-[#44403c]">
+                <div class="font-semibold text-[#1c1917] dark:text-[#1c1917]">{{ lead.contactName }}</div>
                 <div class="mt-1 flex items-center justify-between">
-                  <span class="font-extrabold text-slate-800 dark:text-slate-200">\${{ lead.expectedRevenue.toLocaleString() }}</span>
-                  <span class="text-[9px] font-bold uppercase text-slate-400 tracking-widest bg-slate-50 dark:bg-slate-900 px-1 py-0.5 rounded">{{ lead.leadSource }}</span>
+                  <span class="font-extrabold text-slate-800 dark:text-[#1c1917]">\${{ lead.expectedRevenue.toLocaleString() }}</span>
+                  <span class="text-[9px] font-bold uppercase text-[#44403c] tracking-widest bg-slate-50 bg-[#fafaf9] px-1 py-0.5 rounded">{{ lead.leadSource }}</span>
                 </div>
               </div>
 
               <!-- Assignee -->
-              <div class="flex justify-between items-center text-[10px] text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-700/60">
+              <div class="flex justify-between items-center text-[10px] text-[#44403c] pt-2 border-t border-slate-100 border-[#e7e5e4]/60">
                 <span>Rep: <b>{{ lead.assignedEmployee ? lead.assignedEmployee.name : 'Unassigned' }}</b></span>
-                <span class="material-icons text-slate-400 text-sm">more_horiz</span>
+                <span class="material-icons text-[#44403c] text-sm">more_horiz</span>
               </div>
 
             </div>
@@ -124,37 +124,37 @@ export interface LeadModel {
 
       <!-- Add Lead Modal Overlay -->
       <div *ngIf="isModalOpen()" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
-        <div class="w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-2xl space-y-6">
-          <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
-            <h3 class="text-base font-bold text-slate-900 dark:text-white">Create New Lead Profile</h3>
-            <button (click)="closeModal()" class="text-slate-400 hover:text-slate-600"><span class="material-icons">close</span></button>
+        <div class="w-full max-w-md bg-white bg-white rounded-2xl p-6 shadow-2xl space-y-6">
+          <div class="flex justify-between items-center border-b border-slate-100 border-[#e7e5e4] pb-3">
+            <h3 class="text-base font-bold text-slate-900 text-[#1c1917]">Create New Lead Profile</h3>
+            <button (click)="closeModal()" class="text-[#44403c] hover:text-[#1c1917]"><span class="material-icons">close</span></button>
           </div>
-          <form class="space-y-4 text-xs text-slate-700 dark:text-slate-200">
+          <form class="space-y-4 text-xs text-[#44403c]">
             <div>
-              <label class="block font-semibold uppercase tracking-wider text-slate-400">Company Name</label>
+              <label class="block font-semibold uppercase tracking-wider text-[#44403c]">Company Name</label>
               <input type="text" [(ngModel)]="formModel.company" name="company" class="modal-input">
             </div>
             <div>
-              <label class="block font-semibold uppercase tracking-wider text-slate-400">Contact Person Name</label>
+              <label class="block font-semibold uppercase tracking-wider text-[#44403c]">Contact Person Name</label>
               <input type="text" [(ngModel)]="formModel.contactName" name="contactName" class="modal-input">
             </div>
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block font-semibold uppercase tracking-wider text-slate-400">Email</label>
+                <label class="block font-semibold uppercase tracking-wider text-[#44403c]">Email</label>
                 <input type="email" [(ngModel)]="formModel.email" name="email" class="modal-input">
               </div>
               <div>
-                <label class="block font-semibold uppercase tracking-wider text-slate-400">Phone</label>
+                <label class="block font-semibold uppercase tracking-wider text-[#44403c]">Phone</label>
                 <input type="text" [(ngModel)]="formModel.phone" name="phone" class="modal-input">
               </div>
             </div>
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block font-semibold uppercase tracking-wider text-slate-400">Expected Value ($)</label>
+                <label class="block font-semibold uppercase tracking-wider text-[#44403c]">Expected Value ($)</label>
                 <input type="number" [(ngModel)]="formModel.expectedRevenue" name="expectedRevenue" class="modal-input">
               </div>
               <div>
-                <label class="block font-semibold uppercase tracking-wider text-slate-400">Lead Source</label>
+                <label class="block font-semibold uppercase tracking-wider text-[#44403c]">Lead Source</label>
                 <select [(ngModel)]="formModel.leadSource" name="leadSource" class="modal-input">
                   <option value="Website">Website</option>
                   <option value="Referral">Referral</option>
@@ -165,7 +165,7 @@ export interface LeadModel {
               </div>
             </div>
           </form>
-          <div class="flex gap-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+          <div class="flex gap-3 pt-3 border-t border-slate-100 border-[#e7e5e4]">
             <button (click)="closeModal()" class="flex-1 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg font-bold">Cancel</button>
             <button (click)="submitForm()" class="flex-1 py-2 bg-sky-600 hover:bg-sky-500 rounded-lg text-white font-bold">Create Lead</button>
           </div>
@@ -173,23 +173,23 @@ export interface LeadModel {
       </div>
 
       <!-- Lead Details Slideover Drawer -->
-      <div *ngIf="activeLead() as lead" class="fixed inset-y-0 right-0 z-40 w-96 bg-white dark:bg-slate-800 shadow-2xl p-6 border-l border-slate-200 dark:border-slate-700 flex flex-col justify-between overflow-y-auto">
+      <div *ngIf="activeLead() as lead" class="fixed inset-y-0 right-0 z-40 w-96 bg-white bg-white shadow-2xl p-6 border-l border-slate-200 border-[#e7e5e4] flex flex-col justify-between overflow-y-auto">
         <div class="space-y-6">
-          <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
+          <div class="flex justify-between items-center border-b border-slate-100 border-[#e7e5e4] pb-3">
             <div>
               <span class="text-[10px] text-sky-500 font-bold uppercase tracking-wider">Lead File</span>
-              <h3 class="text-sm font-bold text-slate-800 dark:text-white mt-1">{{ lead.company }}</h3>
+              <h3 class="text-sm font-bold text-slate-800 text-[#1c1917] mt-1">{{ lead.company }}</h3>
             </div>
-            <button (click)="closeDrawer()" class="text-slate-400 hover:text-slate-600"><span class="material-icons">close</span></button>
+            <button (click)="closeDrawer()" class="text-[#44403c] hover:text-[#1c1917]"><span class="material-icons">close</span></button>
           </div>
 
           <!-- AI Score Insights -->
-          <div class="p-4 bg-sky-50 dark:bg-slate-900 border border-sky-100 dark:border-slate-700 rounded-xl space-y-2">
+          <div class="p-4 bg-sky-50 bg-[#fafaf9] border border-sky-100 border-[#e7e5e4] rounded-xl space-y-2">
             <h4 class="text-xs font-bold text-sky-700 dark:text-sky-400 flex items-center gap-1.5">
               <span class="material-icons text-sm">psychology</span>
               <span>AI Conversion Predictor</span>
             </h4>
-            <p class="text-[11px] text-sky-600 dark:text-slate-400 leading-normal">
+            <p class="text-[11px] text-sky-600 dark:text-[#44403c] leading-normal">
               Based on the lead source (<b>{{ lead.leadSource }}</b>) and status (<b>{{ lead.stage }}</b>), the predictive scoring model estimates a <b>{{ lead.aiScore }}%</b> probability of converting this lead into an active paying customer.
             </p>
           </div>
@@ -199,28 +199,28 @@ export interface LeadModel {
             
             <!-- Notes -->
             <div class="space-y-2">
-              <h4 class="font-bold text-xs text-slate-700 dark:text-slate-300 uppercase">Notes ({{ lead.notes.length }})</h4>
+              <h4 class="font-bold text-xs text-[#1c1917] dark:text-[#1c1917] uppercase">Notes ({{ lead.notes.length }})</h4>
               <div class="space-y-2 max-h-40 overflow-y-auto">
-                <div *ngFor="let n of lead.notes" class="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl text-xs space-y-1">
-                  <p class="text-slate-600 dark:text-slate-400 leading-normal">{{ n.content }}</p>
-                  <span class="text-[10px] text-slate-400 block font-semibold">- By staff</span>
+                <div *ngFor="let n of lead.notes" class="p-3 bg-slate-50 bg-[#fafaf9]/60 rounded-xl text-xs space-y-1">
+                  <p class="text-[#1c1917] dark:text-[#44403c] leading-normal">{{ n.content }}</p>
+                  <span class="text-[10px] text-[#44403c] block font-semibold">- By staff</span>
                 </div>
               </div>
               <div class="flex gap-2 mt-2">
-                <input type="text" [(ngModel)]="newLeadNote" placeholder="Write lead update note..." class="flex-1 p-2 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 rounded-lg text-xs">
-                <button (click)="addLeadNote()" [disabled]="!newLeadNote.trim()" class="py-1.5 px-3 bg-slate-900 hover:bg-slate-800 dark:bg-sky-600 dark:hover:bg-sky-500 rounded-lg text-white text-xs font-bold transition-all">Add</button>
+                <input type="text" [(ngModel)]="newLeadNote" placeholder="Write lead update note..." class="flex-1 p-2 border border-slate-200 border-[#e7e5e4] bg-slate-50 bg-[#fafaf9] rounded-lg text-xs">
+                <button (click)="addLeadNote()" [disabled]="!newLeadNote.trim()" class="py-1.5 px-3 bg-slate-900 hover:bg-white hover:border-amber-600/50 dark:bg-sky-600 dark:hover:bg-sky-500 rounded-lg text-white text-xs font-bold transition-all">Add</button>
               </div>
             </div>
 
             <!-- Lead Activities -->
-            <div class="space-y-2 border-t border-slate-100 dark:border-slate-700/60 pt-4">
-              <h4 class="font-bold text-xs text-slate-700 dark:text-slate-300 uppercase">Pipeline History</h4>
+            <div class="space-y-2 border-t border-slate-100 border-[#e7e5e4]/60 pt-4">
+              <h4 class="font-bold text-xs text-[#1c1917] dark:text-[#1c1917] uppercase">Pipeline History</h4>
               <div class="space-y-3 max-h-48 overflow-y-auto">
                 <div *ngFor="let act of lead.activityLog" class="flex items-start gap-2.5 text-xs">
-                  <span class="material-icons text-slate-400 text-sm mt-0.5">history</span>
+                  <span class="material-icons text-[#44403c] text-sm mt-0.5">history</span>
                   <div class="flex-1 min-w-0">
-                    <p class="text-slate-600 dark:text-slate-400 leading-normal truncate">{{ act.description }}</p>
-                    <span class="text-[9px] text-slate-400 block mt-0.5">{{ act.date | date:'short' }}</span>
+                    <p class="text-[#1c1917] dark:text-[#44403c] leading-normal truncate">{{ act.description }}</p>
+                    <span class="text-[9px] text-[#44403c] block mt-0.5">{{ act.date | date:'short' }}</span>
                   </div>
                 </div>
               </div>

@@ -42,12 +42,12 @@ export interface TicketModel {
     <div class="h-[80vh] flex flex-col md:flex-row gap-6 text-slate-800 dark:text-slate-100">
       
       <!-- Left Panel: Ticket List -->
-      <div class="w-full md:w-[35%] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 rounded-2xl flex flex-col overflow-hidden shadow-sm">
+      <div class="w-full md:w-[35%] bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 rounded-2xl flex flex-col overflow-hidden shadow-sm">
         
         <!-- Search and log ticket -->
-        <div class="p-4 border-b border-slate-200 dark:border-slate-700 space-y-3">
+        <div class="p-4 border-b border-slate-200 border-[#e7e5e4] space-y-3">
           <div class="flex justify-between items-center">
-            <h3 class="font-bold text-sm text-slate-700 dark:text-white uppercase tracking-wider">Support Queue</h3>
+            <h3 class="font-bold text-sm text-slate-700 text-[#1c1917] uppercase tracking-wider">Support Queue</h3>
             <button (click)="openAddModal()" class="py-1 px-2.5 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-xs font-semibold shadow-md shadow-sky-600/10 active:scale-95 transition-all flex items-center gap-1">
               <span class="material-icons text-xs">add</span>
               <span>Open Ticket</span>
@@ -59,25 +59,25 @@ export interface TicketModel {
             [(ngModel)]="searchQuery" 
             (input)="loadTickets()"
             placeholder="Search tickets..." 
-            class="w-full px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-800 dark:text-white">
+            class="w-full px-3 py-1.5 border border-slate-200 border-[#e7e5e4] rounded-lg bg-slate-50 bg-[#fafaf9] text-xs focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-800 text-[#1c1917]">
         </div>
 
         <!-- Ticket Filter Tabs -->
-        <div class="flex border-b border-slate-100 dark:border-slate-700/60 text-xs">
+        <div class="flex border-b border-slate-100 border-[#e7e5e4]/60 text-xs">
           <button 
             *ngFor="let tab of ['All', 'Open', 'In Progress', 'Resolved']"
             (click)="selectedTab = tab; loadTickets()"
             [class.border-sky-500]="selectedTab === tab"
             [class.text-sky-500]="selectedTab === tab"
             [class.font-bold]="selectedTab === tab"
-            class="flex-1 py-2.5 border-b-2 border-transparent text-slate-400 hover:text-slate-600 transition-all text-center">
+            class="flex-1 py-2.5 border-b-2 border-transparent text-[#44403c] hover:text-slate-600 transition-all text-center">
             {{ tab }}
           </button>
         </div>
 
         <!-- Tickets Scroll Queue -->
         <div class="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700 scrollbar-thin">
-          <div *ngIf="tickets().length === 0" class="p-8 text-center text-slate-400 text-xs">
+          <div *ngIf="tickets().length === 0" class="p-8 text-center text-[#44403c] text-xs">
             No tickets in this queue.
           </div>
 
@@ -91,20 +91,20 @@ export interface TicketModel {
             
             <div class="flex justify-between items-start">
               <span class="font-bold text-xs text-sky-500">{{ t.ticketCode }}</span>
-              <span class="text-[9px] text-slate-400 font-semibold">{{ t.createdAt | date:'shortDate' }}</span>
+              <span class="text-[9px] text-[#44403c] font-semibold">{{ t.createdAt | date:'shortDate' }}</span>
             </div>
 
-            <h4 class="font-bold text-xs text-slate-800 dark:text-white truncate">{{ t.title }}</h4>
+            <h4 class="font-bold text-xs text-slate-800 text-[#1c1917] truncate">{{ t.title }}</h4>
             
             <div class="flex justify-between items-center text-[10px]">
-              <span class="font-semibold text-slate-500 dark:text-slate-400 truncate max-w-[120px]">{{ t.customer?.companyName }}</span>
+              <span class="font-semibold text-[#574c43] truncate max-w-[120px]">{{ t.customer?.companyName }}</span>
               
               <div class="flex gap-1.5 shrink-0">
                 <span [ngClass]="{
                   'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400': t.priority === 'Critical',
                   'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400': t.priority === 'High',
                   'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-400': t.priority === 'Medium',
-                  'bg-slate-100 text-slate-600 dark:bg-slate-900 dark:text-slate-400': t.priority === 'Low'
+                  'bg-slate-100 text-slate-600 bg-[#fafaf9] dark:text-[#44403c]': t.priority === 'Low'
                 }" class="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase">
                   {{ t.priority }}
                 </span>
@@ -112,7 +112,7 @@ export interface TicketModel {
                   'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400': t.status === 'Resolved' || t.status === 'Closed',
                   'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-400': t.status === 'In Progress',
                   'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400': t.status === 'Assigned',
-                  'bg-slate-100 text-slate-500 dark:bg-slate-900 dark:text-slate-400': t.status === 'Open'
+                  'bg-slate-100 text-[#292524] bg-[#fafaf9] dark:text-[#44403c]': t.status === 'Open'
                 }" class="px-1.5 py-0.5 rounded text-[8px] font-semibold">
                   {{ t.status }}
                 </span>
@@ -125,27 +125,27 @@ export interface TicketModel {
       </div>
 
       <!-- Right Panel: Active Ticket Conversation Details -->
-      <div class="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 rounded-2xl flex flex-col overflow-hidden shadow-sm">
+      <div class="flex-1 bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 rounded-2xl flex flex-col overflow-hidden shadow-sm">
         
         <!-- Header detail -->
         <div *ngIf="activeTicket() as ticket" class="flex-grow flex flex-col overflow-hidden">
-          <div class="p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30 flex justify-between items-center">
+          <div class="p-4 border-b border-slate-200 border-[#e7e5e4] bg-slate-50 bg-[#fafaf9]/30 flex justify-between items-center">
             <div>
               <div class="flex items-center gap-2">
-                <span class="font-extrabold text-slate-800 dark:text-white text-sm">{{ ticket.ticketCode }}</span>
-                <span class="text-xs text-slate-400 font-semibold px-2 py-0.5 bg-slate-200/50 dark:bg-slate-800 rounded-lg capitalize">{{ ticket.category }}</span>
+                <span class="font-extrabold text-slate-800 text-[#1c1917] text-sm">{{ ticket.ticketCode }}</span>
+                <span class="text-xs text-[#44403c] font-semibold px-2 py-0.5 bg-slate-200/50 bg-white rounded-lg capitalize">{{ ticket.category }}</span>
               </div>
-              <h2 class="font-bold text-xs text-slate-50 mt-1">Client: <b class="text-slate-700 dark:text-slate-300 font-semibold">{{ ticket.customer?.companyName }} ({{ ticket.customer?.contactPerson }})</b></h2>
+              <h2 class="font-bold text-xs text-slate-50 mt-1">Client: <b class="text-slate-700 dark:text-[#1c1917] font-semibold">{{ ticket.customer?.companyName }} ({{ ticket.customer?.contactPerson }})</b></h2>
             </div>
 
             <!-- Assignment & Status select -->
             <div class="flex items-center gap-3">
               <div *ngIf="canModify()" class="flex items-center gap-1.5 text-xs">
-                <span class="text-slate-400 font-medium">Status:</span>
+                <span class="text-[#44403c] font-medium">Status:</span>
                 <select 
                   [(ngModel)]="ticket.status" 
                   (change)="updateTicketStatus()"
-                  class="px-2 py-1 border border-slate-200 dark:border-slate-700 rounded bg-white dark:bg-slate-900 text-slate-700 dark:text-white focus:outline-none">
+                  class="px-2 py-1 border border-slate-200 border-[#e7e5e4] rounded bg-white bg-[#fafaf9] text-slate-700 text-[#1c1917] focus:outline-none">
                   <option value="Open">Open</option>
                   <option value="Assigned">Assigned</option>
                   <option value="In Progress">In Progress</option>
@@ -154,11 +154,11 @@ export interface TicketModel {
                 </select>
               </div>
               <div *ngIf="canModify()" class="flex items-center gap-1.5 text-xs">
-                <span class="text-slate-400 font-medium">Owner:</span>
+                <span class="text-[#44403c] font-medium">Owner:</span>
                 <select 
                   [(ngModel)]="assignedStaffId" 
                   (change)="updateTicketAssignment()"
-                  class="px-2 py-1 border border-slate-200 dark:border-slate-700 rounded bg-white dark:bg-slate-900 text-slate-700 dark:text-white focus:outline-none max-w-[120px]">
+                  class="px-2 py-1 border border-slate-200 border-[#e7e5e4] rounded bg-white bg-[#fafaf9] text-slate-700 text-[#1c1917] focus:outline-none max-w-[120px]">
                   <option value="">Unassigned</option>
                   <option *ngFor="let emp of staffList()" [value]="emp._id">{{ emp.name }}</option>
                 </select>
@@ -170,20 +170,20 @@ export interface TicketModel {
           <div class="flex-grow p-4 overflow-y-auto space-y-4 scrollbar-thin">
             
             <!-- Original Description Box -->
-            <div class="p-4 bg-slate-50 dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-700 rounded-2xl space-y-2">
-              <div class="flex justify-between items-center text-[10px] text-slate-400">
+            <div class="p-4 bg-slate-50 bg-[#fafaf9]/40 border border-slate-200/60 border-[#e7e5e4] rounded-2xl space-y-2">
+              <div class="flex justify-between items-center text-[10px] text-[#44403c]">
                 <span class="font-bold uppercase tracking-wider">Description of Issue</span>
                 <span>Opened {{ ticket.createdAt | date:'medium' }}</span>
               </div>
-              <h3 class="font-bold text-xs text-slate-800 dark:text-white">{{ ticket.title }}</h3>
-              <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed break-words whitespace-pre-line">{{ ticket.description }}</p>
+              <h3 class="font-bold text-xs text-slate-800 text-[#1c1917]">{{ ticket.title }}</h3>
+              <p class="text-xs text-[#44403c] leading-relaxed break-words whitespace-pre-line">{{ ticket.description }}</p>
             </div>
 
             <!-- Comments Feed -->
             <div class="space-y-3">
-              <h4 class="font-bold text-[10px] text-slate-400 uppercase tracking-widest pl-1 mb-2">Discussion Thread</h4>
+              <h4 class="font-bold text-[10px] text-[#44403c] uppercase tracking-widest pl-1 mb-2">Discussion Thread</h4>
               
-              <div *ngIf="ticket.comments.length === 0" class="text-center py-6 text-slate-400 text-xs">
+              <div *ngIf="ticket.comments.length === 0" class="text-center py-6 text-[#44403c] text-xs">
                 No replies yet. Use editor below to comment.
               </div>
 
@@ -198,13 +198,13 @@ export interface TicketModel {
                   [class.dark:bg-sky-950/20]="comment.commentedBy.role !== 'customer'"
                   [class.border-sky-500/10]="comment.commentedBy.role !== 'customer'"
                   [class.bg-slate-50]="comment.commentedBy.role === 'customer'"
-                  [class.dark:bg-slate-900/60]="comment.commentedBy.role === 'customer'"
-                  class="max-w-[80%] p-3.5 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl text-xs space-y-1">
-                  <div class="flex justify-between items-center gap-6 font-semibold text-[10px] text-slate-400">
-                    <span class="font-bold text-slate-600 dark:text-slate-300">{{ comment.commentedBy.name }} ({{ comment.commentedBy.role.replace('_', ' ') }})</span>
+                  [class.bg-[#fafaf9]/60]="comment.commentedBy.role === 'customer'"
+                  class="max-w-[80%] p-3.5 border border-slate-200/60 border-[#e7e5e4]/60 rounded-2xl text-xs space-y-1">
+                  <div class="flex justify-between items-center gap-6 font-semibold text-[10px] text-[#44403c]">
+                    <span class="font-bold text-[#44403c]">{{ comment.commentedBy.name }} ({{ comment.commentedBy.role.replace('_', ' ') }})</span>
                     <span>{{ comment.createdAt | date:'shortTime' }}</span>
                   </div>
-                  <p class="text-slate-700 dark:text-slate-200 mt-1 leading-normal break-words whitespace-pre-line">{{ comment.comment }}</p>
+                  <p class="text-[#44403c] mt-1 leading-normal break-words whitespace-pre-line">{{ comment.comment }}</p>
                 </div>
 
               </div>
@@ -212,7 +212,7 @@ export interface TicketModel {
           </div>
 
           <!-- AI Assistant & Comment Input Box -->
-          <div class="p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/20 space-y-3">
+          <div class="p-4 border-t border-slate-200 border-[#e7e5e4] bg-slate-50 bg-[#fafaf9]/20 space-y-3">
             
             <!-- AI suggestions trigger -->
             <div *ngIf="canModify()" class="space-y-2">
@@ -229,7 +229,7 @@ export interface TicketModel {
                 <div 
                   *ngFor="let sug of aiSuggestions(); let idx = index"
                   (click)="applySuggestion(sug)"
-                  class="p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-sky-500 rounded-xl cursor-pointer text-[10px] leading-relaxed text-slate-500 dark:text-slate-400 hover:shadow-sm transition-all max-h-24 overflow-y-auto whitespace-pre-line">
+                  class="p-2.5 bg-white bg-white border border-slate-200 border-[#e7e5e4] hover:border-sky-500 rounded-xl cursor-pointer text-[10px] leading-relaxed text-[#574c43] hover:shadow-sm transition-all max-h-24 overflow-y-auto whitespace-pre-line">
                   <div class="font-bold text-sky-500 mb-1">Option {{ idx + 1 }} (Click to apply)</div>
                   {{ sug }}
                 </div>
@@ -242,11 +242,11 @@ export interface TicketModel {
                 [(ngModel)]="newComment" 
                 placeholder="Write response comment..." 
                 rows="2" 
-                class="flex-1 p-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-800 dark:text-white"></textarea>
+                class="flex-1 p-3 border border-slate-200 border-[#e7e5e4] rounded-xl bg-white bg-[#fafaf9] text-xs focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-800 text-[#1c1917]"></textarea>
               <button 
                 (click)="postComment()" 
                 [disabled]="!newComment.trim()"
-                class="py-2.5 px-4 bg-slate-900 hover:bg-slate-900 dark:bg-sky-600 dark:hover:bg-sky-500 disabled:bg-slate-300 disabled:text-slate-400 dark:disabled:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center">
+                class="py-2.5 px-4 bg-slate-900 hover:bg-white hover:border-amber-600/50 hover:shadow-xl dark:bg-sky-600 dark:hover:bg-sky-500 disabled:bg-slate-300 disabled:text-[#44403c] dark:disabled:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center">
                 <span class="material-icons text-sm">send</span>
               </button>
             </div>
@@ -254,10 +254,10 @@ export interface TicketModel {
         </div>
 
         <!-- Empty State -->
-        <div *ngIf="!activeTicket()" class="flex-grow flex flex-col items-center justify-center text-slate-400 p-8 space-y-4">
-          <span class="material-icons text-6xl text-slate-300 dark:text-slate-700">confirmation_number</span>
+        <div *ngIf="!activeTicket()" class="flex-grow flex flex-col items-center justify-center text-[#44403c] p-8 space-y-4">
+          <span class="material-icons text-6xl text-[#1c1917] dark:text-slate-700">confirmation_number</span>
           <div class="text-center">
-            <h4 class="font-bold text-slate-800 dark:text-slate-300 text-sm">No ticket selected</h4>
+            <h4 class="font-bold text-slate-800 dark:text-[#1c1917] text-sm">No ticket selected</h4>
             <p class="text-xs mt-1">Pick a support ticket from the queue or log a new inquiry.</p>
           </div>
         </div>
@@ -266,30 +266,30 @@ export interface TicketModel {
 
       <!-- Add Ticket Modal Overlay -->
       <div *ngIf="isModalOpen()" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
-        <div class="w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-2xl space-y-6">
-          <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
-            <h3 class="text-base font-bold text-slate-800 dark:text-white">Open Support Ticket</h3>
-            <button (click)="closeModal()" class="text-slate-400 hover:text-slate-600"><span class="material-icons">close</span></button>
+        <div class="w-full max-w-md bg-white bg-white rounded-2xl p-6 shadow-2xl space-y-6">
+          <div class="flex justify-between items-center border-b border-slate-100 border-[#e7e5e4] pb-3">
+            <h3 class="text-base font-bold text-slate-800 text-[#1c1917]">Open Support Ticket</h3>
+            <button (click)="closeModal()" class="text-[#44403c] hover:text-slate-600"><span class="material-icons">close</span></button>
           </div>
-          <form class="space-y-4 text-xs text-slate-700 dark:text-slate-200">
+          <form class="space-y-4 text-xs text-[#44403c]">
             <div>
-              <label class="block font-semibold uppercase tracking-wider text-slate-400">Ticket Title</label>
+              <label class="block font-semibold uppercase tracking-wider text-[#44403c]">Ticket Title</label>
               <input type="text" [(ngModel)]="newTicketForm.title" name="title" placeholder="e.g. Account activation failure" class="modal-input">
             </div>
             <div>
-              <label class="block font-semibold uppercase tracking-wider text-slate-400">Description of Issue</label>
+              <label class="block font-semibold uppercase tracking-wider text-[#44403c]">Description of Issue</label>
               <textarea [(ngModel)]="newTicketForm.description" name="description" placeholder="Provide detailed steps or error codes..." rows="4" class="modal-input"></textarea>
             </div>
             
             <!-- Customer Selector (Admins/staff only, customers bypass this and link automatically) -->
             <div *ngIf="canModify()">
-              <label class="block font-semibold uppercase tracking-wider text-slate-400">Client Customer Account</label>
+              <label class="block font-semibold uppercase tracking-wider text-[#44403c]">Client Customer Account</label>
               <select [(ngModel)]="newTicketForm.customerId" name="customerId" class="modal-input">
                 <option *ngFor="let cust of clientList()" [value]="cust._id">{{ cust.companyName }}</option>
               </select>
             </div>
           </form>
-          <div class="flex gap-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+          <div class="flex gap-3 pt-3 border-t border-slate-100 border-[#e7e5e4]">
             <button (click)="closeModal()" class="flex-1 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg font-bold">Cancel</button>
             <button (click)="submitTicket()" class="flex-1 py-2 bg-sky-600 hover:bg-sky-500 rounded-lg text-white font-bold">Submit Ticket</button>
           </div>

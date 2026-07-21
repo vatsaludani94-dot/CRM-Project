@@ -19,7 +19,7 @@ import { AuthService } from '../../core/services/auth.service';
             <span class="material-icons text-5xl">donut_large</span>
           </div>
           <h2 class="mt-4 text-3xl font-extrabold text-white tracking-tight">Grownox Technologies</h2>
-          <p class="mt-2 text-sm text-slate-400">
+          <p class="mt-2 text-sm text-[#44403c]">
             Create a custom testing account workspace
           </p>
         </div>
@@ -33,9 +33,9 @@ import { AuthService } from '../../core/services/auth.service';
 
             <!-- Full Name -->
             <div>
-              <label for="name" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Full Name</label>
+              <label for="name" class="block text-xs font-semibold text-[#44403c] uppercase tracking-wider">Full Name</label>
               <div class="mt-1.5 relative">
-                <span class="material-icons absolute left-3 top-2.5 text-slate-500 text-lg">person</span>
+                <span class="material-icons absolute left-3 top-2.5 text-[#292524] text-lg">person</span>
                 <input 
                   id="name" 
                   type="text" 
@@ -50,9 +50,9 @@ import { AuthService } from '../../core/services/auth.service';
 
             <!-- Email Address -->
             <div>
-              <label for="email" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Email Address</label>
+              <label for="email" class="block text-xs font-semibold text-[#44403c] uppercase tracking-wider">Email Address</label>
               <div class="mt-1.5 relative">
-                <span class="material-icons absolute left-3 top-2.5 text-slate-500 text-lg">email</span>
+                <span class="material-icons absolute left-3 top-2.5 text-[#292524] text-lg">email</span>
                 <input 
                   id="email" 
                   type="email" 
@@ -67,9 +67,9 @@ import { AuthService } from '../../core/services/auth.service';
 
             <!-- Password -->
             <div>
-              <label for="password" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Password</label>
+              <label for="password" class="block text-xs font-semibold text-[#44403c] uppercase tracking-wider">Password</label>
               <div class="mt-1.5 relative">
-                <span class="material-icons absolute left-3 top-2.5 text-slate-500 text-lg">lock</span>
+                <span class="material-icons absolute left-3 top-2.5 text-[#292524] text-lg">lock</span>
                 <input 
                   id="password" 
                   type="password" 
@@ -84,9 +84,9 @@ import { AuthService } from '../../core/services/auth.service';
 
             <!-- Account Type / Role -->
             <div>
-              <label for="role" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Demo Role type</label>
+              <label for="role" class="block text-xs font-semibold text-[#44403c] uppercase tracking-wider">Demo Role type</label>
               <div class="mt-1.5 relative">
-                <span class="material-icons absolute left-3 top-2.5 text-slate-500 text-lg">supervised_user_circle</span>
+                <span class="material-icons absolute left-3 top-2.5 text-[#292524] text-lg">supervised_user_circle</span>
                 <select 
                   id="role" 
                   formControlName="role" 
@@ -94,15 +94,15 @@ import { AuthService } from '../../core/services/auth.service';
                   <option value="employee">Employee / Sales Representative</option>
                   <option value="customer">Customer Portal</option>
                 </select>
-                <span class="material-icons absolute right-3 top-2.5 text-slate-400 pointer-events-none">arrow_drop_down</span>
+                <span class="material-icons absolute right-3 top-2.5 text-[#44403c] pointer-events-none">arrow_drop_down</span>
               </div>
             </div>
 
             <!-- Department (Optional for Employees) -->
             <div *ngIf="registerForm.get('role')?.value === 'employee'">
-              <label for="department" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Assigned Department</label>
+              <label for="department" class="block text-xs font-semibold text-[#44403c] uppercase tracking-wider">Assigned Department</label>
               <div class="mt-1.5 relative">
-                <span class="material-icons absolute left-3 top-2.5 text-slate-500 text-lg">work</span>
+                <span class="material-icons absolute left-3 top-2.5 text-[#292524] text-lg">work</span>
                 <select 
                   id="department" 
                   formControlName="department" 
@@ -112,7 +112,7 @@ import { AuthService } from '../../core/services/auth.service';
                   <option value="Engineering">Product Engineering</option>
                   <option value="HR">Human Resources</option>
                 </select>
-                <span class="material-icons absolute right-3 top-2.5 text-slate-400 pointer-events-none">arrow_drop_down</span>
+                <span class="material-icons absolute right-3 top-2.5 text-[#44403c] pointer-events-none">arrow_drop_down</span>
               </div>
             </div>
 
@@ -120,14 +120,14 @@ import { AuthService } from '../../core/services/auth.service';
             <button 
               type="submit" 
               [disabled]="registerForm.invalid || isLoading()"
-              class="w-full mt-2 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:text-slate-400 text-white rounded-lg text-sm font-semibold shadow-lg shadow-emerald-600/20 active:scale-95 transition-all flex justify-center items-center gap-2">
+              class="w-full mt-2 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:text-[#44403c] text-white rounded-lg text-sm font-semibold shadow-lg shadow-emerald-600/20 active:scale-95 transition-all flex justify-center items-center gap-2">
               <span *ngIf="isLoading()" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
               <span>Register Workspace</span>
             </button>
           </form>
 
           <div class="mt-6 text-center text-xs">
-            <span class="text-slate-500">Already registered?</span>
+            <span class="text-[#292524]">Already registered?</span>
             <a routerLink="/login" class="ml-1 text-emerald-400 hover:text-emerald-300 font-semibold">Sign in here</a>
           </div>
 

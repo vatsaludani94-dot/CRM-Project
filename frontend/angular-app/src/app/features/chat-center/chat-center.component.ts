@@ -10,21 +10,21 @@ import { Subscription } from 'rxjs';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="h-[calc(100vh-120px)] flex bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 rounded-2xl shadow-sm overflow-hidden animate-fadeIn">
+    <div class="h-[calc(100vh-120px)] flex bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 rounded-2xl shadow-sm overflow-hidden animate-fadeIn">
       
       <!-- Left Sidebar: Channels and DMs -->
-      <div class="w-64 border-r border-slate-100 dark:border-slate-700 flex flex-col bg-slate-50/50 dark:bg-slate-900/30 shrink-0">
+      <div class="w-64 border-r border-slate-100 border-[#e7e5e4] flex flex-col bg-slate-50/50 bg-[#fafaf9]/30 shrink-0">
         
         <!-- Channels Section -->
         <div class="flex-1 overflow-y-auto p-4 space-y-6">
           <div class="space-y-2">
-            <div class="flex justify-between items-center text-[10px] font-black uppercase text-slate-400 tracking-wider">
+            <div class="flex justify-between items-center text-[10px] font-black uppercase text-[#44403c] tracking-wider">
               <span>Channels</span>
               <button (click)="openCreateChannelModal()" class="hover:text-white"><span class="material-icons text-sm">add</span></button>
             </div>
             <div class="space-y-1">
-              <div *ngFor="let ch of channels()" (click)="selectChannel(ch)" [class.bg-indigo-500/10]="activeChannel()?._id === ch._id" [class.text-indigo-500]="activeChannel()?._id === ch._id" class="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 cursor-pointer transition-all">
-                <span class="material-icons text-slate-400 text-sm">tag</span>
+              <div *ngFor="let ch of channels()" (click)="selectChannel(ch)" [class.bg-indigo-500/10]="activeChannel()?._id === ch._id" [class.text-indigo-500]="activeChannel()?._id === ch._id" class="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-[#44403c] hover:bg-slate-100 dark:hover:bg-white hover:border-amber-600/50/60 cursor-pointer transition-all">
+                <span class="material-icons text-[#44403c] text-sm">tag</span>
                 <span>{{ ch.name }}</span>
               </div>
             </div>
@@ -32,10 +32,10 @@ import { Subscription } from 'rxjs';
 
           <!-- Direct Messages Section -->
           <div class="space-y-2">
-            <h4 class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Direct Messages</h4>
+            <h4 class="text-[10px] font-black uppercase text-[#44403c] tracking-wider">Direct Messages</h4>
             <div class="space-y-1">
-              <div *ngFor="let member of teamMembers()" (click)="selectDM(member)" [class.bg-indigo-500/10]="activeRecipient()?._id === member._id" [class.text-indigo-500]="activeRecipient()?._id === member._id" class="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 cursor-pointer transition-all">
-                <span class="material-icons text-slate-400 text-sm">person_outline</span>
+              <div *ngFor="let member of teamMembers()" (click)="selectDM(member)" [class.bg-indigo-500/10]="activeRecipient()?._id === member._id" [class.text-indigo-500]="activeRecipient()?._id === member._id" class="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-[#44403c] hover:bg-slate-100 dark:hover:bg-white hover:border-amber-600/50/60 cursor-pointer transition-all">
+                <span class="material-icons text-[#44403c] text-sm">person_outline</span>
                 <span>{{ member.name }}</span>
               </div>
             </div>
@@ -45,46 +45,46 @@ import { Subscription } from 'rxjs';
       </div>
 
       <!-- Right Chat Window -->
-      <div class="flex-1 flex flex-col bg-white dark:bg-slate-800 relative">
+      <div class="flex-1 flex flex-col bg-white bg-white relative">
         
         <!-- Header -->
-        <div class="h-16 border-b border-slate-100 dark:border-slate-700 px-6 flex items-center justify-between shrink-0">
+        <div class="h-16 border-b border-slate-100 border-[#e7e5e4] px-6 flex items-center justify-between shrink-0">
           <div *ngIf="activeChannel()" class="flex items-center gap-2">
-            <span class="material-icons text-slate-400">tag</span>
-            <strong class="text-sm text-slate-800 dark:text-white font-black">#{{ activeChannel().name }}</strong>
-            <span class="text-xs text-slate-400 font-medium ml-2">{{ activeChannel().description }}</span>
+            <span class="material-icons text-[#44403c]">tag</span>
+            <strong class="text-sm text-slate-800 text-[#1c1917] font-black">#{{ activeChannel().name }}</strong>
+            <span class="text-xs text-[#44403c] font-medium ml-2">{{ activeChannel().description }}</span>
           </div>
           <div *ngIf="activeRecipient()" class="flex items-center gap-2">
-            <span class="material-icons text-slate-400">person</span>
-            <strong class="text-sm text-slate-800 dark:text-white font-black">{{ activeRecipient().name }}</strong>
-            <span class="text-xs text-slate-400 font-medium ml-2">{{ activeRecipient().department }}</span>
+            <span class="material-icons text-[#44403c]">person</span>
+            <strong class="text-sm text-slate-800 text-[#1c1917] font-black">{{ activeRecipient().name }}</strong>
+            <span class="text-xs text-[#44403c] font-medium ml-2">{{ activeRecipient().department }}</span>
           </div>
-          <div *ngIf="!activeChannel() && !activeRecipient()" class="text-xs text-slate-400 font-medium">Select a channel or conversation to start collaborating.</div>
+          <div *ngIf="!activeChannel() && !activeRecipient()" class="text-xs text-[#44403c] font-medium">Select a channel or conversation to start collaborating.</div>
         </div>
 
         <!-- Chat Pane messages -->
         <div class="flex-1 overflow-y-auto p-6 space-y-4">
           <div *ngFor="let msg of chatMessages()" class="flex items-start gap-3 text-xs">
-            <div class="h-8 w-8 rounded-full bg-indigo-600/10 border dark:border-slate-700/80 flex items-center justify-center font-black text-indigo-500 uppercase shrink-0">
+            <div class="h-8 w-8 rounded-full bg-indigo-600/10 border border-[#e7e5e4]/80 flex items-center justify-center font-black text-indigo-500 uppercase shrink-0">
               {{ msg.sender?.name?.slice(0, 2) || 'US' }}
             </div>
             <div class="space-y-1">
-              <div class="flex items-center gap-2 font-bold text-slate-500">
-                <span class="text-slate-800 dark:text-white font-black">{{ msg.sender?.name }}</span>
-                <span class="text-[9px] text-slate-400 font-semibold">{{ msg.createdAt | date:'shortTime' }}</span>
+              <div class="flex items-center gap-2 font-bold text-[#292524]">
+                <span class="text-slate-800 text-[#1c1917] font-black">{{ msg.sender?.name }}</span>
+                <span class="text-[9px] text-[#44403c] font-semibold">{{ msg.createdAt | date:'shortTime' }}</span>
               </div>
-              <p class="text-slate-700 dark:text-slate-300 leading-relaxed font-semibold bg-slate-50 dark:bg-slate-950 px-4 py-2.5 rounded-2xl max-w-xl inline-block">{{ msg.messageText }}</p>
+              <p class="text-slate-700 dark:text-[#1c1917] leading-relaxed font-semibold bg-slate-50 bg-white px-4 py-2.5 rounded-2xl max-w-xl inline-block">{{ msg.messageText }}</p>
             </div>
           </div>
 
-          <div *ngIf="chatMessages().length === 0 && (activeChannel() || activeRecipient())" class="text-center py-24 text-slate-400 font-semibold">
+          <div *ngIf="chatMessages().length === 0 && (activeChannel() || activeRecipient())" class="text-center py-24 text-[#44403c] font-semibold">
             This conversation is empty. Say hello! 👋
           </div>
         </div>
 
         <!-- Chat Input Composer -->
-        <div class="p-4 border-t border-slate-100 dark:border-slate-700 shrink-0 flex gap-2">
-          <input type="text" [(ngModel)]="messageInput" (keyup.enter)="sendMessage()" placeholder="Type a message..." class="flex-1 bg-slate-50 dark:bg-slate-950 border dark:border-slate-700 rounded-xl px-4 py-3 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-indigo-500">
+        <div class="p-4 border-t border-slate-100 border-[#e7e5e4] shrink-0 flex gap-2">
+          <input type="text" [(ngModel)]="messageInput" (keyup.enter)="sendMessage()" placeholder="Type a message..." class="flex-1 bg-slate-50 bg-white border border-[#e7e5e4] rounded-xl px-4 py-3 text-xs text-slate-800 text-[#1c1917] focus:outline-none focus:border-indigo-500">
           <button (click)="sendMessage()" [disabled]="!messageInput" class="bg-indigo-600 hover:bg-indigo-600 disabled:opacity-50 text-white font-bold text-xs px-5 py-3 rounded-xl transition-all shadow-md">
             Send
           </button>
@@ -94,15 +94,15 @@ import { Subscription } from 'rxjs';
 
       <!-- Modal: Create Channel -->
       <div *ngIf="showCreateModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-800 border dark:border-slate-700 p-6 rounded-2xl w-full max-w-sm space-y-4 text-xs animate-fadeIn">
-          <h3 class="text-sm font-extrabold text-slate-800 dark:text-white">Create Channel</h3>
+        <div class="bg-white bg-white border border-[#e7e5e4] p-6 rounded-2xl w-full max-w-sm space-y-4 text-xs animate-fadeIn">
+          <h3 class="text-sm font-extrabold text-slate-800 text-[#1c1917]">Create Channel</h3>
           <div>
-            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Channel Name</label>
-            <input type="text" [(ngModel)]="newChannelName" placeholder="engineering" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white">
+            <label class="block text-[10px] font-bold text-[#44403c] uppercase mb-1">Channel Name</label>
+            <input type="text" [(ngModel)]="newChannelName" placeholder="engineering" class="w-full bg-slate-50 bg-white border border-slate-205 border-[#e7e5e4] rounded-xl px-3 py-2 text-slate-800 text-[#1c1917]">
           </div>
           <div>
-            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Description</label>
-            <input type="text" [(ngModel)]="newChannelDesc" placeholder="Team discussions for code releases" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white">
+            <label class="block text-[10px] font-bold text-[#44403c] uppercase mb-1">Description</label>
+            <input type="text" [(ngModel)]="newChannelDesc" placeholder="Team discussions for code releases" class="w-full bg-slate-50 bg-white border border-slate-205 border-[#e7e5e4] rounded-xl px-3 py-2 text-slate-800 text-[#1c1917]">
           </div>
           <div class="flex gap-2 pt-2">
             <button (click)="closeCreateChannelModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-700 py-2.5 rounded-xl font-bold transition-colors">Cancel</button>

@@ -13,8 +13,8 @@ import { ApiService } from '../../core/services/api.service';
       <!-- Header -->
       <div class="flex justify-between items-center">
         <div>
-          <h1 class="text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight">Sales Funnels</h1>
-          <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Design checkout paths, schedule webinar funnels, and monitor conversion metrics.</p>
+          <h1 class="text-2xl font-extrabold text-slate-800 text-[#1c1917] tracking-tight">Sales Funnels</h1>
+          <p class="text-sm text-[#574c43] mt-1">Design checkout paths, schedule webinar funnels, and monitor conversion metrics.</p>
         </div>
         
         <div class="flex gap-2">
@@ -26,32 +26,32 @@ import { ApiService } from '../../core/services/api.service';
 
       <!-- Main Layout: Grid -->
       <div *ngIf="activeView() === 'list'" class="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fadeIn">
-        <div *ngFor="let fn of funnels()" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 p-6 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-6">
+        <div *ngFor="let fn of funnels()" class="bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 p-6 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-6">
           
           <div class="space-y-4">
             <div class="flex justify-between items-center">
               <span class="text-[9px] font-black uppercase tracking-wider bg-violet-500/10 text-violet-500 dark:text-violet-400 px-2.5 py-1 rounded-md">{{ fn.template }}</span>
-              <span class="text-[10px] font-bold text-slate-400">Steps: {{ fn.steps?.length || 0 }}</span>
+              <span class="text-[10px] font-bold text-[#44403c]">Steps: {{ fn.steps?.length || 0 }}</span>
             </div>
             
-            <h3 class="text-lg font-bold text-slate-900 dark:text-white">{{ fn.name }}</h3>
+            <h3 class="text-lg font-bold text-slate-900 text-[#1c1917]">{{ fn.name }}</h3>
 
             <!-- Metrics grid -->
             <div class="grid grid-cols-5 gap-2 text-center pt-2">
-              <div class="bg-slate-50 dark:bg-slate-950 p-2 rounded-lg">
-                <p class="text-[9px] text-slate-400 font-bold uppercase">Visits</p>
-                <p class="text-xs font-black text-slate-800 dark:text-white mt-0.5">{{ fn.stats?.visitors }}</p>
+              <div class="bg-slate-50 bg-white p-2 rounded-lg">
+                <p class="text-[9px] text-[#44403c] font-bold uppercase">Visits</p>
+                <p class="text-xs font-black text-slate-800 text-[#1c1917] mt-0.5">{{ fn.stats?.visitors }}</p>
               </div>
-              <div class="bg-slate-50 dark:bg-slate-950 p-2 rounded-lg">
-                <p class="text-[9px] text-slate-400 font-bold uppercase">Leads</p>
-                <p class="text-xs font-black text-slate-900 dark:text-white mt-0.5">{{ fn.stats?.leads }}</p>
+              <div class="bg-slate-50 bg-white p-2 rounded-lg">
+                <p class="text-[9px] text-[#44403c] font-bold uppercase">Leads</p>
+                <p class="text-xs font-black text-slate-900 text-[#1c1917] mt-0.5">{{ fn.stats?.leads }}</p>
               </div>
-              <div class="bg-slate-50 dark:bg-slate-950 p-2 rounded-lg">
-                <p class="text-[9px] text-slate-400 font-bold uppercase">Appts</p>
-                <p class="text-xs font-black text-slate-800 dark:text-white mt-0.5">{{ fn.stats?.appointments }}</p>
+              <div class="bg-slate-50 bg-white p-2 rounded-lg">
+                <p class="text-[9px] text-[#44403c] font-bold uppercase">Appts</p>
+                <p class="text-xs font-black text-slate-800 text-[#1c1917] mt-0.5">{{ fn.stats?.appointments }}</p>
               </div>
-              <div class="bg-slate-50 dark:bg-slate-950 p-2 rounded-lg">
-                <p class="text-[9px] text-slate-400 font-bold uppercase">Rate</p>
+              <div class="bg-slate-50 bg-white p-2 rounded-lg">
+                <p class="text-[9px] text-[#44403c] font-bold uppercase">Rate</p>
                 <p class="text-xs font-black text-indigo-500 dark:text-indigo-400 mt-0.5">{{ fn.stats?.conversionRate }}%</p>
               </div>
               <div class="bg-indigo-50 dark:bg-indigo-950/35 p-2 rounded-lg">
@@ -61,8 +61,8 @@ import { ApiService } from '../../core/services/api.service';
             </div>
           </div>
 
-          <div class="flex gap-2 border-t border-slate-100 dark:border-slate-700 pt-4">
-            <button (click)="openStepsEditor(fn)" class="flex-1 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold py-2 rounded-xl transition-all">
+          <div class="flex gap-2 border-t border-slate-100 border-[#e7e5e4] pt-4">
+            <button (click)="openStepsEditor(fn)" class="flex-1 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-white hover:border-amber-600/50 hover:shadow-xl text-white font-bold text-[#44403c] text-xs font-bold py-2 rounded-xl transition-all">
               Manage Steps
             </button>
             <button (click)="cloneFunnel(fn._id)" class="bg-violet-50 hover:bg-violet-100 dark:bg-violet-950/40 dark:hover:bg-violet-900/40 text-violet-600 dark:text-violet-400 text-xs font-bold px-3 py-2 rounded-xl transition-all flex items-center gap-1">
@@ -75,9 +75,9 @@ import { ApiService } from '../../core/services/api.service';
 
         </div>
 
-        <div *ngIf="funnels().length === 0" class="col-span-2 text-center py-16 bg-white dark:bg-slate-800 border border-dashed border-slate-300 dark:border-slate-700 rounded-2xl space-y-3">
-          <span class="material-icons text-4xl text-slate-300">filter_alt</span>
-          <p class="text-sm font-semibold text-slate-500 dark:text-slate-400">No funnels created yet. Click Create Funnel to build your checkout map.</p>
+        <div *ngIf="funnels().length === 0" class="col-span-2 text-center py-16 bg-white bg-white border border-dashed border-slate-300 border-[#e7e5e4] rounded-2xl space-y-3">
+          <span class="material-icons text-4xl text-[#1c1917]">filter_alt</span>
+          <p class="text-sm font-semibold text-[#574c43]">No funnels created yet. Click Create Funnel to build your checkout map.</p>
         </div>
       </div>
 
@@ -89,7 +89,7 @@ import { ApiService } from '../../core/services/api.service';
           
           <div class="flex justify-between w-full border-b border-slate-800 pb-4 mb-6">
             <div class="flex items-center gap-3">
-              <button (click)="closeStepsEditor()" class="text-slate-400 hover:text-white">
+              <button (click)="closeStepsEditor()" class="text-[#44403c] hover:text-white">
                 <span class="material-icons">arrow_back</span>
               </button>
               <h3 class="text-md font-extrabold text-white">{{ currentFunnel().name }}</h3>
@@ -102,13 +102,13 @@ import { ApiService } from '../../core/services/api.service';
             <div *ngFor="let step of currentFunnelSteps(); let idx = index" class="flex flex-col items-center">
               
               <!-- Step card -->
-              <div class="w-64 bg-slate-800 border border-slate-700 p-4 rounded-xl shadow-md flex items-center gap-3 relative group">
+              <div class="w-64 bg-[#1c1917] text-white font-bold border border-slate-700 p-4 rounded-xl shadow-md flex items-center gap-3 relative group">
                 <div class="h-6 w-6 rounded-full bg-indigo-500/15 text-indigo-400 flex items-center justify-center font-black text-xs">
                   {{ idx + 1 }}
                 </div>
                 <div class="overflow-hidden">
                   <h5 class="text-xs font-bold text-white truncate">{{ step.name }}</h5>
-                  <p class="text-[9px] text-slate-400 font-bold">{{ step.path }}</p>
+                  <p class="text-[9px] text-[#44403c] font-bold">{{ step.path }}</p>
                 </div>
                 <button (click)="removeStep(idx)" class="absolute top-1/2 -translate-y-1/2 -right-8 text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
                   <span class="material-icons text-sm">remove_circle</span>
@@ -116,7 +116,7 @@ import { ApiService } from '../../core/services/api.service';
               </div>
 
               <!-- Flow Connection line -->
-              <div *ngIf="idx < currentFunnelSteps().length - 1" class="h-8 w-0.5 bg-slate-700 flex justify-center items-center">
+              <div *ngIf="idx < currentFunnelSteps().length - 1" class="h-8 w-0.5 bg-[#1c1917] text-white font-bold flex justify-center items-center">
                 <span class="material-icons text-slate-700 text-[10px] translate-y-1">arrow_downward</span>
               </div>
 
@@ -140,25 +140,25 @@ import { ApiService } from '../../core/services/api.service';
         </div>
 
         <!-- Right Panel: Conversion Rate simulator -->
-        <div class="lg:col-span-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 p-6 rounded-2xl shadow-sm space-y-6">
-          <h4 class="font-extrabold text-sm text-slate-700 dark:text-white uppercase tracking-wider">Conversion Simulator</h4>
+        <div class="lg:col-span-4 bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 p-6 rounded-2xl shadow-sm space-y-6">
+          <h4 class="font-extrabold text-sm text-slate-700 text-[#1c1917] uppercase tracking-wider">Conversion Simulator</h4>
           
-          <div class="space-y-4 text-xs font-semibold text-slate-500 dark:text-slate-400">
+          <div class="space-y-4 text-xs font-semibold text-[#574c43]">
             <p>Mock traffic generation to test funnel tracking metrics locally.</p>
             
             <div class="grid grid-cols-2 gap-3 pt-2">
-              <button (click)="simulateMetric('visitors')" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-700 text-slate-800 dark:text-white py-2.5 rounded-xl transition-colors font-bold text-[10px] uppercase">Record Visit</button>
-              <button (click)="simulateMetric('leads')" class="bg-slate-105 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-700 text-slate-800 dark:text-white py-2.5 rounded-xl transition-colors font-bold text-[10px] uppercase">Record Lead</button>
-              <button (click)="simulateMetric('appointments')" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-700 text-slate-900 dark:text-white py-2.5 rounded-xl transition-colors font-bold text-[10px] uppercase">Book Call</button>
+              <button (click)="simulateMetric('visitors')" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-white hover:border-amber-600/50 hover:shadow-xl text-white font-bold text-slate-800 text-[#1c1917] py-2.5 rounded-xl transition-colors font-bold text-[10px] uppercase">Record Visit</button>
+              <button (click)="simulateMetric('leads')" class="bg-slate-105 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-white hover:border-amber-600/50 hover:shadow-xl text-white font-bold text-slate-800 text-[#1c1917] py-2.5 rounded-xl transition-colors font-bold text-[10px] uppercase">Record Lead</button>
+              <button (click)="simulateMetric('appointments')" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-white hover:border-amber-600/50 hover:shadow-xl text-white font-bold text-slate-900 text-[#1c1917] py-2.5 rounded-xl transition-colors font-bold text-[10px] uppercase">Book Call</button>
               <button (click)="simulateMetric('revenue')" class="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 py-2.5 rounded-xl border border-emerald-500/20 transition-colors font-bold text-[10px] uppercase">Record Sale ($)</button>
             </div>
             
-            <div class="border-t border-slate-100 dark:border-slate-700 pt-4 space-y-3">
-              <p class="text-[10px] font-black uppercase tracking-wider text-slate-400">Active Funnel Analytics</p>
-              <div class="space-y-2 text-slate-600 dark:text-slate-300">
+            <div class="border-t border-slate-100 border-[#e7e5e4] pt-4 space-y-3">
+              <p class="text-[10px] font-black uppercase tracking-wider text-[#44403c]">Active Funnel Analytics</p>
+              <div class="space-y-2 text-[#44403c]">
                 <div class="flex justify-between">
                   <span>Total Revenue Generated:</span>
-                  <strong class="text-slate-900 dark:text-white">\${{ currentFunnel().stats?.revenue || 0 }}</strong>
+                  <strong class="text-slate-900 text-[#1c1917]">\${{ currentFunnel().stats?.revenue || 0 }}</strong>
                 </div>
                 <div class="flex justify-between">
                   <span>Current Conversion Rate:</span>
@@ -173,29 +173,29 @@ import { ApiService } from '../../core/services/api.service';
 
       <!-- Modal: Create Funnel -->
       <div *ngIf="showCreateModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-800 border dark:border-slate-700 p-6 rounded-2xl w-full max-w-lg space-y-4 text-xs animate-fadeIn">
-          <h3 class="text-sm font-extrabold text-slate-800 dark:text-white">Create Sales Funnel</h3>
+        <div class="bg-white bg-white border border-[#e7e5e4] p-6 rounded-2xl w-full max-w-lg space-y-4 text-xs animate-fadeIn">
+          <h3 class="text-sm font-extrabold text-slate-800 text-[#1c1917]">Create Sales Funnel</h3>
           
           <div class="space-y-3">
             <div>
-              <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Funnel Name</label>
-              <input type="text" [(ngModel)]="newFunnelName" placeholder="Black Friday Promo" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white">
+              <label class="block text-[10px] font-bold text-[#44403c] uppercase mb-1">Funnel Name</label>
+              <input type="text" [(ngModel)]="newFunnelName" placeholder="Black Friday Promo" class="w-full bg-slate-50 bg-white border border-slate-200 border-[#e7e5e4] rounded-xl px-3 py-2 text-slate-900 text-[#1c1917]">
             </div>
             
             <div>
-              <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5">Select Pipeline Template (54 Available)</label>
+              <label class="block text-[10px] font-bold text-[#44403c] uppercase mb-1.5">Select Pipeline Template (54 Available)</label>
               
               <!-- Category Selector Pills -->
-              <div class="flex flex-wrap gap-1 border-b border-slate-200 dark:border-slate-700 pb-3 mb-3">
-                <button *ngFor="let cat of funnelCategories" (click)="selectedFunnelCategoryFilter.set(cat)" [class.bg-indigo-600]="selectedFunnelCategoryFilter() === cat" [class.text-white]="selectedFunnelCategoryFilter() === cat" class="px-2.5 py-1.5 rounded-lg text-[9px] font-bold text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors">
+              <div class="flex flex-wrap gap-1 border-b border-slate-200 border-[#e7e5e4] pb-3 mb-3">
+                <button *ngFor="let cat of funnelCategories" (click)="selectedFunnelCategoryFilter.set(cat)" [class.bg-indigo-600]="selectedFunnelCategoryFilter() === cat" [class.text-white]="selectedFunnelCategoryFilter() === cat" class="px-2.5 py-1.5 rounded-lg text-[9px] font-bold text-[#44403c] dark:text-[#1c1917] hover:bg-slate-100 dark:hover:bg-white hover:border-amber-600/50 hover:shadow-xl text-white font-bold/50 transition-colors">
                   {{ cat }}
                 </button>
               </div>
               
               <!-- Templates Grid (9 per category) -->
               <div class="grid grid-cols-3 gap-2 max-h-[180px] overflow-y-auto pr-1">
-                <div *ngFor="let t of getFilteredFunnels()" (click)="selectFunnelTemplate(t)" [class.border-indigo-500]="selectedTemplateId() === t.id" [class.ring-2]="selectedTemplateId() === t.id" class="border border-slate-200 dark:border-slate-700 p-2 rounded-xl cursor-pointer hover:border-indigo-400 dark:hover:border-indigo-500 transition-all flex flex-col justify-between text-left space-y-1">
-                  <h4 class="font-bold text-slate-800 dark:text-white text-[9px] leading-tight">{{ t.name }}</h4>
+                <div *ngFor="let t of getFilteredFunnels()" (click)="selectFunnelTemplate(t)" [class.border-indigo-500]="selectedTemplateId() === t.id" [class.ring-2]="selectedTemplateId() === t.id" class="border border-slate-200 border-[#e7e5e4] p-2 rounded-xl cursor-pointer hover:border-indigo-400 dark:hover:border-indigo-500 transition-all flex flex-col justify-between text-left space-y-1">
+                  <h4 class="font-bold text-slate-800 text-[#1c1917] text-[9px] leading-tight">{{ t.name }}</h4>
                   <span class="text-[7px] text-indigo-500 font-black uppercase">Select</span>
                 </div>
               </div>
@@ -203,7 +203,7 @@ import { ApiService } from '../../core/services/api.service';
           </div>
 
           <div class="flex gap-2 pt-2">
-            <button (click)="closeCreateModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-700 py-2.5 rounded-xl font-bold transition-colors">Cancel</button>
+            <button (click)="closeCreateModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-white hover:border-amber-600/50 hover:shadow-xl text-white font-bold py-2.5 rounded-xl font-bold transition-colors">Cancel</button>
             <button (click)="createFunnel()" [disabled]="!newFunnelName || !selectedTemplateId()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white py-2.5 rounded-xl font-bold transition-all">Create Funnel</button>
           </div>
         </div>

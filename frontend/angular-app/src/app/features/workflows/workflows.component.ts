@@ -33,17 +33,17 @@ interface WorkflowStep {
       <!-- Header -->
       <div class="flex justify-between items-center">
         <div>
-          <h1 class="text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight">Workflow Automation</h1>
-          <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Design visual triggers, conditions, delays, and automated triggers.</p>
+          <h1 class="text-2xl font-extrabold text-slate-800 text-[#1c1917] tracking-tight">Workflow Automation</h1>
+          <p class="text-sm text-[#574c43] mt-1">Design visual triggers, conditions, delays, and automated triggers.</p>
         </div>
         <div class="flex gap-3">
-          <button (click)="setView('list')" [class.bg-indigo-600]="activeView() === 'list'" class="bg-slate-800 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all shadow-md">
+          <button (click)="setView('list')" [class.bg-indigo-600]="activeView() === 'list'" class="bg-[#1c1917] text-white font-bold text-white font-bold text-xs px-4 py-2 rounded-xl transition-all shadow-md">
             Workflows List
           </button>
           <button (click)="startNewWorkflow()" [class.bg-indigo-600]="activeView() === 'builder'" class="bg-indigo-600 text-white font-bold text-xs px-4 py-2 rounded-xl hover:bg-indigo-500 transition-all shadow-md flex items-center gap-1.5">
             <span class="material-icons text-sm">add</span> Create Workflow
           </button>
-          <button (click)="setView('logs')" [class.bg-indigo-600]="activeView() === 'logs'" class="bg-slate-800 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all shadow-md">
+          <button (click)="setView('logs')" [class.bg-indigo-600]="activeView() === 'logs'" class="bg-[#1c1917] text-white font-bold text-white font-bold text-xs px-4 py-2 rounded-xl transition-all shadow-md">
             Execution Logs
           </button>
         </div>
@@ -51,17 +51,17 @@ interface WorkflowStep {
 
       <!-- View: Workflow List -->
       <div *ngIf="activeView() === 'list'" class="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fadeIn">
-        <div *ngFor="let wf of workflows()" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 p-6 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
+        <div *ngFor="let wf of workflows()" class="bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 p-6 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
           <div class="space-y-3">
             <div class="flex justify-between items-start">
               <span class="text-xs font-bold text-indigo-500 dark:text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-full uppercase">{{ wf.trigger }}</span>
               <span class="h-2 w-2 rounded-full" [class.bg-emerald-500]="wf.isActive" [class.bg-slate-400]="!wf.isActive"></span>
             </div>
-            <h3 class="text-lg font-bold text-slate-800 dark:text-white">{{ wf.name }}</h3>
-            <p class="text-xs text-slate-400">Total Steps configured: {{ wf.steps?.length || 0 }}</p>
+            <h3 class="text-lg font-bold text-slate-800 text-[#1c1917]">{{ wf.name }}</h3>
+            <p class="text-xs text-[#44403c]">Total Steps configured: {{ wf.steps?.length || 0 }}</p>
           </div>
           <div class="flex gap-2 pt-2">
-            <button (click)="editWorkflow(wf)" class="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold py-2 rounded-xl transition-colors">
+            <button (click)="editWorkflow(wf)" class="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-white hover:border-amber-600/50 hover:shadow-xl text-white font-bold text-[#44403c] text-xs font-bold py-2 rounded-xl transition-colors">
               Configure
             </button>
             <button (click)="deleteWorkflow(wf._id)" class="bg-rose-100 hover:bg-rose-200 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 px-3 py-2 rounded-xl transition-colors">
@@ -70,9 +70,9 @@ interface WorkflowStep {
           </div>
         </div>
 
-        <div *ngIf="workflows().length === 0" class="col-span-3 text-center py-16 bg-white dark:bg-slate-800 border border-dashed border-slate-300 dark:border-slate-700 rounded-2xl space-y-3">
-          <span class="material-icons text-4xl text-slate-300">account_tree</span>
-          <p class="text-sm font-semibold text-slate-500 dark:text-slate-400">No automation workflows found. Click Create Workflow to start.</p>
+        <div *ngIf="workflows().length === 0" class="col-span-3 text-center py-16 bg-white bg-white border border-dashed border-slate-300 border-[#e7e5e4] rounded-2xl space-y-3">
+          <span class="material-icons text-4xl text-[#1c1917]">account_tree</span>
+          <p class="text-sm font-semibold text-[#574c43]">No automation workflows found. Click Create Workflow to start.</p>
         </div>
       </div>
 
@@ -107,7 +107,7 @@ interface WorkflowStep {
           </div>
 
           <!-- Connection Arrow -->
-          <div class="h-8 w-0.5 bg-slate-700 flex justify-center items-center">
+          <div class="h-8 w-0.5 bg-[#1c1917] text-white font-bold flex justify-center items-center">
             <span class="material-icons text-slate-700 text-sm translate-y-1">arrow_downward</span>
           </div>
 
@@ -115,8 +115,8 @@ interface WorkflowStep {
           <div class="flex flex-col items-center w-full space-y-0" *ngFor="let step of steps(); let idx = index">
             
             <!-- Step Card -->
-            <div class="w-64 bg-slate-800 border border-slate-700 p-4 rounded-2xl shadow-md relative group flex flex-col items-center text-center">
-              <button (click)="removeStep(idx)" class="absolute -top-2.5 -right-2.5 h-6 w-6 bg-slate-900 border border-slate-700 hover:bg-slate-800 text-slate-400 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+            <div class="w-64 bg-[#1c1917] text-white font-bold border border-slate-700 p-4 rounded-2xl shadow-md relative group flex flex-col items-center text-center">
+              <button (click)="removeStep(idx)" class="absolute -top-2.5 -right-2.5 h-6 w-6 bg-slate-900 border border-slate-700 hover:bg-white hover:border-amber-600/50 hover:shadow-xl text-white font-bold text-[#44403c] rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
                 <span class="material-icons text-sm">close</span>
               </button>
               
@@ -128,7 +128,7 @@ interface WorkflowStep {
                 }">
                   {{ step.type === 'Condition' ? 'rule' : step.type === 'Action' ? 'bolt' : 'schedule' }}
                 </span>
-                <span class="text-[9px] font-black uppercase tracking-widest text-slate-400">{{ step.type }}</span>
+                <span class="text-[9px] font-black uppercase tracking-widest text-[#44403c]">{{ step.type }}</span>
               </div>
 
               <!-- Render Brief Config Description -->
@@ -148,7 +148,7 @@ interface WorkflowStep {
             </div>
 
             <!-- Connection Arrow -->
-            <div class="h-8 w-0.5 bg-slate-700 flex justify-center items-center">
+            <div class="h-8 w-0.5 bg-[#1c1917] text-white font-bold flex justify-center items-center">
               <span class="material-icons text-slate-700 text-sm translate-y-1">arrow_downward</span>
             </div>
 
@@ -177,12 +177,12 @@ interface WorkflowStep {
         </div>
 
         <!-- Right Panel: Step Configurator Form -->
-        <div class="lg:col-span-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 p-6 rounded-2xl shadow-sm space-y-6">
-          <h3 class="text-md font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
+        <div class="lg:col-span-4 bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 p-6 rounded-2xl shadow-sm space-y-6">
+          <h3 class="text-md font-extrabold text-slate-800 text-[#1c1917] flex items-center gap-2">
             <span class="material-icons text-indigo-500">settings</span> Step Configuration
           </h3>
           
-          <div *ngIf="selectedStepIdx() === null" class="text-center py-16 text-slate-400 text-xs">
+          <div *ngIf="selectedStepIdx() === null" class="text-center py-16 text-[#44403c] text-xs">
             Select a step card in the visual flowchart builder to edit its configuration fields.
           </div>
 
@@ -191,20 +191,20 @@ interface WorkflowStep {
             <!-- Type: Condition -->
             <div *ngIf="getSelectedStep()?.type === 'Condition'" class="space-y-4">
               <div>
-                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Field Name</label>
-                <input type="text" [(ngModel)]="getSelectedStep()!.config.conditionField" placeholder="e.g. status" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white">
+                <label class="block text-[10px] font-bold text-[#44403c] uppercase mb-1">Field Name</label>
+                <input type="text" [(ngModel)]="getSelectedStep()!.config.conditionField" placeholder="e.g. status" class="w-full bg-slate-50 bg-white border border-slate-200 border-[#e7e5e4] rounded-xl px-3 py-2 text-slate-800 text-[#1c1917]">
               </div>
               <div>
-                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Operator</label>
-                <select [(ngModel)]="getSelectedStep()!.config.conditionOperator" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white">
+                <label class="block text-[10px] font-bold text-[#44403c] uppercase mb-1">Operator</label>
+                <select [(ngModel)]="getSelectedStep()!.config.conditionOperator" class="w-full bg-slate-50 bg-white border border-slate-200 border-[#e7e5e4] rounded-xl px-3 py-2 text-slate-800 text-[#1c1917]">
                   <option value="equals">equals</option>
                   <option value="not_equals">not_equals</option>
                   <option value="contains">contains</option>
                 </select>
               </div>
               <div>
-                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Value to Match</label>
-                <input type="text" [(ngModel)]="getSelectedStep()!.config.conditionValue" placeholder="e.g. Active" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white">
+                <label class="block text-[10px] font-bold text-[#44403c] uppercase mb-1">Value to Match</label>
+                <input type="text" [(ngModel)]="getSelectedStep()!.config.conditionValue" placeholder="e.g. Active" class="w-full bg-slate-50 bg-white border border-slate-200 border-[#e7e5e4] rounded-xl px-3 py-2 text-slate-800 text-[#1c1917]">
               </div>
             </div>
 
@@ -212,12 +212,12 @@ interface WorkflowStep {
             <div *ngIf="getSelectedStep()?.type === 'Delay'" class="space-y-4">
               <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Duration</label>
-                  <input type="number" [(ngModel)]="getSelectedStep()!.config.delayDuration" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white">
+                  <label class="block text-[10px] font-bold text-[#44403c] uppercase mb-1">Duration</label>
+                  <input type="number" [(ngModel)]="getSelectedStep()!.config.delayDuration" class="w-full bg-slate-50 bg-white border border-slate-200 border-[#e7e5e4] rounded-xl px-3 py-2 text-slate-800 text-[#1c1917]">
                 </div>
                 <div>
-                  <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Unit</label>
-                  <select [(ngModel)]="getSelectedStep()!.config.delayUnit" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white">
+                  <label class="block text-[10px] font-bold text-[#44403c] uppercase mb-1">Unit</label>
+                  <select [(ngModel)]="getSelectedStep()!.config.delayUnit" class="w-full bg-slate-50 bg-white border border-slate-200 border-[#e7e5e4] rounded-xl px-3 py-2 text-slate-800 text-[#1c1917]">
                     <option value="seconds">seconds</option>
                     <option value="minutes">minutes</option>
                     <option value="hours">hours</option>
@@ -230,8 +230,8 @@ interface WorkflowStep {
             <!-- Type: Action -->
             <div *ngIf="getSelectedStep()?.type === 'Action'" class="space-y-4">
               <div>
-                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Action Type</label>
-                <select [(ngModel)]="getSelectedStep()!.config.actionType" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white">
+                <label class="block text-[10px] font-bold text-[#44403c] uppercase mb-1">Action Type</label>
+                <select [(ngModel)]="getSelectedStep()!.config.actionType" class="w-full bg-slate-50 bg-white border border-slate-200 border-[#e7e5e4] rounded-xl px-3 py-2 text-slate-800 text-[#1c1917]">
                   <option value="Send Email">Send Email</option>
                   <option value="Send SMS">Send SMS</option>
                   <option value="Send WhatsApp Message">Send WhatsApp Message</option>
@@ -244,37 +244,37 @@ interface WorkflowStep {
               <!-- Action-specific fields -->
               <div *ngIf="getSelectedStep()!.config.actionType === 'Send Email'" class="space-y-3">
                 <div>
-                  <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Subject</label>
-                  <input type="text" [(ngModel)]="getSelectedStep()!.config.emailSubject" placeholder="Welcome aboard!" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white">
+                  <label class="block text-[10px] font-bold text-[#44403c] uppercase mb-1">Subject</label>
+                  <input type="text" [(ngModel)]="getSelectedStep()!.config.emailSubject" placeholder="Welcome aboard!" class="w-full bg-slate-50 bg-white border border-slate-200 border-[#e7e5e4] rounded-xl px-3 py-2 text-slate-800 text-[#1c1917]">
                 </div>
                 <div>
-                  <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Body Template</label>
-                  <textarea [(ngModel)]="getSelectedStep()!.config.emailBody" rows="4" placeholder="Email body details..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white"></textarea>
+                  <label class="block text-[10px] font-bold text-[#44403c] uppercase mb-1">Body Template</label>
+                  <textarea [(ngModel)]="getSelectedStep()!.config.emailBody" rows="4" placeholder="Email body details..." class="w-full bg-slate-50 bg-white border border-slate-200 border-[#e7e5e4] rounded-xl px-3 py-2 text-slate-800 text-[#1c1917]"></textarea>
                 </div>
               </div>
 
               <div *ngIf="getSelectedStep()!.config.actionType === 'Send SMS'" class="space-y-3">
                 <div>
-                  <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">SMS Text</label>
-                  <textarea [(ngModel)]="getSelectedStep()!.config.smsText" rows="3" placeholder="SMS copy text..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white"></textarea>
+                  <label class="block text-[10px] font-bold text-[#44403c] uppercase mb-1">SMS Text</label>
+                  <textarea [(ngModel)]="getSelectedStep()!.config.smsText" rows="3" placeholder="SMS copy text..." class="w-full bg-slate-50 bg-white border border-slate-200 border-[#e7e5e4] rounded-xl px-3 py-2 text-slate-800 text-[#1c1917]"></textarea>
                 </div>
               </div>
 
               <div *ngIf="getSelectedStep()!.config.actionType === 'Send WhatsApp Message'" class="space-y-3">
                 <div>
-                  <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">WhatsApp Text</label>
-                  <textarea [(ngModel)]="getSelectedStep()!.config.whatsappText" rows="3" placeholder="WhatsApp copy..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white"></textarea>
+                  <label class="block text-[10px] font-bold text-[#44403c] uppercase mb-1">WhatsApp Text</label>
+                  <textarea [(ngModel)]="getSelectedStep()!.config.whatsappText" rows="3" placeholder="WhatsApp copy..." class="w-full bg-slate-50 bg-white border border-slate-200 border-[#e7e5e4] rounded-xl px-3 py-2 text-slate-800 text-[#1c1917]"></textarea>
                 </div>
               </div>
 
               <div *ngIf="getSelectedStep()!.config.actionType === 'Create Task'" class="space-y-3">
                 <div>
-                  <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Task Title</label>
-                  <input type="text" [(ngModel)]="getSelectedStep()!.config.taskTitle" placeholder="Follow-up call" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white">
+                  <label class="block text-[10px] font-bold text-[#44403c] uppercase mb-1">Task Title</label>
+                  <input type="text" [(ngModel)]="getSelectedStep()!.config.taskTitle" placeholder="Follow-up call" class="w-full bg-slate-50 bg-white border border-slate-200 border-[#e7e5e4] rounded-xl px-3 py-2 text-slate-800 text-[#1c1917]">
                 </div>
                 <div>
-                  <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Priority</label>
-                  <select [(ngModel)]="getSelectedStep()!.config.taskPriority" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white">
+                  <label class="block text-[10px] font-bold text-[#44403c] uppercase mb-1">Priority</label>
+                  <select [(ngModel)]="getSelectedStep()!.config.taskPriority" class="w-full bg-slate-50 bg-white border border-slate-200 border-[#e7e5e4] rounded-xl px-3 py-2 text-slate-800 text-[#1c1917]">
                     <option value="Low">Low</option>
                     <option value="Medium">Medium</option>
                     <option value="High">High</option>
@@ -285,14 +285,14 @@ interface WorkflowStep {
 
               <div *ngIf="getSelectedStep()!.config.actionType === 'Trigger Webhook'" class="space-y-3">
                 <div>
-                  <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Webhook URL</label>
-                  <input type="text" [(ngModel)]="getSelectedStep()!.config.webhookUrl" placeholder="https://api.mycrm.com/callback" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white">
+                  <label class="block text-[10px] font-bold text-[#44403c] uppercase mb-1">Webhook URL</label>
+                  <input type="text" [(ngModel)]="getSelectedStep()!.config.webhookUrl" placeholder="https://api.mycrm.com/callback" class="w-full bg-slate-50 bg-white border border-slate-200 border-[#e7e5e4] rounded-xl px-3 py-2 text-slate-800 text-[#1c1917]">
                 </div>
               </div>
 
             </div>
 
-            <button (click)="selectedStepIdx.set(null)" class="w-full bg-slate-900 border border-slate-700/80 hover:bg-slate-900 text-slate-300 py-2.5 rounded-xl font-bold transition-all text-[11px] mt-4">
+            <button (click)="selectedStepIdx.set(null)" class="w-full bg-slate-900 border border-slate-700/80 hover:bg-white hover:border-amber-600/50 hover:shadow-xl text-[#1c1917] py-2.5 rounded-xl font-bold transition-all text-[11px] mt-4">
               Close Settings
             </button>
 
@@ -302,13 +302,13 @@ interface WorkflowStep {
       </div>
 
       <!-- View: Execution Logs -->
-      <div *ngIf="activeView() === 'logs'" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 rounded-2xl shadow-sm p-6 overflow-hidden animate-fadeIn">
-        <h3 class="text-sm font-extrabold text-slate-700 dark:text-white uppercase tracking-wider mb-4">Workflow Automation History</h3>
+      <div *ngIf="activeView() === 'logs'" class="bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 rounded-2xl shadow-sm p-6 overflow-hidden animate-fadeIn">
+        <h3 class="text-sm font-extrabold text-slate-700 text-[#1c1917] uppercase tracking-wider mb-4">Workflow Automation History</h3>
         
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-700 text-xs">
             <thead>
-              <tr class="text-left text-slate-400 font-bold uppercase tracking-wider">
+              <tr class="text-left text-[#44403c] font-bold uppercase tracking-wider">
                 <th class="pb-3">Workflow Name</th>
                 <th class="pb-3">Trigger Entity</th>
                 <th class="pb-3">Status</th>
@@ -317,8 +317,8 @@ interface WorkflowStep {
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
-              <tr *ngFor="let log of workflowLogs()" class="hover:bg-slate-50 dark:hover:bg-slate-700/30">
-                <td class="py-3 font-semibold text-slate-800 dark:text-white">{{ log.workflow?.name || 'Deleted Workflow' }}</td>
+              <tr *ngFor="let log of workflowLogs()" class="hover:bg-slate-50 dark:hover:bg-white hover:border-amber-600/50 hover:shadow-xl text-white font-bold/30">
+                <td class="py-3 font-semibold text-slate-800 text-[#1c1917]">{{ log.workflow?.name || 'Deleted Workflow' }}</td>
                 <td class="py-3 font-medium text-slate-600">{{ log.entityType }} [{{ log.entityId }}]</td>
                 <td class="py-3">
                   <span [ngClass]="{
@@ -329,13 +329,13 @@ interface WorkflowStep {
                     {{ log.status }}
                   </span>
                 </td>
-                <td class="py-3 font-medium text-slate-500">
+                <td class="py-3 font-medium text-[#44403c] font-medium">
                   {{ log.executedSteps?.length || 0 }} steps completed
                 </td>
-                <td class="py-3 font-medium text-slate-400">{{ log.createdAt | date:'medium' }}</td>
+                <td class="py-3 font-medium text-[#44403c]">{{ log.createdAt | date:'medium' }}</td>
               </tr>
               <tr *ngIf="workflowLogs().length === 0">
-                <td colspan="5" class="text-center py-12 text-slate-400 font-semibold">No automation history logs found.</td>
+                <td colspan="5" class="text-center py-12 text-[#44403c] font-semibold">No automation history logs found.</td>
               </tr>
             </tbody>
           </table>

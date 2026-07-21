@@ -26,10 +26,10 @@ interface Appointment {
     <div class="space-y-6">
       
       <!-- Page Header -->
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-700/60 shadow-sm">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white bg-white p-6 rounded-2xl border border-slate-100 border-[#e7e5e4]/60 shadow-sm">
         <div>
-          <h2 class="text-2xl font-bold text-slate-800 dark:text-white tracking-tight">Calendar Scheduler</h2>
-          <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Manage, view, and schedule business client appointments.</p>
+          <h2 class="text-2xl font-bold text-slate-800 text-[#1c1917] tracking-tight">Calendar Scheduler</h2>
+          <p class="text-sm text-[#574c43] mt-1">Manage, view, and schedule business client appointments.</p>
         </div>
         <div class="flex flex-wrap gap-3 w-full sm:w-auto">
           
@@ -38,11 +38,11 @@ interface Appointment {
             <select 
               [(ngModel)]="filterHostId" 
               (change)="loadAppointments()"
-              class="w-full pl-3 pr-8 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-slate-700 dark:text-slate-200 appearance-none">
+              class="w-full pl-3 pr-8 py-2.5 border border-slate-200 border-[#e7e5e4] rounded-lg bg-slate-50 bg-[#fafaf9] text-xs focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-[#44403c] appearance-none">
               <option value="">All Hosts / Staff</option>
               <option *ngFor="let emp of employees()" [value]="emp._id">{{ emp.name }} ({{ emp.department }})</option>
             </select>
-            <span class="material-icons absolute right-2.5 top-3 text-slate-400 pointer-events-none text-sm">unfold_more</span>
+            <span class="material-icons absolute right-2.5 top-3 text-[#44403c] pointer-events-none text-sm">unfold_more</span>
           </div>
 
           <button 
@@ -58,30 +58,30 @@ interface Appointment {
       <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
         
         <!-- Month Grid (Cols: 3) -->
-        <div class="lg:col-span-3 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700/60 shadow-sm overflow-hidden flex flex-col">
+        <div class="lg:col-span-3 bg-white bg-white rounded-2xl border border-slate-100 border-[#e7e5e4]/60 shadow-sm overflow-hidden flex flex-col">
           
           <!-- Month Selector Header -->
-          <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-700/60 bg-slate-50/55 dark:bg-slate-900/30">
-            <h3 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+          <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 border-[#e7e5e4]/60 bg-slate-50/55 bg-[#fafaf9]/30">
+            <h3 class="text-base font-bold text-slate-800 text-[#1c1917] flex items-center gap-2">
               <span class="material-icons text-sky-500">calendar_month</span>
               <span>{{ getMonthName() }} {{ currentYear() }}</span>
             </h3>
             <div class="flex items-center gap-1">
-              <button (click)="prevMonth()" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-400">
+              <button (click)="prevMonth()" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-[#44403c]">
                 <span class="material-icons text-lg">chevron_left</span>
               </button>
-              <button (click)="goToToday()" class="px-2.5 py-1 text-xs hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md text-slate-600 dark:text-slate-400 font-medium">
+              <button (click)="goToToday()" class="px-2.5 py-1 text-xs hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md text-slate-600 dark:text-[#44403c] font-medium">
                 Today
               </button>
-              <button (click)="nextMonth()" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-400">
+              <button (click)="nextMonth()" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-[#44403c]">
                 <span class="material-icons text-lg">chevron_right</span>
               </button>
             </div>
           </div>
 
           <!-- Week Days Label Header -->
-          <div class="grid grid-cols-7 text-center py-2.5 bg-slate-100/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700/60">
-            <div *ngFor="let day of weekDays" class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+          <div class="grid grid-cols-7 text-center py-2.5 bg-slate-100/50 bg-[#fafaf9]/50 border-b border-slate-100 border-[#e7e5e4]/60">
+            <div *ngFor="let day of weekDays" class="text-xs font-bold text-[#574c43] uppercase tracking-wider">
               {{ day }}
             </div>
           </div>
@@ -91,7 +91,7 @@ interface Appointment {
             <div 
               *ngFor="let day of calendarDays()" 
               [class.bg-slate-50/30]="!day.dayNum"
-              [class.dark:bg-slate-900/10]="!day.dayNum"
+              [class.bg-[#fafaf9]/10]="!day.dayNum"
               [class.hover:bg-slate-50/70]="day.dayNum"
               [class.dark:hover:bg-slate-700/20]="day.dayNum"
               [class.bg-sky-500/5]="day.dayNum && isToday(day.date)"
@@ -111,7 +111,7 @@ interface Appointment {
                   [class.items-center]="isToday(day.date)"
                   [class.justify-center]="isToday(day.date)"
                   [class.font-bold]="isToday(day.date)"
-                  class="text-xs font-medium text-slate-400 dark:text-slate-500">
+                  class="text-xs font-medium text-[#44403c] dark:text-[#292524]">
                   {{ day.dayNum }}
                 </span>
                 
@@ -157,14 +157,14 @@ interface Appointment {
         <div class="space-y-6">
           
           <!-- Appointment Inspector Widget -->
-          <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700/60 shadow-sm p-6">
-            <h3 class="text-base font-bold text-slate-800 dark:text-white border-b border-slate-100 dark:border-slate-700 pb-3 flex items-center gap-2">
-              <span class="material-icons text-slate-400">info</span>
+          <div class="bg-white bg-white rounded-2xl border border-slate-100 border-[#e7e5e4]/60 shadow-sm p-6">
+            <h3 class="text-base font-bold text-slate-800 text-[#1c1917] border-b border-slate-100 border-[#e7e5e4] pb-3 flex items-center gap-2">
+              <span class="material-icons text-[#44403c]">info</span>
               <span>Details Inspector</span>
             </h3>
 
             <!-- Placeholder if no appointment is selected -->
-            <div *ngIf="!selectedApp()" class="py-12 text-center text-slate-400 dark:text-slate-500">
+            <div *ngIf="!selectedApp()" class="py-12 text-center text-[#44403c] dark:text-[#292524]">
               <span class="material-icons text-4xl mb-2">touch_app</span>
               <p class="text-xs font-medium">Click any appointment on the grid to inspect details and update status.</p>
             </div>
@@ -180,52 +180,52 @@ interface Appointment {
                   }">
                   {{ app.status }}
                 </span>
-                <h4 class="text-lg font-bold text-slate-800 dark:text-white mt-2 leading-snug">{{ app.subject }}</h4>
+                <h4 class="text-lg font-bold text-slate-800 text-[#1c1917] mt-2 leading-snug">{{ app.subject }}</h4>
               </div>
 
-              <div class="space-y-2.5 text-xs text-slate-600 dark:text-slate-300">
+              <div class="space-y-2.5 text-xs text-[#44403c]">
                 <div class="flex items-center gap-2">
-                  <span class="material-icons text-slate-400 text-sm">schedule</span>
+                  <span class="material-icons text-[#44403c] text-sm">schedule</span>
                   <span><strong>Time:</strong> {{ app.startTime }} - {{ app.endTime }}</span>
                 </div>
                 <div class="flex items-center gap-2">
-                  <span class="material-icons text-slate-400 text-sm">event</span>
+                  <span class="material-icons text-[#44403c] text-sm">event</span>
                   <span><strong>Date:</strong> {{ formatDate(app.appointmentDate) }}</span>
                 </div>
                 <div class="flex items-center gap-2">
-                  <span class="material-icons text-slate-400 text-sm">person</span>
+                  <span class="material-icons text-[#44403c] text-sm">person</span>
                   <span><strong>Host:</strong> {{ app.host.name }} ({{ app.host.department }})</span>
                 </div>
 
                 <!-- Customer / Lead Link -->
-                <div *ngIf="app.customer" class="flex items-center gap-2 p-2 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-700/40">
+                <div *ngIf="app.customer" class="flex items-center gap-2 p-2 bg-slate-50 bg-[#fafaf9] rounded-lg border border-slate-100 border-[#e7e5e4]/40">
                   <span class="material-icons text-sky-500 text-lg">corporate_fare</span>
                   <div class="min-w-0 flex-1">
-                    <p class="font-bold text-slate-800 dark:text-white truncate">Customer: {{ app.customer.companyName }}</p>
+                    <p class="font-bold text-slate-800 text-[#1c1917] truncate">Customer: {{ app.customer.companyName }}</p>
                     <a [routerLink]="['/customers', app.customer._id]" class="text-[10px] text-sky-500 hover:underline">View 360 profile &rarr;</a>
                   </div>
                 </div>
 
-                <div *ngIf="app.lead" class="flex items-center gap-2 p-2 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-700/40">
+                <div *ngIf="app.lead" class="flex items-center gap-2 p-2 bg-slate-50 bg-[#fafaf9] rounded-lg border border-slate-100 border-[#e7e5e4]/40">
                   <span class="material-icons text-emerald-500 text-lg">leaderboard</span>
                   <div class="min-w-0 flex-1">
-                    <p class="font-bold text-slate-800 dark:text-white truncate">Lead: {{ app.lead.company }}</p>
+                    <p class="font-bold text-slate-800 text-[#1c1917] truncate">Lead: {{ app.lead.company }}</p>
                     <a routerLink="/leads" class="text-[10px] text-emerald-500 hover:underline">View Kanban pipeline &rarr;</a>
                   </div>
                 </div>
               </div>
 
               <!-- Description -->
-              <div class="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-100 dark:border-slate-700/30 text-xs">
-                <p class="font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[9px] mb-1">Notes / Agenda</p>
-                <p class="text-slate-600 dark:text-slate-300 leading-relaxed italic">
+              <div class="p-3 bg-slate-50 bg-[#fafaf9]/50 rounded-lg border border-slate-100 border-[#e7e5e4]/30 text-xs">
+                <p class="font-semibold text-[#574c43] uppercase tracking-wider text-[9px] mb-1">Notes / Agenda</p>
+                <p class="text-[#44403c] leading-relaxed italic">
                   {{ app.description || 'No description provided.' }}
                 </p>
               </div>
 
               <!-- Edit / Update Status Actions -->
               <div class="space-y-2 pt-2">
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Update Status</p>
+                <p class="text-[10px] font-bold text-[#44403c] uppercase tracking-wider">Update Status</p>
                 <div class="flex gap-2">
                   <button 
                     *ngIf="app.status === 'Scheduled'"
@@ -242,7 +242,7 @@ interface Appointment {
                 </div>
                 <button 
                   (click)="deleteAppointmentRecord(app._id)"
-                  class="w-full py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 rounded text-xs font-semibold transition-colors flex items-center justify-center gap-1">
+                  class="w-full py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 border-[#e7e5e4] text-[#574c43] rounded text-xs font-semibold transition-colors flex items-center justify-center gap-1">
                   <span class="material-icons text-sm">delete</span>
                   <span>Delete Appointment</span>
                 </button>
@@ -251,26 +251,26 @@ interface Appointment {
           </div>
 
           <!-- Upcoming Meetings Panel -->
-          <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700/60 shadow-sm p-6">
-            <h3 class="text-base font-bold text-slate-800 dark:text-white border-b border-slate-100 dark:border-slate-700 pb-3 flex items-center gap-2">
+          <div class="bg-white bg-white rounded-2xl border border-slate-100 border-[#e7e5e4]/60 shadow-sm p-6">
+            <h3 class="text-base font-bold text-slate-800 text-[#1c1917] border-b border-slate-100 border-[#e7e5e4] pb-3 flex items-center gap-2">
               <span class="material-icons text-sky-500">pending_actions</span>
               <span>Upcoming Queue</span>
             </h3>
             <div class="space-y-3 pt-3">
-              <div *ngIf="upcomingAppointments().length === 0" class="text-center text-xs py-6 text-slate-400">
+              <div *ngIf="upcomingAppointments().length === 0" class="text-center text-xs py-6 text-[#44403c]">
                 No upcoming meetings.
               </div>
               <div 
                 *ngFor="let app of upcomingAppointments()"
                 (click)="viewAppointmentDetails(app)"
-                class="p-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 hover:border-sky-400 dark:hover:border-sky-500 transition-colors cursor-pointer flex justify-between items-center gap-2">
+                class="p-2 rounded-lg bg-slate-50 bg-[#fafaf9] border border-slate-100 border-[#e7e5e4] hover:border-sky-400 dark:hover:border-sky-500 transition-colors cursor-pointer flex justify-between items-center gap-2">
                 <div class="min-w-0 flex-1">
-                  <h4 class="text-xs font-bold text-slate-700 dark:text-white truncate">{{ app.subject }}</h4>
-                  <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  <h4 class="text-xs font-bold text-slate-700 text-[#1c1917] truncate">{{ app.subject }}</h4>
+                  <p class="text-[10px] text-[#574c43] mt-0.5">
                     {{ formatDateShort(app.appointmentDate) }} at {{ app.startTime }}
                   </p>
                 </div>
-                <span class="material-icons text-slate-300 text-sm shrink-0">navigate_next</span>
+                <span class="material-icons text-[#1c1917] text-sm shrink-0">navigate_next</span>
               </div>
             </div>
           </div>
@@ -279,13 +279,13 @@ interface Appointment {
       </div>
 
       <!-- Booking Dialog/Modal Modal -->
-      <div *ngIf="isModalOpen()" class="fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700/60 shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in duration-200">
+      <div *ngIf="isModalOpen()" class="fixed inset-0 bg-slate-900/60 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white bg-white rounded-2xl border border-slate-100 border-[#e7e5e4]/60 shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in duration-200">
           
           <!-- Header -->
-          <div class="px-6 py-4 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
-            <h3 class="font-bold text-slate-800 dark:text-white text-base">Schedule New Appointment</h3>
-            <button (click)="closeBookingModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+          <div class="px-6 py-4 bg-slate-50 bg-[#fafaf9]/50 border-b border-slate-100 border-[#e7e5e4] flex justify-between items-center">
+            <h3 class="font-bold text-slate-800 text-[#1c1917] text-base">Schedule New Appointment</h3>
+            <button (click)="closeBookingModal()" class="text-[#44403c] hover:text-slate-600 dark:hover:text-[#1c1917]">
               <span class="material-icons">close</span>
             </button>
           </div>
@@ -295,78 +295,78 @@ interface Appointment {
             
             <!-- Subject -->
             <div>
-              <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Subject *</label>
+              <label class="block text-xs font-bold text-[#574c43] uppercase tracking-wider mb-1.5">Subject *</label>
               <input 
                 type="text" 
                 required
                 placeholder="e.g. Q3 Contract Discussion"
                 [(ngModel)]="newApp.subject" 
                 name="subject"
-                class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-slate-700 dark:text-slate-200">
+                class="w-full px-3 py-2 border border-slate-200 border-[#e7e5e4] rounded-lg bg-slate-50 bg-[#fafaf9] text-xs focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-[#44403c]">
             </div>
 
             <!-- Description -->
             <div>
-              <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Description / Agenda</label>
+              <label class="block text-xs font-bold text-[#574c43] uppercase tracking-wider mb-1.5">Description / Agenda</label>
               <textarea 
                 rows="2"
                 placeholder="Meeting agenda or briefing notes..."
                 [(ngModel)]="newApp.description" 
                 name="description"
-                class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-slate-700 dark:text-slate-200"></textarea>
+                class="w-full px-3 py-2 border border-slate-200 border-[#e7e5e4] rounded-lg bg-slate-50 bg-[#fafaf9] text-xs focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-[#44403c]"></textarea>
             </div>
 
             <!-- Date, Start, End -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Date *</label>
+                <label class="block text-xs font-bold text-[#574c43] uppercase tracking-wider mb-1.5">Date *</label>
                 <input 
                   type="date" 
                   required
                   [(ngModel)]="newApp.appointmentDate" 
                   name="appointmentDate"
-                  class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-slate-700 dark:text-slate-200">
+                  class="w-full px-3 py-2 border border-slate-200 border-[#e7e5e4] rounded-lg bg-slate-50 bg-[#fafaf9] text-xs focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-[#44403c]">
               </div>
               <div>
-                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Start Time *</label>
+                <label class="block text-xs font-bold text-[#574c43] uppercase tracking-wider mb-1.5">Start Time *</label>
                 <input 
                   type="time" 
                   required
                   [(ngModel)]="newApp.startTime" 
                   name="startTime"
-                  class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-slate-700 dark:text-slate-200">
+                  class="w-full px-3 py-2 border border-slate-200 border-[#e7e5e4] rounded-lg bg-slate-50 bg-[#fafaf9] text-xs focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-[#44403c]">
               </div>
               <div>
-                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">End Time *</label>
+                <label class="block text-xs font-bold text-[#574c43] uppercase tracking-wider mb-1.5">End Time *</label>
                 <input 
                   type="time" 
                   required
                   [(ngModel)]="newApp.endTime" 
                   name="endTime"
-                  class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-slate-700 dark:text-slate-200">
+                  class="w-full px-3 py-2 border border-slate-200 border-[#e7e5e4] rounded-lg bg-slate-50 bg-[#fafaf9] text-xs focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-[#44403c]">
               </div>
             </div>
 
             <!-- Client Linking -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Link Customer (Optional)</label>
+                <label class="block text-xs font-bold text-[#574c43] uppercase tracking-wider mb-1.5">Link Customer (Optional)</label>
                 <select 
                   [(ngModel)]="newApp.customerId" 
                   name="customerId"
                   (change)="newApp.leadId = ''"
-                  class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-slate-700 dark:text-slate-200">
+                  class="w-full px-3 py-2 border border-slate-200 border-[#e7e5e4] rounded-lg bg-slate-50 bg-[#fafaf9] text-xs focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-[#44403c]">
                   <option value="">-- No Customer Link --</option>
                   <option *ngFor="let cust of customers()" [value]="cust._id">{{ cust.companyName }}</option>
                 </select>
               </div>
               <div>
-                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Link Lead (Optional)</label>
+                <label class="block text-xs font-bold text-[#574c43] uppercase tracking-wider mb-1.5">Link Lead (Optional)</label>
                 <select 
                   [(ngModel)]="newApp.leadId" 
                   name="leadId"
                   (change)="newApp.customerId = ''"
-                  class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-slate-700 dark:text-slate-200">
+                  class="w-full px-3 py-2 border border-slate-200 border-[#e7e5e4] rounded-lg bg-slate-50 bg-[#fafaf9] text-xs focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-[#44403c]">
                   <option value="">-- No Lead Link --</option>
                   <option *ngFor="let ld of leads()" [value]="ld._id">{{ ld.company }} ({{ ld.contactName }})</option>
                 </select>
@@ -375,23 +375,23 @@ interface Appointment {
 
             <!-- Host Assignment (Super Admins / Managers can assign) -->
             <div *ngIf="isAdminOrManager()">
-              <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Host Representative *</label>
+              <label class="block text-xs font-bold text-[#574c43] uppercase tracking-wider mb-1.5">Host Representative *</label>
               <select 
                 [(ngModel)]="newApp.hostId" 
                 name="hostId"
                 required
-                class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-slate-700 dark:text-slate-200">
+                class="w-full px-3 py-2 border border-slate-200 border-[#e7e5e4] rounded-lg bg-slate-50 bg-[#fafaf9] text-xs focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-[#44403c]">
                 <option value="">-- Select Host --</option>
                 <option *ngFor="let emp of employees()" [value]="emp._id">{{ emp.name }} ({{ emp.department }})</option>
               </select>
             </div>
 
             <!-- Actions -->
-            <div class="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-700">
+            <div class="flex justify-end gap-3 pt-4 border-t border-slate-100 border-[#e7e5e4]">
               <button 
                 type="button" 
                 (click)="closeBookingModal()"
-                class="px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-600 dark:text-slate-400 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-700">
+                class="px-4 py-2 border border-slate-200 border-[#e7e5e4] rounded-lg text-slate-600 dark:text-[#44403c] text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-700">
                 Cancel
               </button>
               <button 
