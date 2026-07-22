@@ -198,4 +198,87 @@ router.get('/download-installer', protect, async (req, res) => {
   }
 });
 
+/**
+ * @desc    Razorpay Webhook Handler
+ * @route   POST /api/payments/webhook
+ * @access  Public (Signature Verified)
+ */
+router.post('/webhook', async (req, res) => {
+  const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || 'your_webhook_secret_here';
+
+  try {
+    const signature = req.headers['x-razorpay-signature'];
+    if (!signature) {
+      return res.status(400).json({ success: false, error: 'Signature header missing' });
+    }
+
+    const shasum = crypto.createHmac('sha256', webhookSecret);
+    shasum.update(JSON.stringify(req.body));
+    const digest = shasum.digest('hex');
+
+    if (digest !== signature) {
+      return res.status(400).json({ success: false, error: 'Webhook signature verification failed' });
+    }
+
+    const event = req.body.event;
+    if (event === 'payment.captured' || event === 'order.paid') {
+      const paymentEntity = req.body.payload.payment.entity;
+      const email = paymentEntity.email;
+      const amount = paymentEntity.amount / 100;
+      const paymentId = paymentEntity.id;
+      const orderId = paymentEntity.order_id;
+      const planName = paymentEntity.notes?.planName || 'GrownX Enterprise Plan';
+
+      const user = await User.findOne({ email });
+      if (user) {
+        const exists = user.purchasedLicenses.some(lic => lic.paymentId === paymentId);
+        if (!exists) {
+          const licenseKey = `GXCRM-${crypto.randomBytes(4).toString('hex').toUpperCase()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+          user.purchasedLicenses.push({
+            licenseKey,
+            planName,
+            amountPaid: amount,
+            paymentId,
+            orderId,
+          });
+          await user.save();
+
+          await Activity.create({
+            user: user._id,
+            action: 'Software License Purchased (Webhook)',
+            details: `Webhook payment captured: ₹${amount} for ${planName}. License: ${licenseKey}`,
+            module: 'Billing',
+            ipAddress: req.ip,
+          });
+
+          sendCustomerInvoiceEmail({
+            email: user.email,
+            name: user.name,
+            planName,
+            amount,
+            currency: 'INR',
+            paymentId,
+            licenseKey,
+          }).catch((e) => console.error('Customer Invoice Email Webhook Error:', e.message));
+
+          sendOwnerSalesAlertEmail({
+            buyerName: user.name,
+            buyerEmail: user.email,
+            planName,
+            amount,
+            currency: 'INR',
+            paymentId,
+            licenseKey,
+          }).catch((e) => console.error('Owner Alert Email Webhook Error:', e.message));
+        }
+      }
+    }
+
+    res.json({ status: 'ok' });
+  } catch (error) {
+    console.error('Webhook Error:', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 module.exports = router;
