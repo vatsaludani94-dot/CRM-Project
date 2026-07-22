@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { AuthService, UserProfile } from '../core/services/auth.service';
 import { ApiService } from '../core/services/api.service';
 import { SocketService } from '../core/services/socket.service';
@@ -181,6 +182,18 @@ export interface AlertNotification {
             </a>
           </div>
 
+          <!-- Floating Update Banner -->
+          <div *ngIf="isUpdateAvailable()" class="mx-3 my-2 p-3 bg-[#292524] border border-amber-600/30 text-white rounded-xl shadow-md space-y-2 animate-slideIn">
+            <div class="flex items-center gap-1.5">
+              <span class="material-icons text-amber-500 text-xs">update</span>
+              <span class="text-[9px] font-black uppercase tracking-wider text-amber-400">Desktop Update Available</span>
+            </div>
+            <p class="text-[9px] text-stone-300 leading-tight">Version {{latestVersion()}} includes security hardening (Passkeys & 2FA).</p>
+            <a [href]="updateUrl()" target="_blank" class="block w-full py-1.5 text-center bg-amber-600 text-white font-bold text-[9px] rounded-lg hover:bg-amber-700 transition-colors">
+              Download Installer
+            </a>
+          </div>
+
         </nav>
 
         <!-- Sidebar Footer -->
@@ -309,6 +322,13 @@ export class LayoutComponent implements OnInit {
   private apiService = inject(ApiService);
   private socketService = inject(SocketService);
   private router = inject(Router);
+  private http = inject(HttpClient);
+
+  isUpdateAvailable = signal(false);
+  latestVersion = signal('1.0.0');
+  updateNotes = signal('');
+  updateUrl = signal('');
+  appVersion = '1.0.0';
 
   user = signal<UserProfile | null>(null);
   isMobileOpen = signal(false);
@@ -335,6 +355,35 @@ export class LayoutComponent implements OnInit {
     this.socketService.onNotificationReceived.subscribe((notif: AlertNotification) => {
       this.notifications.update(n => [notif, ...n]);
       this.unreadCount.update(c => c + 1);
+    });
+
+    this.checkDesktopUpdates();
+  }
+
+  checkDesktopUpdates() {
+    let currentVersion = '1.0.0';
+
+    if (typeof window !== 'undefined' && (window as any).electronAPI?.getAppVersion) {
+      currentVersion = (window as any).electronAPI.getAppVersion();
+    } else {
+      return;
+    }
+
+    this.appVersion = currentVersion;
+    const apiUrl = this.authService.apiUrl.replace('/auth', '/updates');
+
+    this.http.get<any>(`${apiUrl}/check?version=${currentVersion}`).subscribe({
+      next: (res) => {
+        if (res && res.updateAvailable) {
+          this.isUpdateAvailable.set(true);
+          this.latestVersion.set(res.latestVersion);
+          this.updateNotes.set(res.releaseNotes);
+          this.updateUrl.set(res.downloadUrl);
+        }
+      },
+      error: (err: any) => {
+        console.warn('Desktop update check failed:', err);
+      }
     });
   }
 

@@ -27,6 +27,7 @@ const collaborationRoutes = require('./routes/collaborationRoutes');
 const documentRoutes = require('./routes/documentRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
+const updateRoutes = require('./routes/updateRoutes');
 
 // Load Rate Limiters
 const { apiLimiter } = require('./middleware/rateLimitMiddleware');
@@ -104,6 +105,7 @@ app.use('/api/collaboration', collaborationRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/updates', updateRoutes);
 
 // Simple test root route
 app.get('/', (req, res) => {

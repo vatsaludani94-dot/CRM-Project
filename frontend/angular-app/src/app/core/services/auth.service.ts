@@ -18,7 +18,7 @@ export interface UserProfile {
   providedIn: 'root'
 })
 export class AuthService {
-  private get apiUrl(): string {
+  public get apiUrl(): string {
     if (typeof window !== 'undefined') {
       const host = window.location.hostname;
       const protocol = window.location.protocol;
