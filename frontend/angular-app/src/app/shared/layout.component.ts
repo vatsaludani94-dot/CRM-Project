@@ -184,8 +184,12 @@ export interface AlertNotification {
         </nav>
 
         <!-- Sidebar Footer -->
-        <div class="p-4 border-t border-[#292524]">
-          <button (click)="logout()" class="w-full py-2.5 px-4 rounded-xl bg-[#292524] hover:bg-rose-500/10 hover:text-rose-400 border border-[#44403c] hover:border-rose-500/20 text-[#292524] text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer">
+        <div class="p-4 border-t border-[#292524] space-y-2">
+          <a routerLink="/settings" routerLinkActive="active-link" class="nav-item">
+            <span class="material-icons">security</span>
+            <span>Security Settings</span>
+          </a>
+          <button (click)="logout()" class="w-full py-2.5 px-4 rounded-xl bg-[#292524] hover:bg-rose-500/10 hover:text-rose-400 border border-[#44403c] hover:border-rose-500/20 text-[#a8a29e] text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer">
             <span class="material-icons text-sm">logout</span>
             <span>Sign Out</span>
           </button>

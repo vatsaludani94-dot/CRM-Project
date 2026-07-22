@@ -21,7 +21,6 @@ const UserSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, 'Please provide a password'],
       minlength: [6, 'Password must be at least 6 characters'],
       select: false,
     },
@@ -70,6 +69,28 @@ const UserSchema = new mongoose.Schema(
         purchasedAt: { type: Date, default: Date.now }
       }
     ],
+    googleSubjectId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+    twoFactorEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    twoFactorSecret: {
+      type: String,
+    },
+    passkeys: [
+      {
+        credentialID: { type: String, required: true },
+        credentialPublicKey: { type: String, required: true },
+        counter: { type: Number, default: 0 },
+        transports: [String],
+        deviceName: String,
+        createdAt: { type: Date, default: Date.now }
+      }
+    ],
   },
   {
     timestamps: true,
@@ -78,8 +99,8 @@ const UserSchema = new mongoose.Schema(
 
 // Encrypt password using bcrypt
 UserSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) {
-    next();
+  if (!this.isModified('password') || !this.password) {
+    return next();
   }
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
@@ -87,6 +108,7 @@ UserSchema.pre('save', async function (next) {
 
 // Match user entered password to hashed password in database
 UserSchema.methods.matchPassword = async function (enteredPassword) {
+  if (!this.password) return false;
   return await bcrypt.compare(enteredPassword, this.password);
 };
 

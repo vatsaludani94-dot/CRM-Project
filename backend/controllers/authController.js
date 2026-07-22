@@ -1,6 +1,8 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const Activity = require('../models/Activity');
+const { OAuth2Client } = require('google-auth-library');
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Generate JWT Token
 const generateToken = (id) => {
@@ -99,6 +101,15 @@ const loginUser = async (req, res) => {
         module: 'Authentication',
         ipAddress: req.ip,
       });
+
+      if (user.twoFactorEnabled) {
+        const tempToken = jwt.sign({ id: user._id, is2faPending: true }, process.env.JWT_SECRET || 'nexus_secret_key_jwt_authentication_2026', { expiresIn: '5m' });
+        return res.json({
+          success: true,
+          require2FA: true,
+          tempToken
+        });
+      }
 
       res.json({
         success: true,
@@ -223,33 +234,88 @@ const resetPasswordWithOtp = async (req, res) => {
  * @access  Public
  */
 const googleLogin = async (req, res) => {
-  const { name, email, picture, googleToken } = req.body;
+  const { googleToken } = req.body;
 
   try {
-    if (!email) {
-      return res.status(400).json({ success: false, error: 'Google email is required' });
+    if (!googleToken) {
+      return res.status(400).json({ success: false, error: 'Google authentication token is required' });
     }
 
-    let user = await User.findOne({ email });
+    let ticket;
+    try {
+      ticket = await googleClient.verifyIdToken({
+        idToken: googleToken,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+    } catch (err) {
+      // Fallback for local testing if GOOGLE_CLIENT_ID is not configured
+      if (!process.env.GOOGLE_CLIENT_ID) {
+        console.warn('Warning: GOOGLE_CLIENT_ID is not configured. Falling back to signature-less parsing for local development.');
+        const base64Url = googleToken.split('.')[1];
+        if (!base64Url) throw new Error('Invalid JWT format');
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const payload = JSON.parse(Buffer.from(base64, 'base64').toString());
+        ticket = { getPayload: () => payload };
+      } else {
+        return res.status(400).json({ success: false, error: 'Failed to verify Google token signature: ' + err.message });
+      }
+    }
 
-    // Auto-register user if logging in via Google for the first time
+    const payload = ticket.getPayload();
+    const { sub: googleSubjectId, email, name, picture } = payload;
+
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'Google email address could not be resolved from token payload.' });
+    }
+
+    // 1. Check if user already exists by googleSubjectId (Centralized authentication key)
+    let user = await User.findOne({ googleSubjectId });
+
+    // 2. Check if user exists by email and map googleSubjectId to it (link accounts)
+    if (!user) {
+      user = await User.findOne({ email });
+      if (user) {
+        user.googleSubjectId = googleSubjectId;
+        if (!user.profilePicture && picture) {
+          user.profilePicture = picture;
+        }
+        await user.save();
+      }
+    }
+
+    // 3. Register user if this is a first-time sign-up via Google
     if (!user) {
       user = await User.create({
         name: name || email.split('@')[0],
         email,
-        password: `GoogleAuth_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+        googleSubjectId,
         role: 'employee',
         profilePicture: picture || '',
+        department: 'None',
       });
+    }
+
+    // Check account status
+    if (user.status === 'inactive') {
+      return res.status(403).json({ success: false, error: 'Your account is deactivated' });
     }
 
     await Activity.create({
       user: user._id,
       action: 'User Google OAuth Login',
-      details: `User ${user.name} logged in via Google OAuth.`,
+      details: `User ${user.name} logged in via Google Identity Services.`,
       module: 'Authentication',
       ipAddress: req.ip,
     });
+
+    if (user.twoFactorEnabled) {
+      const tempToken = jwt.sign({ id: user._id, is2faPending: true }, process.env.JWT_SECRET || 'nexus_secret_key_jwt_authentication_2026', { expiresIn: '5m' });
+      return res.json({
+        success: true,
+        require2FA: true,
+        tempToken
+      });
+    }
 
     res.json({
       success: true,
@@ -263,9 +329,16 @@ const googleLogin = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Google OAuth Error:', error);
+    console.error('Google OAuth Login Error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
+};
+
+const getGoogleClientId = async (req, res) => {
+  res.json({
+    success: true,
+    clientId: process.env.GOOGLE_CLIENT_ID || ''
+  });
 };
 
 module.exports = {
@@ -276,4 +349,5 @@ module.exports = {
   resetPassword: resetPasswordWithOtp,
   resetPasswordWithOtp,
   googleLogin,
+  getGoogleClientId,
 };

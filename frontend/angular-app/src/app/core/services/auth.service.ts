@@ -73,8 +73,8 @@ export class AuthService {
     );
   }
 
-  googleLogin(googleUser: { name: string; email: string; picture?: string; googleToken?: string }): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/google`, googleUser).pipe(
+  googleLogin(googleToken: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/google`, { googleToken }).pipe(
       map(response => {
         if (response && response.success && response.data) {
           const user = response.data;
@@ -83,34 +83,7 @@ export class AuthService {
           this.userSignal.set(user);
           return user;
         }
-        const fallbackUser: UserProfile = {
-          _id: 'google_' + Date.now(),
-          name: googleUser.name,
-          email: googleUser.email,
-          role: 'employee',
-          department: 'Sales',
-          token: 'google_token_' + Date.now(),
-          profilePicture: googleUser.picture
-        };
-        localStorage.setItem('nexus_user', JSON.stringify(fallbackUser));
-        this.currentUserSubject.next(fallbackUser);
-        this.userSignal.set(fallbackUser);
-        return fallbackUser;
-      }),
-      catchError(() => {
-        const fallbackUser: UserProfile = {
-          _id: 'google_' + Date.now(),
-          name: googleUser.name,
-          email: googleUser.email,
-          role: 'employee',
-          department: 'Sales',
-          token: 'google_token_' + Date.now(),
-          profilePicture: googleUser.picture
-        };
-        localStorage.setItem('nexus_user', JSON.stringify(fallbackUser));
-        this.currentUserSubject.next(fallbackUser);
-        this.userSignal.set(fallbackUser);
-        return of(fallbackUser);
+        throw new Error(response.error || 'Google Identity login verification failed');
       })
     );
   }
@@ -173,5 +146,62 @@ export class AuthService {
 
   isCustomer(): boolean {
     return this.currentUserValue?.role === 'customer';
+  }
+
+  getGoogleClientId(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/google/client-id`);
+  }
+
+  // Passkeys Helpers
+  getPasskeyRegisterOptions(): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/passkey/register-options`, {});
+  }
+
+  verifyPasskeyRegistration(credential: any, deviceName: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/passkey/verify-registration`, { credential, deviceName });
+  }
+
+  getPasskeyLoginOptions(email: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/passkey/login-options`, { email });
+  }
+
+  verifyPasskeyLogin(email: string, credential: any): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/passkey/verify-login`, { email, credential });
+  }
+
+  deletePasskey(id: string): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/passkey/${id}`);
+  }
+
+  // 2FA Helpers
+  setup2FA(): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/2fa/setup`, {});
+  }
+
+  verify2FA(code: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/2fa/verify`, { code });
+  }
+
+  disable2FA(password: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/2fa/disable`, { password });
+  }
+
+  challenge2FA(code: string, tempToken: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/2fa/challenge`, { code, tempToken }).pipe(
+      map(response => {
+        if (response && response.success && response.data) {
+          const user = response.data;
+          localStorage.setItem('nexus_user', JSON.stringify(user));
+          this.currentUserSubject.next(user);
+          this.userSignal.set(user);
+          return user;
+        }
+        throw new Error(response.error || '2FA code verification failed');
+      })
+    );
+  }
+
+  getMe(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/me`);
   }
 }

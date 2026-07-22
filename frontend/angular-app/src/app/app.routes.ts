@@ -130,6 +130,10 @@ export const routes: Routes = [
       {
         path: 'documents-invoices',
         loadComponent: () => import('./features/documents-invoices/documents-invoices.component').then(m => m.DocumentsInvoicesComponent)
+      },
+      {
+        path: 'settings',
+        loadComponent: () => import('./features/settings/settings.component').then(m => m.SettingsComponent)
       }
     ]
   },

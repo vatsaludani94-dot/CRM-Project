@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -35,68 +35,111 @@ import { AuthService } from '../../core/services/auth.service';
             {{ errorMessage() }}
           </div>
 
-          <!-- Email & Password Form -->
-          <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-5">
+          <!-- TOTP 2FA Verification Panel -->
+          <div *ngIf="show2faChallenge()" class="space-y-5 animate-fadeIn">
+            <div class="text-center space-y-2 flex flex-col items-center">
+              <span class="material-icons text-amber-600 text-3xl">security</span>
+              <h3 class="text-sm font-black text-[#1c1917]">2FA Verification Required</h3>
+              <p class="text-[11px] text-[#44403c] leading-relaxed text-center">Open your Google Authenticator app and enter the 6-digit login validation code.</p>
+            </div>
             
-            <div>
-              <label for="email" class="block text-xs font-bold text-[#1c1917] uppercase tracking-wider mb-1.5">Email Address</label>
-              <div class="relative">
-                <span class="material-icons absolute left-3 top-2.5 text-[#44403c] text-lg">email</span>
+            <div class="space-y-4 pt-2">
+              <div>
+                <label for="totpCode" class="block text-xs font-bold text-[#1c1917] uppercase tracking-wider mb-1.5 text-center">6-Digit Code</label>
                 <input 
-                  id="email" 
-                  type="email" 
-                  formControlName="email" 
-                  placeholder="name@company.com" 
-                  class="w-full pl-10 pr-4 py-2.5 bg-white border border-[#e7e5e4] text-[#1c1917] font-medium rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-amber-600">
+                  id="totpCode" 
+                  type="text" 
+                  maxLength="6"
+                  placeholder="000000" 
+                  [(ngModel)]="totpCode"
+                  class="w-full text-center tracking-[0.75em] text-xl font-mono py-3 bg-white border border-[#e7e5e4] text-[#1c1917] font-black rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-amber-600">
               </div>
+              
+              <button 
+                (click)="submit2faChallenge()" 
+                [disabled]="totpCode.length !== 6 || isLoading()" 
+                class="w-full py-3.5 bg-amber-700 hover:bg-amber-800 disabled:bg-stone-300 text-white font-bold text-sm rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer">
+                <span *ngIf="isLoading()" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                <span>Confirm & Sign In</span>
+              </button>
+
+              <button 
+                (click)="cancel2faChallenge()" 
+                class="w-full py-2 bg-stone-100 hover:bg-stone-200 text-[#1c1917] font-bold text-xs rounded-xl cursor-pointer">
+                Cancel
+              </button>
             </div>
-
-            <div>
-              <div class="flex justify-between items-center mb-1.5">
-                <label for="password" class="block text-xs font-bold text-[#1c1917] uppercase tracking-wider">Password</label>
-                <a routerLink="/forgot-password" class="text-xs font-bold text-amber-700 hover:text-amber-800 transition-colors">Forgot Password?</a>
-              </div>
-              <div class="relative">
-                <span class="material-icons absolute left-3 top-2.5 text-[#44403c] text-lg">lock</span>
-                <input 
-                  id="password" 
-                  type="password" 
-                  formControlName="password" 
-                  placeholder="••••••••" 
-                  class="w-full pl-10 pr-4 py-2.5 bg-white border border-[#e7e5e4] text-[#1c1917] font-medium rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-amber-600">
-              </div>
-            </div>
-
-            <button 
-              type="submit" 
-              [disabled]="loginForm.invalid || isLoading()" 
-              class="w-full py-3 bg-[#1c1917] hover:bg-[#292524] disabled:bg-stone-300 text-white font-bold text-sm rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer">
-              <span *ngIf="isLoading()" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
-              <span>Sign In</span>
-            </button>
-
-          </form>
-
-          <div class="relative flex py-2 items-center">
-            <div class="flex-grow border-t border-[#e7e5e4]"></div>
-            <span class="flex-shrink mx-4 text-[11px] font-bold text-[#44403c] uppercase">Or continue with</span>
-            <div class="flex-grow border-t border-[#e7e5e4]"></div>
           </div>
 
-          <!-- Google Sign In Button -->
-          <button (click)="openGooglePopup()" class="w-full flex items-center justify-center gap-3 bg-white hover:bg-stone-50 border border-[#e7e5e4] text-[#1c1917] font-bold text-sm py-3 rounded-xl shadow-sm transition-all cursor-pointer active:scale-95">
-            <svg class="h-5 w-5" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.85z"/>
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.85c.87-2.6 3.3-4.53 6.16-4.53z"/>
-            </svg>
-            <span>Sign In with Google</span>
-          </button>
+          <!-- Standard Email & Password / Passkey Login Form -->
+          <div *ngIf="!show2faChallenge()" class="space-y-5">
+            <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-4">
+              
+              <div>
+                <label for="email" class="block text-xs font-bold text-[#1c1917] uppercase tracking-wider mb-1.5">Email Address</label>
+                <div class="relative">
+                  <span class="material-icons absolute left-3 top-2.5 text-[#44403c] text-lg">email</span>
+                  <input 
+                    id="email" 
+                    type="email" 
+                    formControlName="email" 
+                    placeholder="name@company.com" 
+                    class="w-full pl-10 pr-4 py-2.5 bg-white border border-[#e7e5e4] text-[#1c1917] font-medium rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-amber-600">
+                </div>
+              </div>
 
-          <div class="text-center pt-2">
-            <span class="text-xs text-[#44403c]">Don't have an account? </span>
-            <a routerLink="/register" class="text-xs font-bold text-amber-700 hover:text-amber-800 transition-colors">Create Workspace Account</a>
+              <div>
+                <div class="flex justify-between items-center mb-1.5">
+                  <label for="password" class="block text-xs font-bold text-[#1c1917] uppercase tracking-wider">Password</label>
+                  <a routerLink="/forgot-password" class="text-xs font-bold text-amber-700 hover:text-amber-800 transition-colors">Forgot Password?</a>
+                </div>
+                <div class="relative">
+                  <span class="material-icons absolute left-3 top-2.5 text-[#44403c] text-lg">lock</span>
+                  <input 
+                    id="password" 
+                    type="password" 
+                    formControlName="password" 
+                    placeholder="••••••••" 
+                    class="w-full pl-10 pr-4 py-2.5 bg-white border border-[#e7e5e4] text-[#1c1917] font-medium rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-amber-600">
+                </div>
+              </div>
+
+              <div class="flex flex-col gap-2 pt-2">
+                <button 
+                  type="submit" 
+                  [disabled]="loginForm.invalid || isLoading()" 
+                  class="w-full py-3 bg-[#1c1917] hover:bg-[#292524] disabled:bg-stone-300 text-white font-bold text-sm rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer">
+                  <span *ngIf="isLoading()" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                  <span>Sign In</span>
+                </button>
+
+                <button 
+                  type="button" 
+                  (click)="loginWithPasskey()" 
+                  [disabled]="!loginForm.get('email')?.valid || isLoading()"
+                  class="w-full py-2.5 bg-stone-100 hover:bg-stone-200 disabled:bg-stone-50 disabled:text-stone-300 text-[#1c1917] font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer border border-[#e7e5e4]">
+                  <span class="material-icons text-sm">fingerprint</span>
+                  <span>Sign In with Passkey</span>
+                </button>
+              </div>
+
+            </form>
+
+            <div class="relative flex py-2 items-center">
+              <div class="flex-grow border-t border-[#e7e5e4]"></div>
+              <span class="flex-shrink mx-4 text-[11px] font-bold text-[#44403c] uppercase">Or continue with</span>
+              <div class="flex-grow border-t border-[#e7e5e4]"></div>
+            </div>
+
+            <!-- Official Google Sign In Button Container -->
+            <div class="w-full flex justify-center py-1">
+              <div id="google-signin-btn" class="w-full flex justify-center"></div>
+            </div>
+
+            <div class="text-center pt-2">
+              <span class="text-xs text-[#44403c]">Don't have an account? </span>
+              <a routerLink="/register" class="text-xs font-bold text-amber-700 hover:text-amber-800 transition-colors">Create Workspace Account</a>
+            </div>
           </div>
 
         </div>
@@ -106,77 +149,101 @@ import { AuthService } from '../../core/services/auth.service';
         </div>
 
       </div>
-
-      <!-- Google OAuth Account Selection Modal -->
-      <div *ngIf="showGooglePopup()" class="fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-scaleIn border border-[#e7e5e4] text-[#1c1917]">
-          
-          <div class="p-6 border-b border-[#e7e5e4] flex flex-col items-center text-center space-y-4">
-            <svg class="h-8 w-8" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.85z"/>
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.85c.87-2.6 3.3-4.53 6.16-4.53z"/>
-            </svg>
-            <div class="space-y-1">
-              <h3 class="text-md font-extrabold text-[#1c1917]">Sign in with Google</h3>
-              <p class="text-xs text-[#44403c]">to continue to <strong class="text-amber-700">GrownX CRM</strong></p>
-            </div>
-          </div>
-
-          <div class="p-4 space-y-2">
-            <div *ngIf="googleAuthenticating()" class="flex flex-col items-center py-8 space-y-4">
-              <div class="animate-spin h-8 w-8 border-4 border-amber-600 border-t-transparent rounded-full"></div>
-              <p class="text-xs text-[#1c1917] font-bold">Authenticating with Google OAuth...</p>
-            </div>
-
-            <div *ngIf="!googleAuthenticating()" class="space-y-1.5">
-              <p class="text-[10px] text-[#44403c] font-bold uppercase px-2 mb-2">Select Google Account</p>
-              
-              <div (click)="selectGoogleAccount('Vatsal Udani', 'vatsaludani94@gmail.com')" class="flex items-center gap-3 p-3 hover:bg-stone-50 rounded-xl cursor-pointer transition-colors border border-transparent hover:border-[#e7e5e4]">
-                <div class="h-8 w-8 rounded-full bg-amber-100 text-amber-900 flex items-center justify-center font-bold text-xs">VU</div>
-                <div class="flex-1 text-left">
-                  <p class="text-xs font-bold text-[#1c1917]">Vatsal Udani</p>
-                  <p class="text-[10px] text-[#44403c]">vatsaludani94@gmail.com</p>
-                </div>
-              </div>
-
-              <div (click)="selectGoogleAccount('Enterprise User', 'user@company.com')" class="flex items-center gap-3 p-3 hover:bg-stone-50 rounded-xl cursor-pointer transition-colors border border-transparent hover:border-[#e7e5e4]">
-                <div class="h-8 w-8 rounded-full bg-stone-100 text-stone-700 flex items-center justify-center font-bold text-xs">EU</div>
-                <div class="flex-1 text-left">
-                  <p class="text-xs font-bold text-[#1c1917]">Enterprise User</p>
-                  <p class="text-[10px] text-[#44403c]">user@company.com</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-stone-50 px-6 py-4 border-t border-[#e7e5e4] flex justify-between items-center text-[10px] text-[#44403c] font-bold">
-            <button (click)="closeGooglePopup()" class="hover:text-[#1c1917]">Cancel</button>
-            <span>Google Accounts OAuth 2.0</span>
-          </div>
-
-        </div>
-      </div>
-
     </div>
   `
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit, AfterViewInit {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private router = inject(Router);
 
   isLoading = signal(false);
   errorMessage = signal<string | null>(null);
-  
-  showGooglePopup = signal<boolean>(false);
-  googleAuthenticating = signal<boolean>(false);
+
+  show2faChallenge = signal(false);
+  totpCode = '';
+  temp2faToken = '';
 
   loginForm: FormGroup = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(6)]]
   });
+
+  ngOnInit() {}
+
+  ngAfterViewInit() {
+    this.loadGoogleSdk();
+  }
+
+  loadGoogleSdk() {
+    this.authService.getGoogleClientId().subscribe({
+      next: (res) => {
+        const clientId = res.clientId;
+        if (!clientId) {
+          console.warn('Google Client ID not configured in backend .env');
+          return;
+        }
+
+        if (typeof document !== 'undefined') {
+          if (document.getElementById('google-jssdk')) {
+            this.initGoogleAuth(clientId);
+            return;
+          }
+          const script = document.createElement('script');
+          script.id = 'google-jssdk';
+          script.src = 'https://accounts.google.com/gsi/client';
+          script.async = true;
+          script.defer = true;
+          script.onload = () => this.initGoogleAuth(clientId);
+          document.head.appendChild(script);
+        }
+      },
+      error: (err) => {
+        console.error('Error fetching Google Client ID:', err);
+      }
+    });
+  }
+
+  private initGoogleAuth(clientId: string) {
+    if (typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
+      const google = (window as any).google;
+      google.accounts.id.initialize({
+        client_id: clientId,
+        callback: (response: any) => this.handleGoogleCredential(response),
+        context: 'signin',
+        ux_mode: 'popup',
+        select_by: 'user'
+      });
+
+      google.accounts.id.renderButton(
+        document.getElementById('google-signin-btn'),
+        { theme: 'outline', size: 'large', width: 320, text: 'signin_with', shape: 'rectangular' }
+      );
+    }
+  }
+
+  private handleGoogleCredential(response: any) {
+    if (response && response.credential) {
+      this.isLoading.set(true);
+      this.errorMessage.set(null);
+
+      this.authService.googleLogin(response.credential).subscribe({
+        next: (res) => {
+          this.isLoading.set(false);
+          if (res && res.require2FA) {
+            this.temp2faToken = res.tempToken;
+            this.show2faChallenge.set(true);
+          } else {
+            this.router.navigate(['/dashboard']);
+          }
+        },
+        error: (err) => {
+          this.isLoading.set(false);
+          this.errorMessage.set(err.message || 'Google Sign-In failed.');
+        }
+      });
+    }
+  }
 
   onSubmit() {
     if (this.loginForm.invalid) return;
@@ -187,8 +254,14 @@ export class LoginComponent {
     const { email, password } = this.loginForm.value;
 
     this.authService.login(email, password).subscribe({
-      next: () => {
-        this.router.navigate(['/dashboard']);
+      next: (res) => {
+        this.isLoading.set(false);
+        if (res && (res as any).require2FA) {
+          this.temp2faToken = (res as any).tempToken;
+          this.show2faChallenge.set(true);
+        } else {
+          this.router.navigate(['/dashboard']);
+        }
       },
       error: (err) => {
         this.isLoading.set(false);
@@ -197,33 +270,70 @@ export class LoginComponent {
     });
   }
 
-  openGooglePopup() {
-    this.showGooglePopup.set(true);
-    this.googleAuthenticating.set(false);
+  async loginWithPasskey() {
+    const email = this.loginForm.get('email')?.value;
+    if (!email) return;
+
+    this.isLoading.set(true);
+    this.errorMessage.set(null);
+
+    this.authService.getPasskeyLoginOptions(email).subscribe({
+      next: async (options) => {
+        try {
+          const { startAuthentication } = await import('@simplewebauthn/browser');
+          const assertionResponse = await startAuthentication(options);
+
+          this.authService.verifyPasskeyLogin(email, assertionResponse).subscribe({
+            next: (res) => {
+              this.isLoading.set(false);
+              if (res.require2FA) {
+                this.temp2faToken = res.tempToken;
+                this.show2faChallenge.set(true);
+              } else {
+                this.router.navigate(['/dashboard']);
+              }
+            },
+            error: (err) => {
+              this.isLoading.set(false);
+              this.errorMessage.set(err.error?.error || 'Passkey signature verification failed on backend.');
+            }
+          });
+        } catch (err: any) {
+          this.isLoading.set(false);
+          this.errorMessage.set(err.message || 'Passkey login cancelled or failed.');
+        }
+      },
+      error: (err) => {
+        this.isLoading.set(false);
+        this.errorMessage.set(err.error?.error || 'No passkeys registered for this email address.');
+      }
+    });
   }
 
-  closeGooglePopup() {
-    this.showGooglePopup.set(false);
-  }
+  submit2faChallenge() {
+    if (this.totpCode.length !== 6) return;
 
-  selectGoogleAccount(name: string, email: string) {
-    this.googleAuthenticating.set(true);
-    
-    this.authService.googleLogin({
-      name,
-      email,
-      picture: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=b45309&color=fff`
-    }).subscribe({
+    this.isLoading.set(true);
+    this.errorMessage.set(null);
+
+    this.authService.challenge2FA(this.totpCode, this.temp2faToken).subscribe({
       next: () => {
-        this.googleAuthenticating.set(false);
-        this.showGooglePopup.set(false);
+        this.isLoading.set(false);
+        this.show2faChallenge.set(false);
+        this.totpCode = '';
         this.router.navigate(['/dashboard']);
       },
       error: (err) => {
-        this.googleAuthenticating.set(false);
-        this.showGooglePopup.set(false);
-        this.errorMessage.set('Google Sign-In failed.');
+        this.isLoading.set(false);
+        this.errorMessage.set(err.message || 'Invalid Authenticator code.');
       }
     });
+  }
+
+  cancel2faChallenge() {
+    this.show2faChallenge.set(false);
+    this.totpCode = '';
+    this.temp2faToken = '';
+    this.errorMessage.set(null);
   }
 }
