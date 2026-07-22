@@ -239,7 +239,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
         },
         error: (err) => {
           this.isLoading.set(false);
-          this.errorMessage.set(err.message || 'Google Sign-In failed.');
+          this.errorMessage.set(err.error?.error || err.message || 'Google Sign-In failed.');
         }
       });
     }
@@ -265,7 +265,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
       },
       error: (err) => {
         this.isLoading.set(false);
-        this.errorMessage.set(err.message || 'Invalid email or password');
+        this.errorMessage.set(err.error?.error || err.message || 'Invalid email or password');
       }
     });
   }
@@ -295,7 +295,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
             },
             error: (err) => {
               this.isLoading.set(false);
-              this.errorMessage.set(err.error?.error || 'Passkey signature verification failed on backend.');
+              this.errorMessage.set(err.error?.error || err.message || 'Passkey signature verification failed on backend.');
             }
           });
         } catch (err: any) {
@@ -305,7 +305,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
       },
       error: (err) => {
         this.isLoading.set(false);
-        this.errorMessage.set(err.error?.error || 'No passkeys registered for this email address.');
+        this.errorMessage.set(err.error?.error || err.message || 'No passkeys registered for this email address.');
       }
     });
   }
@@ -325,7 +325,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
       },
       error: (err) => {
         this.isLoading.set(false);
-        this.errorMessage.set(err.message || 'Invalid Authenticator code.');
+        this.errorMessage.set(err.error?.error || err.message || 'Invalid Authenticator code.');
       }
     });
   }

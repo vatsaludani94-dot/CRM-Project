@@ -124,7 +124,7 @@ export class RegisterComponent {
       },
       error: (err) => {
         this.isLoading.set(false);
-        this.errorMessage.set(err.message || 'Registration failed');
+        this.errorMessage.set(err.error?.error || err.message || 'Registration failed');
       }
     });
   }
