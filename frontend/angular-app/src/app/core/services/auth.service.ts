@@ -61,12 +61,17 @@ export class AuthService {
   login(email: string, password: string): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/login`, { email, password }).pipe(
       map(response => {
-        if (response && response.success && response.data) {
-          const user = response.data;
-          localStorage.setItem('nexus_user', JSON.stringify(user));
-          this.currentUserSubject.next(user);
-          this.userSignal.set(user);
-          return user;
+        if (response && response.success) {
+          if (response.require2FA) {
+            return response;
+          }
+          if (response.data) {
+            const user = response.data;
+            localStorage.setItem('nexus_user', JSON.stringify(user));
+            this.currentUserSubject.next(user);
+            this.userSignal.set(user);
+            return user;
+          }
         }
         throw new Error(response.error || 'Authentication failed');
       })
@@ -76,12 +81,17 @@ export class AuthService {
   googleLogin(googleToken: string): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/google`, { googleToken }).pipe(
       map(response => {
-        if (response && response.success && response.data) {
-          const user = response.data;
-          localStorage.setItem('nexus_user', JSON.stringify(user));
-          this.currentUserSubject.next(user);
-          this.userSignal.set(user);
-          return user;
+        if (response && response.success) {
+          if (response.require2FA) {
+            return response;
+          }
+          if (response.data) {
+            const user = response.data;
+            localStorage.setItem('nexus_user', JSON.stringify(user));
+            this.currentUserSubject.next(user);
+            this.userSignal.set(user);
+            return user;
+          }
         }
         throw new Error(response.error || 'Google Identity login verification failed');
       })

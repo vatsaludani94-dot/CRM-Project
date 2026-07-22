@@ -128,3 +128,5 @@ server.listen(PORT, () => {
   console.log(`GrownX CRM Backend Server running on port ${PORT}`);
   console.log(`Socket.IO listening for connections`);
 });
+
+module.exports = app;
