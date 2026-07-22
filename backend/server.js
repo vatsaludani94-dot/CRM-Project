@@ -124,9 +124,11 @@ app.use((err, req, res, next) => {
 // Port configuration
 const PORT = process.env.PORT || 3000;
 
-server.listen(PORT, () => {
-  console.log(`GrownX CRM Backend Server running on port ${PORT}`);
-  console.log(`Socket.IO listening for connections`);
-});
+if (!process.env.VERCEL) {
+  server.listen(PORT, () => {
+    console.log(`GrownX CRM Backend Server running on port ${PORT}`);
+    console.log(`Socket.IO listening for connections`);
+  });
+}
 
 module.exports = app;
