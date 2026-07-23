@@ -6,7 +6,10 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Generate JWT Token
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'nexus_secret_key_jwt_authentication_2026', {
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET environment variable is missing');
+  }
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: '30d',
   });
 };
@@ -103,7 +106,7 @@ const loginUser = async (req, res) => {
       });
 
       if (user.twoFactorEnabled) {
-        const tempToken = jwt.sign({ id: user._id, is2faPending: true }, process.env.JWT_SECRET || 'nexus_secret_key_jwt_authentication_2026', { expiresIn: '5m' });
+        const tempToken = jwt.sign({ id: user._id, is2faPending: true }, process.env.JWT_SECRET, { expiresIn: '5m' });
         return res.json({
           success: true,
           require2FA: true,
@@ -241,6 +244,13 @@ const googleLogin = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Google authentication token is required' });
     }
 
+    if (!process.env.GOOGLE_CLIENT_ID) {
+      return res.status(400).json({
+        success: false,
+        error: 'Google Sign-In is disabled: GOOGLE_CLIENT_ID is not configured in backend environment variables.',
+      });
+    }
+
     let ticket;
     try {
       ticket = await googleClient.verifyIdToken({
@@ -248,17 +258,7 @@ const googleLogin = async (req, res) => {
         audience: process.env.GOOGLE_CLIENT_ID,
       });
     } catch (err) {
-      // Fallback for local testing if GOOGLE_CLIENT_ID is not configured
-      if (!process.env.GOOGLE_CLIENT_ID) {
-        console.warn('Warning: GOOGLE_CLIENT_ID is not configured. Falling back to signature-less parsing for local development.');
-        const base64Url = googleToken.split('.')[1];
-        if (!base64Url) throw new Error('Invalid JWT format');
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const payload = JSON.parse(Buffer.from(base64, 'base64').toString());
-        ticket = { getPayload: () => payload };
-      } else {
-        return res.status(400).json({ success: false, error: 'Failed to verify Google token signature: ' + err.message });
-      }
+      return res.status(400).json({ success: false, error: 'Failed to verify Google token signature: ' + err.message });
     }
 
     const payload = ticket.getPayload();
@@ -309,7 +309,7 @@ const googleLogin = async (req, res) => {
     });
 
     if (user.twoFactorEnabled) {
-      const tempToken = jwt.sign({ id: user._id, is2faPending: true }, process.env.JWT_SECRET || 'nexus_secret_key_jwt_authentication_2026', { expiresIn: '5m' });
+      const tempToken = jwt.sign({ id: user._id, is2faPending: true }, process.env.JWT_SECRET, { expiresIn: '5m' });
       return res.json({
         success: true,
         require2FA: true,

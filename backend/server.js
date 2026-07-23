@@ -1,4 +1,12 @@
 require('dotenv').config();
+
+if (!process.env.JWT_SECRET) {
+  console.error('FATAL WARNING: JWT_SECRET environment variable is not set!');
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('FATAL: JWT_SECRET must be configured in environment variables for production.');
+  }
+}
+
 const express = require('express');
 const http = require('http');
 const socketio = require('socket.io');
@@ -40,7 +48,10 @@ const server = http.createServer(app);
 connectDB();
 
 // Middlewares
-const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [];
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean)
+  : [];
+
 const corsOptions = {
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);

@@ -132,8 +132,11 @@ import { AuthService } from '../../core/services/auth.service';
             </div>
 
             <!-- Official Google Sign In Button Container -->
-            <div class="w-full flex justify-center py-1">
+            <div class="w-full flex flex-col items-center justify-center py-1">
               <div id="google-signin-btn" class="w-full flex justify-center"></div>
+              <div *ngIf="googleConfigError()" class="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-center w-full mt-1 font-medium">
+                <span class="material-icons text-xs align-middle mr-1">info</span> {{ googleConfigError() }}
+              </div>
             </div>
 
             <div class="text-center pt-2">
@@ -159,6 +162,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
 
   isLoading = signal(false);
   errorMessage = signal<string | null>(null);
+  googleConfigError = signal<string | null>(null);
 
   show2faChallenge = signal(false);
   totpCode = '';
@@ -180,9 +184,11 @@ export class LoginComponent implements OnInit, AfterViewInit {
       next: (res) => {
         const clientId = res.clientId;
         if (!clientId) {
-          console.warn('Google Client ID not configured in backend .env');
+          console.warn('[Google Auth] GOOGLE_CLIENT_ID is not configured in backend environment variables.');
+          this.googleConfigError.set('Google Sign-In is not configured in backend environment (GOOGLE_CLIENT_ID missing).');
           return;
         }
+        this.googleConfigError.set(null);
 
         if (typeof document !== 'undefined') {
           if (document.getElementById('google-jssdk')) {

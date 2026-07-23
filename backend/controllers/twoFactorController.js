@@ -6,7 +6,10 @@ const Activity = require('../models/Activity');
 
 // Helper to generate full access JWT
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'nexus_secret_key_jwt_authentication_2026', {
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET environment variable is missing');
+  }
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: '30d',
   });
 };
@@ -148,7 +151,10 @@ const challenge2FA = async (req, res) => {
 
     let decoded;
     try {
-      decoded = jwt.verify(tempToken, process.env.JWT_SECRET || 'nexus_secret_key_jwt_authentication_2026');
+      if (!process.env.JWT_SECRET) {
+        throw new Error('JWT_SECRET environment variable is missing');
+      }
+      decoded = jwt.verify(tempToken, process.env.JWT_SECRET);
     } catch (err) {
       return res.status(401).json({ success: false, error: 'Session token has expired or is invalid. Please log in again.' });
     }

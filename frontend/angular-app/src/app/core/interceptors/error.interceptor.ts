@@ -9,8 +9,14 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(req).pipe(
     catchError((err) => {
-      // Auto logout if 401 Unauthorized or 403 Forbidden is returned from API
-      if ([401, 403].includes(err.status) && !req.url.includes('/api/auth/login')) {
+      // Auto logout ONLY if 401 Unauthorized is returned from protected API requests
+      const isPublicAuthEndpoint = req.url.includes('/api/auth/login') ||
+                                   req.url.includes('/api/auth/register') ||
+                                   req.url.includes('/api/auth/google') ||
+                                   req.url.includes('/api/auth/forgot-password') ||
+                                   req.url.includes('/api/auth/reset-password');
+
+      if (err.status === 401 && !isPublicAuthEndpoint) {
         authService.logout();
       }
 
