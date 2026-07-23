@@ -53,6 +53,7 @@ const documentRoutes = require('./routes/documentRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const updateRoutes = require('./routes/updateRoutes');
+const onboardingRoutes = require('./routes/onboardingRoutes');
 
 // Load Rate Limiters
 const { apiLimiter } = require('./middleware/rateLimitMiddleware');
@@ -113,6 +114,7 @@ socketHandler(io);
 
 // Mount routes
 app.use('/api/auth', authRoutes);
+app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/leads', leadRoutes);
 app.use('/api/tickets', ticketRoutes);

@@ -23,8 +23,8 @@ const DriveFolderSchema = new mongoose.Schema(
     permissions: {
       roleAccess: {
         type: [String],
-        enum: ['super_admin', 'manager', 'employee', 'customer'],
-        default: ['super_admin', 'manager', 'employee'],
+        enum: ['super_admin', 'workspace_owner', 'manager', 'employee', 'customer'],
+        default: ['super_admin', 'workspace_owner', 'manager', 'employee'],
       }
     },
     tenant: {

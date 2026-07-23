@@ -1,16 +1,21 @@
 const User = require('../models/User');
 const Tenant = require('../models/Tenant');
+const PendingRegistration = require('../models/PendingRegistration');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const Activity = require('../models/Activity');
 const { OAuth2Client } = require('google-auth-library');
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-// Generate JWT Token
-const generateToken = (id) => {
+// Generate JWT Token with server-side tokenVersion
+const generateToken = (userOrId) => {
   if (!process.env.JWT_SECRET) {
     throw new Error('JWT_SECRET environment variable is missing');
   }
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
+  let id = userOrId._id || userOrId;
+  let tokenVersion = userOrId.tokenVersion || 0;
+  return jwt.sign({ id, tokenVersion }, process.env.JWT_SECRET, {
     expiresIn: '30d',
   });
 };
@@ -30,9 +35,6 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ success: false, error: 'User already exists with this email' });
     }
 
-    // Role safety: Only super_admin can register managers/super_admins.
-    // If request has no auth (initial setup) or caller is admin, allow it.
-    // Otherwise default to 'customer' or 'employee' depending on signup details.
     let targetRole = role || 'customer';
     if (role && ['super_admin', 'manager'].includes(role)) {
       if (!req.user || req.user.role !== 'super_admin') {
@@ -52,7 +54,6 @@ const registerUser = async (req, res) => {
     });
 
     if (user) {
-      // Log activity
       await Activity.create({
         user: req.user ? req.user._id : user._id,
         action: 'User Registered',
@@ -69,7 +70,7 @@ const registerUser = async (req, res) => {
           email: user.email,
           role: user.role,
           department: user.department,
-          token: generateToken(user._id),
+          token: generateToken(user),
         },
       });
     } else {
@@ -97,7 +98,6 @@ const loginUser = async (req, res) => {
         return res.status(403).json({ success: false, error: 'Your account is deactivated' });
       }
 
-      // Log activity
       await Activity.create({
         user: user._id,
         action: 'User Login',
@@ -123,7 +123,8 @@ const loginUser = async (req, res) => {
           email: user.email,
           role: user.role,
           department: user.department,
-          token: generateToken(user._id),
+          tenant: user.tenant,
+          token: generateToken(user),
         },
       });
     } else {
@@ -142,7 +143,7 @@ const loginUser = async (req, res) => {
  */
 const getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.user._id).populate('tenant', 'name subdomain plan status');
     if (user) {
       res.json({ success: true, data: user });
     } else {
@@ -154,34 +155,40 @@ const getMe = async (req, res) => {
 };
 
 /**
- * @desc    Forgot Password (Generates 6-digit OTP & sends email)
+ * @desc    Forgot Password (Generates hashed 6-digit OTP & sends email, prevents enumeration)
  * @route   POST /api/auth/forgot-password
  * @access  Public
  */
 const forgotPassword = async (req, res) => {
   const { email } = req.body;
+  const genericMessage = 'If an account exists for this email address, password reset instructions have been sent.';
+
   try {
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ success: false, error: 'No account registered with this email address' });
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'Email address is required' });
     }
 
-    // Generate 6-digit numeric OTP
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.json({
+        success: true,
+        message: genericMessage,
+      });
+    }
+
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    
-    // Set OTP and 10 minute expiration
-    user.resetPasswordOtp = otpCode;
+    const hashedOtp = crypto.createHash('sha256').update(otpCode).digest('hex');
+
+    user.resetPasswordOtp = hashedOtp;
     user.resetPasswordOtpExpire = Date.now() + 10 * 60 * 1000;
     await user.save();
 
-    // Send email via Nodemailer
     const { sendOtpEmail } = require('../services/invoice-email.service');
     await sendOtpEmail(user.email, otpCode);
 
     res.json({
       success: true,
-      message: `A 6-digit verification OTP has been sent to ${user.email}. Please enter it to reset your password.`,
-      email: user.email,
+      message: genericMessage,
     });
   } catch (error) {
     console.error('Forgot Password Error:', error);
@@ -190,7 +197,7 @@ const forgotPassword = async (req, res) => {
 };
 
 /**
- * @desc    Verify OTP and Reset Password
+ * @desc    Verify Hashed OTP and Reset Password (Invalidates all previous sessions)
  * @route   POST /api/auth/reset-password-otp
  * @access  Public
  */
@@ -201,9 +208,11 @@ const resetPasswordWithOtp = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Email, OTP, and new password are required' });
     }
 
+    const hashedOtp = crypto.createHash('sha256').update(otp).digest('hex');
+
     const user = await User.findOne({
       email,
-      resetPasswordOtp: otp,
+      resetPasswordOtp: hashedOtp,
       resetPasswordOtpExpire: { $gt: Date.now() },
     });
 
@@ -211,21 +220,21 @@ const resetPasswordWithOtp = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid or expired OTP code. Please request a new OTP.' });
     }
 
-    // Update password and clear OTP
     user.password = newPassword;
     user.resetPasswordOtp = undefined;
     user.resetPasswordOtpExpire = undefined;
+    user.tokenVersion = (user.tokenVersion || 0) + 1;
     await user.save();
 
     await Activity.create({
       user: user._id,
       action: 'Password Reset via Email OTP',
-      details: `User ${user.name} successfully reset password using 6-digit email OTP.`,
+      details: `User ${user.name} reset password. All active sessions invalidated.`,
       module: 'Authentication',
       ipAddress: req.ip,
     });
 
-    res.json({ success: true, message: 'Password updated successfully! You can now log in.' });
+    res.json({ success: true, message: 'Password updated successfully! All previous sessions invalidated. You can now log in.' });
   } catch (error) {
     console.error('Reset Password OTP Error:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -233,12 +242,12 @@ const resetPasswordWithOtp = async (req, res) => {
 };
 
 /**
- * @desc    Google OAuth Sign-In / Sign-Up
+ * @desc    Google OAuth Sign-In / Sign-Up with secure account linking & email verification
  * @route   POST /api/auth/google
  * @access  Public
  */
 const googleLogin = async (req, res) => {
-  const { googleToken } = req.body;
+  const { googleToken, linkPassword } = req.body;
 
   try {
     if (!googleToken) {
@@ -263,28 +272,51 @@ const googleLogin = async (req, res) => {
     }
 
     const payload = ticket.getPayload();
-    const { sub: googleSubjectId, email, name, picture } = payload;
+    const { sub: googleSubjectId, email, name, picture, email_verified } = payload;
 
     if (!email) {
       return res.status(400).json({ success: false, error: 'Google email address could not be resolved from token payload.' });
     }
 
-    // 1. Check if user already exists by googleSubjectId (Centralized authentication key)
+    if (email_verified === false || email_verified === 'false') {
+      return res.status(400).json({
+        success: false,
+        error: 'Google authentication failed: The Google email address is not verified by Google.',
+      });
+    }
+
     let user = await User.findOne({ googleSubjectId });
 
-    // 2. Check if user exists by email and map googleSubjectId to it (link accounts)
     if (!user) {
-      user = await User.findOne({ email });
-      if (user) {
-        user.googleSubjectId = googleSubjectId;
-        if (!user.profilePicture && picture) {
-          user.profilePicture = picture;
+      const existingEmailUser = await User.findOne({ email }).select('+password');
+      if (existingEmailUser) {
+        if (linkPassword) {
+          const isPasswordValid = await existingEmailUser.matchPassword(linkPassword);
+          if (!isPasswordValid) {
+            return res.status(401).json({
+              success: false,
+              requireAccountLinking: true,
+              email: existingEmailUser.email,
+              error: 'Incorrect password for account linking. Please enter your valid account password.',
+            });
+          }
+          existingEmailUser.googleSubjectId = googleSubjectId;
+          if (!existingEmailUser.profilePicture && picture) {
+            existingEmailUser.profilePicture = picture;
+          }
+          await existingEmailUser.save();
+          user = existingEmailUser;
+        } else {
+          return res.status(400).json({
+            success: false,
+            requireAccountLinking: true,
+            email: existingEmailUser.email,
+            error: 'An account with this email address already exists. Please enter your account password to link your Google account.',
+          });
         }
-        await user.save();
       }
     }
 
-    // 3. Register user if this is a first-time sign-up via Google
     if (!user) {
       user = await User.create({
         name: name || email.split('@')[0],
@@ -296,7 +328,6 @@ const googleLogin = async (req, res) => {
       });
     }
 
-    // Check account status
     if (user.status === 'inactive') {
       return res.status(403).json({ success: false, error: 'Your account is deactivated' });
     }
@@ -326,7 +357,9 @@ const googleLogin = async (req, res) => {
         email: user.email,
         role: user.role,
         department: user.department,
-        token: generateToken(user._id),
+        tenant: user.tenant,
+        requireWorkspaceOnboarding: !user.tenant && user.role !== 'super_admin',
+        token: generateToken(user),
       },
     });
   } catch (error) {
@@ -343,14 +376,19 @@ const getGoogleClientId = async (req, res) => {
 };
 
 /**
- * @desc    Register a new workspace (Tenant) & Workspace Owner
+ * @desc    Initiate Workspace Registration (Generates verification code & sends email)
  * @route   POST /api/auth/register-workspace
  * @access  Public
  */
 const registerWorkspace = async (req, res) => {
-  const { companyName, name, email, password } = req.body;
+  const { companyName, name, email, password, code } = req.body;
 
   try {
+    // If verification code is submitted in body, delegate to verify function
+    if (code) {
+      return await verifyWorkspaceRegistration(req, res);
+    }
+
     if (!companyName || !name || !email || !password) {
       return res.status(400).json({
         success: false,
@@ -365,8 +403,8 @@ const registerWorkspace = async (req, res) => {
       });
     }
 
-    // 1. Check if user already exists with this email
-    const userExists = await User.findOne({ email });
+    const cleanEmail = email.toLowerCase().trim();
+    const userExists = await User.findOne({ email: cleanEmail });
     if (userExists) {
       return res.status(400).json({
         success: false,
@@ -374,8 +412,87 @@ const registerWorkspace = async (req, res) => {
       });
     }
 
-    // 2. Generate clean subdomain from companyName
-    let baseSubdomain = companyName
+    // Generate 6-digit numeric verification code
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
+
+    // Hash password with bcrypt
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Save pending registration in MongoDB
+    await PendingRegistration.findOneAndUpdate(
+      { email: cleanEmail },
+      {
+        email: cleanEmail,
+        companyName: companyName.trim(),
+        name: name.trim(),
+        password: hashedPassword,
+        verificationCodeHash: hashedCode,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes expiry
+      },
+      { upsert: true, new: true }
+    );
+
+    // Send verification email
+    const { sendRegistrationVerificationEmail } = require('../services/invoice-email.service');
+    await sendRegistrationVerificationEmail(cleanEmail, verificationCode);
+
+    res.status(200).json({
+      success: true,
+      requireEmailVerification: true,
+      email: cleanEmail,
+      message: 'A 6-digit verification code has been sent to your email. Please enter it to complete workspace creation.',
+    });
+  } catch (error) {
+    console.error('Workspace Registration Error:', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+/**
+ * @desc    Verify Email & Complete Workspace Registration
+ * @route   POST /api/auth/register-workspace/verify
+ * @access  Public
+ */
+const verifyWorkspaceRegistration = async (req, res) => {
+  const { email, code } = req.body;
+
+  try {
+    if (!email || !code) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email address and 6-digit verification code are required',
+      });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const cleanedCode = String(code).trim();
+    const hashedCode = crypto.createHash('sha256').update(cleanedCode).digest('hex');
+
+    const pending = await PendingRegistration.findOne({
+      email: cleanEmail,
+      verificationCodeHash: hashedCode,
+      expiresAt: { $gt: new Date() },
+    });
+
+    if (!pending) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid or expired verification code. Please request a new code.',
+      });
+    }
+
+    const userExists = await User.findOne({ email: cleanEmail });
+    if (userExists) {
+      await PendingRegistration.deleteOne({ _id: pending._id });
+      return res.status(400).json({
+        success: false,
+        error: 'User account already exists for this email address',
+      });
+    }
+
+    let baseSubdomain = pending.companyName
       .toLowerCase()
       .replace(/[^a-z0-9]/g, '')
       .trim();
@@ -391,11 +508,10 @@ const registerWorkspace = async (req, res) => {
       subdomain = `${baseSubdomain}${suffix}`;
     }
 
-    // 3. Create Tenant
     let tenant;
     try {
       tenant = await Tenant.create({
-        name: companyName,
+        name: pending.companyName,
         subdomain,
         plan: 'free',
         status: 'active',
@@ -404,7 +520,7 @@ const registerWorkspace = async (req, res) => {
       if (err.code === 11000) {
         subdomain = `${baseSubdomain}${Math.floor(10000 + Math.random() * 90000)}`;
         tenant = await Tenant.create({
-          name: companyName,
+          name: pending.companyName,
           subdomain,
           plan: 'free',
           status: 'active',
@@ -414,32 +530,32 @@ const registerWorkspace = async (req, res) => {
       }
     }
 
-    // 4. Create User as workspace_owner
     let user;
     try {
       user = await User.create({
-        name,
-        email,
-        password,
+        name: pending.name,
+        email: pending.email,
+        password: pending.password, // Pre-hashed password
         role: 'workspace_owner',
         department: 'Management',
         status: 'active',
         tenant: tenant._id,
       });
     } catch (userErr) {
-      console.error('User creation failed during workspace registration. Rolling back Tenant:', userErr.message);
+      console.error('User creation failed during workspace verification. Rolling back Tenant:', userErr.message);
       await Tenant.findByIdAndDelete(tenant._id);
       throw userErr;
     }
 
-    // 5. Link Tenant owner to User
     tenant.owner = user._id;
     await tenant.save();
 
-    // 6. Log Activity
+    // Delete pending registration after successful creation (single-use)
+    await PendingRegistration.deleteOne({ _id: pending._id });
+
     await Activity.create({
       user: user._id,
-      action: 'Workspace Registered',
+      action: 'Workspace Registered & Email Verified',
       details: `Workspace "${tenant.name}" (${tenant.subdomain}) created with Owner ${user.name} (${user.email}).`,
       module: 'Authentication',
       ipAddress: req.ip,
@@ -447,6 +563,7 @@ const registerWorkspace = async (req, res) => {
 
     res.status(201).json({
       success: true,
+      message: 'Workspace registered and email verified successfully!',
       data: {
         _id: user._id,
         name: user.name,
@@ -459,11 +576,90 @@ const registerWorkspace = async (req, res) => {
           subdomain: tenant.subdomain,
           plan: tenant.plan,
         },
-        token: generateToken(user._id),
+        token: generateToken(user),
       },
     });
   } catch (error) {
-    console.error('Workspace Registration Error:', error.message);
+    console.error('Verify Workspace Registration Error:', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+/**
+ * @desc    Resend Workspace Registration Verification Code
+ * @route   POST /api/auth/register-workspace/resend-code
+ * @access  Public
+ */
+const resendRegistrationCode = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'Email address is required' });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const pending = await PendingRegistration.findOne({ email: cleanEmail });
+
+    if (!pending) {
+      return res.status(400).json({
+        success: false,
+        error: 'No pending registration found for this email address. Please register again.',
+      });
+    }
+
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
+
+    pending.verificationCodeHash = hashedCode;
+    pending.expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    await pending.save();
+
+    const { sendRegistrationVerificationEmail } = require('../services/invoice-email.service');
+    await sendRegistrationVerificationEmail(cleanEmail, verificationCode);
+
+    res.json({
+      success: true,
+      message: 'A new 6-digit verification code has been sent to your email.',
+    });
+  } catch (error) {
+    console.error('Resend Registration Code Error:', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+/**
+ * @desc    Logout user and invalidate server-side JWT session
+ * @route   POST /api/auth/logout
+ * @access  Private
+ */
+const logoutUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (user) {
+      user.tokenVersion = (user.tokenVersion || 0) + 1;
+      await user.save();
+    }
+    res.json({ success: true, message: 'Logged out successfully across all active sessions.' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+/**
+ * @desc    Revoke all active sessions
+ * @route   POST /api/auth/revoke-sessions
+ * @access  Private
+ */
+const revokeAllSessions = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (user) {
+      user.tokenVersion = (user.tokenVersion || 0) + 1;
+      await user.save();
+    }
+    res.json({ success: true, message: 'All active sessions have been revoked.' });
+  } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -471,6 +667,8 @@ const registerWorkspace = async (req, res) => {
 module.exports = {
   registerUser,
   registerWorkspace,
+  verifyWorkspaceRegistration,
+  resendRegistrationCode,
   loginUser,
   getMe,
   forgotPassword,
@@ -478,4 +676,7 @@ module.exports = {
   resetPasswordWithOtp,
   googleLogin,
   getGoogleClientId,
+  logoutUser,
+  revokeAllSessions,
+  generateToken,
 };

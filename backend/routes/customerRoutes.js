@@ -10,10 +10,11 @@ const {
   addCustomerNote,
   logCustomerActivity
 } = require('../controllers/customerController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect, requireTenant } = require('../middleware/authMiddleware');
 const { authorize } = require('../middleware/roleMiddleware');
 
-router.use(protect); // protect all customer routes
+router.use(protect);
+router.use(requireTenant);
 
 // Directory CRUD
 router.route('/')

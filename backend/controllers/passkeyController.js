@@ -10,15 +10,34 @@ const Activity = require('../models/Activity');
 
 // Generate JWT Token
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'nexus_secret_key_jwt_authentication_2026', {
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET environment variable is missing');
+  }
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: '30d',
   });
 };
 
-// Helper to get RP ID dynamically
+// Helper to get RP ID dynamically with environment variable override
 const getRpID = (req) => {
+  if (process.env.WEBAUTHN_RP_ID) {
+    return process.env.WEBAUTHN_RP_ID;
+  }
   const host = req.headers.host || 'localhost';
   return host.split(':')[0];
+};
+
+// Helper to get expected origins
+const getExpectedOrigins = (req, rpID) => {
+  if (process.env.WEBAUTHN_ORIGIN) {
+    return [process.env.WEBAUTHN_ORIGIN];
+  }
+  return [
+    `http://${rpID}:4200`,
+    `https://${rpID}`,
+    `http://${req.headers.host}`,
+    `https://${req.headers.host}`
+  ];
 };
 
 /**
@@ -53,8 +72,9 @@ const getRegisterOptions = async (req, res) => {
       },
     });
 
-    // Save challenge to user document
-    user.resetPasswordOtp = options.challenge; // temporary field mapping for challenge reuse
+    // Save dedicated passkey challenge & 5-minute expiry
+    user.passkeyChallenge = options.challenge;
+    user.passkeyChallengeExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
     await user.save();
 
     res.json(options);
@@ -78,23 +98,33 @@ const verifyRegistration = async (req, res) => {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
 
-    const expectedChallenge = user.resetPasswordOtp;
-    if (!expectedChallenge) {
-      return res.status(400).json({ success: false, error: 'Registration challenge missing or expired' });
+    // Verify challenge presence and non-expiry
+    if (
+      !user.passkeyChallenge ||
+      !user.passkeyChallengeExpiresAt ||
+      user.passkeyChallengeExpiresAt < new Date()
+    ) {
+      return res.status(400).json({ success: false, error: 'Passkey registration challenge missing or expired' });
     }
 
+    const expectedChallenge = user.passkeyChallenge;
     const rpID = getRpID(req);
+    const expectedOrigin = getExpectedOrigins(req, rpID);
+
+    // Invalidate challenge immediately (single-use)
+    user.passkeyChallenge = undefined;
+    user.passkeyChallengeExpiresAt = undefined;
+
     const verification = await verifyRegistrationResponse({
       response: credential,
       expectedChallenge,
-      expectedOrigin: [`http://${rpID}:4200`, `https://${rpID}`, `http://${req.headers.host}`, `https://${req.headers.host}`],
+      expectedOrigin,
       expectedRPID: rpID,
     });
 
     if (verification.verified && verification.registrationInfo) {
       const { credentialID, credentialPublicKey, counter, transports } = verification.registrationInfo;
 
-      // Save credential
       user.passkeys.push({
         credentialID: Buffer.from(credentialID).toString('base64url'),
         credentialPublicKey: Buffer.from(credentialPublicKey).toString('base64url'),
@@ -103,7 +133,6 @@ const verifyRegistration = async (req, res) => {
         deviceName: deviceName || 'Security Key',
       });
 
-      user.resetPasswordOtp = undefined; // clear challenge
       await user.save();
 
       await Activity.create({
@@ -117,6 +146,7 @@ const verifyRegistration = async (req, res) => {
       return res.json({ success: true, message: 'Passkey registered successfully!' });
     }
 
+    await user.save();
     res.status(400).json({ success: false, error: 'Passkey verification failed' });
   } catch (error) {
     console.error('Passkey Verify Registration Error:', error);
@@ -146,14 +176,16 @@ const getLoginOptions = async (req, res) => {
     const options = await generateAuthenticationOptions({
       rpID,
       allowCredentials: user.passkeys.map(p => ({
-        id: Buffer.from(p.credentialID, 'base64url'),
+        id: String(p.credentialID),
         type: 'public-key',
         transports: p.transports || [],
       })),
       userVerification: 'preferred',
     });
 
-    user.resetPasswordOtp = options.challenge; // temporary mapping
+    // Dedicated passkey challenge & 5-minute expiry
+    user.passkeyChallenge = options.challenge;
+    user.passkeyChallengeExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
     await user.save();
 
     res.json(options);
@@ -181,21 +213,33 @@ const verifyLogin = async (req, res) => {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
 
+    if (
+      !user.passkeyChallenge ||
+      !user.passkeyChallengeExpiresAt ||
+      user.passkeyChallengeExpiresAt < new Date()
+    ) {
+      return res.status(400).json({ success: false, error: 'Authentication challenge missing or expired' });
+    }
+
+    const expectedChallenge = user.passkeyChallenge;
+
+    // Invalidate challenge immediately on any verification attempt (single-use)
+    user.passkeyChallenge = undefined;
+    user.passkeyChallengeExpiresAt = undefined;
+    await user.save();
+
     const passkey = user.passkeys.find(p => p.credentialID === credential.id);
     if (!passkey) {
       return res.status(400).json({ success: false, error: 'Credential ID does not match any registered passkeys' });
     }
 
-    const expectedChallenge = user.resetPasswordOtp;
-    if (!expectedChallenge) {
-      return res.status(400).json({ success: false, error: 'Authentication challenge missing or expired' });
-    }
-
     const rpID = getRpID(req);
+    const expectedOrigin = getExpectedOrigins(req, rpID);
+
     const verification = await verifyAuthenticationResponse({
       response: credential,
       expectedChallenge,
-      expectedOrigin: [`http://${rpID}:4200`, `https://${rpID}`, `http://${req.headers.host}`, `https://${req.headers.host}`],
+      expectedOrigin,
       expectedRPID: rpID,
       authenticator: {
         credentialID: Buffer.from(passkey.credentialID, 'base64url'),
@@ -205,12 +249,9 @@ const verifyLogin = async (req, res) => {
     });
 
     if (verification.verified && verification.authenticationInfo) {
-      // Update counter
       passkey.counter = verification.authenticationInfo.newCounter;
-      user.resetPasswordOtp = undefined;
       await user.save();
 
-      // Check status
       if (user.status === 'inactive') {
         return res.status(403).json({ success: false, error: 'Your account is deactivated' });
       }
@@ -219,14 +260,15 @@ const verifyLogin = async (req, res) => {
         user: user._id,
         action: 'User Passkey Login',
         details: `User logged in using passkey device: ${passkey.deviceName || 'Security Key'}`,
-        module: 'Authentication',
+        module: 'Security',
         ipAddress: req.ip,
       });
 
-      // Handle 2FA intercept if 2FA enabled
       if (user.twoFactorEnabled) {
-        // Return temp token to solve 2FA challenge
-        const tempToken = jwt.sign({ id: user._id, is2faPending: true }, process.env.JWT_SECRET || 'nexus_secret_key_jwt_authentication_2026', { expiresIn: '5m' });
+        if (!process.env.JWT_SECRET) {
+          throw new Error('JWT_SECRET environment variable is missing');
+        }
+        const tempToken = jwt.sign({ id: user._id, is2faPending: true }, process.env.JWT_SECRET, { expiresIn: '5m' });
         return res.json({
           success: true,
           require2FA: true,
@@ -247,6 +289,7 @@ const verifyLogin = async (req, res) => {
       });
     }
 
+    await user.save();
     res.status(400).json({ success: false, error: 'Authentication challenge signature verification failed' });
   } catch (error) {
     console.error('Passkey Verify Login Error:', error);
@@ -255,15 +298,16 @@ const verifyLogin = async (req, res) => {
 };
 
 /**
- * @desc    Delete a Passkey
+ * @desc    Delete a Passkey (Requires re-authentication password)
  * @route   DELETE /api/auth/passkey/:id
  * @access  Private
  */
 const deletePasskey = async (req, res) => {
   const { id } = req.params;
+  const { password } = req.body;
 
   try {
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.user._id).select('+password');
     if (!user) {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
@@ -276,13 +320,35 @@ const deletePasskey = async (req, res) => {
       });
     }
 
+    // Re-authentication requirement if user has a password set
+    if (user.password && !password) {
+      return res.status(401).json({
+        success: false,
+        requireReauth: true,
+        error: 'Re-authentication required. Please provide your password to confirm passkey deletion.',
+      });
+    }
+
+    if (user.password && password && !(await user.matchPassword(password))) {
+      return res.status(401).json({
+        success: false,
+        requireReauth: true,
+        error: 'Re-authentication failed: Incorrect password.',
+      });
+    }
+
+    const passkeyExists = user.passkeys.some(p => p._id.toString() === id);
+    if (!passkeyExists) {
+      return res.status(404).json({ success: false, error: 'Passkey not found or does not belong to user' });
+    }
+
     user.passkeys = user.passkeys.filter(p => p._id.toString() !== id);
     await user.save();
 
     await Activity.create({
       user: user._id,
       action: 'Passkey Deleted',
-      details: `Deleted passkey: ${id}`,
+      details: `Deleted passkey device ID: ${id}`,
       module: 'Security',
       ipAddress: req.ip,
     });

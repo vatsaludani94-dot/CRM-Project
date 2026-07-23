@@ -14,7 +14,7 @@ const createTransporter = () => {
     });
   }
 
-  // Development Fallback Transporter (logs email content to console gracefully)
+  // Development Fallback Transporter (logs email content to console gracefully when SMTP credentials not provided)
   return {
     sendMail: async (mailOptions) => {
       console.log('\n======================================================');
@@ -29,6 +29,11 @@ const createTransporter = () => {
   };
 };
 
+const getFromAddress = () => {
+  const fromEmail = process.env.SMTP_FROM || process.env.SMTP_USER || 'grownxcrm@gmail.com';
+  return `"GrownX CRM" <${fromEmail}>`;
+};
+
 /**
  * Send 6-Digit Password Reset OTP Email
  */
@@ -36,7 +41,7 @@ const sendOtpEmail = async (userEmail, otpCode) => {
   const transporter = createTransporter();
 
   const mailOptions = {
-    from: `"GrownX Security" <${process.env.SMTP_USER || 'no-reply@grownox.com'}>`,
+    from: getFromAddress(),
     to: userEmail,
     subject: 'Your 6-Digit Password Reset Verification OTP - GrownX CRM',
     text: `Your password reset OTP is ${otpCode}. This code is valid for 10 minutes.`,
@@ -61,13 +66,76 @@ const sendOtpEmail = async (userEmail, otpCode) => {
 };
 
 /**
+ * Send 6-Digit Workspace Registration Verification Email
+ */
+const sendRegistrationVerificationEmail = async (userEmail, code) => {
+  const transporter = createTransporter();
+
+  const mailOptions = {
+    from: getFromAddress(),
+    to: userEmail,
+    subject: 'Verify Your Email to Create Your GrownX CRM Workspace',
+    text: `Your workspace registration verification code is ${code}. This code is valid for 10 minutes.`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #fafaf9; border: 1px solid #e7e5e4; border-radius: 16px; padding: 32px;">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <h2 style="color: #1c1917; margin: 0; font-size: 24px;">GrownX CRM</h2>
+          <p style="color: #44403c; font-size: 14px; margin-top: 4px;">Workspace Registration Email Verification</p>
+        </div>
+        <div style="background: #ffffff; border: 1px solid #e7e5e4; border-radius: 12px; padding: 24px; text-align: center;">
+          <p style="color: #44403c; font-size: 14px; margin-bottom: 16px;">Thank you for registering a new GrownX CRM workspace! Please use the 6-digit verification code below to verify your email address:</p>
+          <div style="font-size: 32px; font-weight: 900; letter-spacing: 6px; color: #b45309; background: #fffbeb; border: 1px solid #fef3c7; padding: 16px; border-radius: 8px; display: inline-block; margin: 12px 0;">
+            ${code}
+          </div>
+          <p style="color: #574c43; font-size: 12px; margin-top: 16px;">This code expires in <strong>10 minutes</strong>. Do not share this code with anyone.</p>
+        </div>
+      </div>
+    `,
+  };
+
+  return await transporter.sendMail(mailOptions);
+};
+
+/**
+ * Send Workspace Invitation Email
+ */
+const sendInvitationEmail = async (invitedEmail, companyName, invitationToken, inviterName) => {
+  const transporter = createTransporter();
+  const inviteUrl = `${process.env.ALLOWED_ORIGINS || 'http://localhost:4200'}/accept-invitation?token=${invitationToken}`;
+
+  const mailOptions = {
+    from: getFromAddress(),
+    to: invitedEmail,
+    subject: `You have been invited to join ${companyName} on GrownX CRM`,
+    text: `${inviterName || 'A team owner'} invited you to join ${companyName} on GrownX CRM. Accept invitation link: ${inviteUrl}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #fafaf9; border: 1px solid #e7e5e4; border-radius: 16px; padding: 32px;">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <h2 style="color: #1c1917; margin: 0; font-size: 24px;">GrownX CRM</h2>
+          <p style="color: #44403c; font-size: 14px; margin-top: 4px;">Workspace Team Invitation</p>
+        </div>
+        <div style="background: #ffffff; border: 1px solid #e7e5e4; border-radius: 12px; padding: 24px; text-align: center;">
+          <p style="color: #44403c; font-size: 14px; margin-bottom: 16px;"><strong>${inviterName || 'Workspace Admin'}</strong> invited you to join the team workspace for <strong>${companyName}</strong>.</p>
+          <div style="margin: 24px 0;">
+            <a href="${inviteUrl}" style="background: #1c1917; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 10px; font-weight: bold; display: inline-block; font-size: 14px;">Accept Invitation & Join Team →</a>
+          </div>
+          <p style="color: #574c43; font-size: 12px; margin-top: 16px;">This invitation is valid for <strong>7 days</strong>.</p>
+        </div>
+      </div>
+    `,
+  };
+
+  return await transporter.sendMail(mailOptions);
+};
+
+/**
  * Send Customer Purchase Invoice & License Download Link Email
  */
 const sendCustomerInvoiceEmail = async ({ email, name, planName, amount, currency, paymentId, licenseKey }) => {
   const transporter = createTransporter();
 
   const mailOptions = {
-    from: `"GrownX Billing" <${process.env.SMTP_USER || 'billing@grownox.com'}>`,
+    from: getFromAddress(),
     to: email,
     subject: `Official Purchase Invoice & Software License Key - GrownX CRM (${planName})`,
     text: `Thank you for your purchase of GrownX CRM ${planName}. License Key: ${licenseKey}. Payment ID: ${paymentId}.`,
@@ -114,7 +182,7 @@ const sendCustomerInvoiceEmail = async ({ email, name, planName, amount, currenc
         </div>
 
         <div style="text-align: center; color: #574c43; font-size: 12px; line-height: 1.5;">
-          <p style="margin: 4px 0;">GrownX Technologies • Support Email: <a href="mailto:vatsaludani94@gmail.com" style="color: #b45309;">vatsaludani94@gmail.com</a> • Contact: +91 7624026264</p>
+          <p style="margin: 4px 0;">GrownX Technologies • Support Email: <a href="mailto:grownxcrm@gmail.com" style="color: #b45309;">grownxcrm@gmail.com</a></p>
         </div>
       </div>
     `,
@@ -124,14 +192,14 @@ const sendCustomerInvoiceEmail = async ({ email, name, planName, amount, currenc
 };
 
 /**
- * Send Sales Alert Receipt Email to Owner (vatsaludani94@gmail.com)
+ * Send Sales Alert Receipt Email to Owner
  */
 const sendOwnerSalesAlertEmail = async ({ buyerName, buyerEmail, planName, amount, currency, paymentId, licenseKey }) => {
   const transporter = createTransporter();
 
   const mailOptions = {
-    from: `"GrownX Sales Alert" <${process.env.SMTP_USER || 'no-reply@grownox.com'}>`,
-    to: 'vatsaludani94@gmail.com',
+    from: getFromAddress(),
+    to: process.env.SMTP_USER || 'grownxcrm@gmail.com',
     subject: `🚨 NEW SALE ALERT: ₹${amount} Received for ${planName} from ${buyerName}`,
     text: `New sale completed! Buyer: ${buyerName} (${buyerEmail}). Plan: ${planName}. Amount: ₹${amount}. Payment ID: ${paymentId}. License: ${licenseKey}.`,
     html: `
@@ -176,6 +244,8 @@ const sendOwnerSalesAlertEmail = async ({ buyerName, buyerEmail, planName, amoun
 
 module.exports = {
   sendOtpEmail,
+  sendRegistrationVerificationEmail,
+  sendInvitationEmail,
   sendCustomerInvoiceEmail,
   sendOwnerSalesAlertEmail,
 };

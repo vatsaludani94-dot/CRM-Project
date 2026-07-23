@@ -81,6 +81,19 @@ const UserSchema = new mongoose.Schema(
     twoFactorSecret: {
       type: String,
     },
+    twoFactorRecoveryCodes: [
+      {
+        codeHash: { type: String, required: true },
+        used: { type: Boolean, default: false },
+        usedAt: Date,
+      }
+    ],
+    passkeyChallenge: String,
+    passkeyChallengeExpiresAt: Date,
+    tokenVersion: {
+      type: Number,
+      default: 0,
+    },
     passkeys: [
       {
         credentialID: { type: String, required: true },
@@ -100,6 +113,9 @@ const UserSchema = new mongoose.Schema(
 // Encrypt password using bcrypt
 UserSchema.pre('save', async function (next) {
   if (!this.isModified('password') || !this.password) {
+    return next();
+  }
+  if (this.password.startsWith('$2a$') || this.password.startsWith('$2b$')) {
     return next();
   }
   const salt = await bcrypt.genSalt(10);

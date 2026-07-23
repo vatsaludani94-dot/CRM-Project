@@ -5,7 +5,15 @@ frontend/angular-app/node_modules/
 
 # Environment configurations (Contains private credentials/API keys)
 .env
+.env.*
+!.env.example
 backend/.env
+backend/.env.*
+!backend/.env.example
+*.pem
+*.key
+credentials.json
+service-account*.json
 
 # Angular build outputs and cache
 .angular/

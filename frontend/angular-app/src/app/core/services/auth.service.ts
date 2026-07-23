@@ -117,7 +117,11 @@ export class AuthService {
   }
 
   registerWorkspace(data: { companyName: string; name: string; email: string; password: string }): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/register-workspace`, data).pipe(
+    return this.http.post<any>(`${this.apiUrl}/register-workspace`, data);
+  }
+
+  verifyWorkspaceRegistration(email: string, code: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/register-workspace/verify`, { email, code }).pipe(
       map(response => {
         if (response && response.success && response.data) {
           const user = response.data;
@@ -128,9 +132,13 @@ export class AuthService {
           }
           return user;
         }
-        throw new Error(response.error || 'Workspace registration failed');
+        throw new Error(response.error || 'Verification failed');
       })
     );
+  }
+
+  resendRegistrationCode(email: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/register-workspace/resend-code`, { email });
   }
 
   forgotPassword(email: string): Observable<any> {
