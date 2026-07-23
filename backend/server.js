@@ -1,4 +1,21 @@
-require('dotenv').config();
+const path = require('path');
+const fs = require('fs');
+
+// Load environment variables reliably regardless of current working directory
+const backendEnvPath = path.join(__dirname, '.env');
+const rootEnvPath = path.join(__dirname, '../.env');
+
+if (fs.existsSync(backendEnvPath)) {
+  require('dotenv').config({ path: backendEnvPath });
+} else if (fs.existsSync(rootEnvPath)) {
+  require('dotenv').config({ path: rootEnvPath });
+} else {
+  require('dotenv').config();
+}
+
+// Log safe diagnostic status (never log secret values)
+console.log(`JWT_SECRET configured: ${Boolean(process.env.JWT_SECRET)}`);
+console.log(`Google Client ID configured: ${Boolean(process.env.GOOGLE_CLIENT_ID)}`);
 
 if (!process.env.JWT_SECRET) {
   console.error('FATAL WARNING: JWT_SECRET environment variable is not set!');
