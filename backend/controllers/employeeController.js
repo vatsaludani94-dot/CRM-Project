@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Lead = require('../models/Lead');
 const Ticket = require('../models/Ticket');
 const Activity = require('../models/Activity');
+const { getTenantFilter, getTenantId } = require('../utils/tenantScope');
 
 /**
  * @desc    Get employee directory list
@@ -10,8 +11,9 @@ const Activity = require('../models/Activity');
  */
 const getEmployees = async (req, res) => {
   try {
+    const tenantFilter = getTenantFilter(req);
     const { department, status } = req.query;
-    let query = { role: { $in: ['employee', 'manager'] } }; // exclude customers
+    let query = { role: { $in: ['employee', 'manager', 'workspace_owner'] }, ...tenantFilter };
 
     if (department) query.department = department;
     if (status) query.status = status;
@@ -20,7 +22,7 @@ const getEmployees = async (req, res) => {
 
     res.json({ success: true, count: employees.length, data: employees });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
@@ -31,28 +33,28 @@ const getEmployees = async (req, res) => {
  */
 const getEmployeePerformance = async (req, res) => {
   try {
+    const tenantFilter = getTenantFilter(req);
     const employeeId = req.params.id;
-    const employee = await User.findById(employeeId).select('-password');
+    const employee = await User.findOne({ _id: employeeId, ...tenantFilter }).select('-password');
     
     if (!employee) {
       return res.status(404).json({ success: false, error: 'Employee not found' });
     }
 
-    // 1. Calculate assigned vs converted leads
-    const totalLeads = await Lead.countDocuments({ assignedEmployee: employeeId });
-    const convertedLeads = await Lead.countDocuments({ assignedEmployee: employeeId, stage: 'Converted' });
-    const lostLeads = await Lead.countDocuments({ assignedEmployee: employeeId, stage: 'Lost' });
+    // 1. Calculate assigned vs converted leads within tenant
+    const totalLeads = await Lead.countDocuments({ assignedEmployee: employeeId, ...tenantFilter });
+    const convertedLeads = await Lead.countDocuments({ assignedEmployee: employeeId, stage: 'Converted', ...tenantFilter });
+    const lostLeads = await Lead.countDocuments({ assignedEmployee: employeeId, stage: 'Lost', ...tenantFilter });
 
-    // 2. Calculate resolved tickets
-    const assignedTickets = await Ticket.countDocuments({ assignedEmployee: employeeId });
-    const resolvedTickets = await Ticket.countDocuments({ assignedEmployee: employeeId, status: { $in: ['Resolved', 'Closed'] } });
+    // 2. Calculate resolved tickets within tenant
+    const assignedTickets = await Ticket.countDocuments({ assignedEmployee: employeeId, ...tenantFilter });
+    const resolvedTickets = await Ticket.countDocuments({ assignedEmployee: employeeId, status: { $in: ['Resolved', 'Closed'] }, ...tenantFilter });
 
     // 3. Productivity Score Calculation (0 to 100)
-    // Formula: (Converted Leads * 20 + Resolved Tickets * 10) capped at 100, or a ratio
     let leadRatio = totalLeads > 0 ? (convertedLeads / totalLeads) * 100 : 0;
     let ticketRatio = assignedTickets > 0 ? (resolvedTickets / assignedTickets) * 100 : 0;
     
-    let productivityScore = 50; // base score if no tasks
+    let productivityScore = 50;
     if (totalLeads > 0 || assignedTickets > 0) {
       const leadWeight = totalLeads > 0 ? 0.6 : 0;
       const ticketWeight = assignedTickets > 0 ? 0.4 : 0;
@@ -63,7 +65,6 @@ const getEmployeePerformance = async (req, res) => {
       );
     }
 
-    // Ensure it's between 10 and 100
     productivityScore = Math.max(10, Math.min(100, productivityScore));
 
     res.json({
@@ -83,12 +84,12 @@ const getEmployeePerformance = async (req, res) => {
           leadsLost: lostLeads,
           ticketsAssigned: assignedTickets,
           ticketsResolved: resolvedTickets,
-          productivityIndex: productivityScore, // Percentage representing output quality
+          productivityIndex: productivityScore,
         }
       }
     });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
@@ -99,14 +100,15 @@ const getEmployeePerformance = async (req, res) => {
  */
 const getLeaderboard = async (req, res) => {
   try {
-    const employees = await User.find({ role: 'employee', status: 'active' }).select('name email department');
+    const tenantFilter = getTenantFilter(req);
+    const employees = await User.find({ role: { $in: ['employee', 'manager'] }, status: 'active', ...tenantFilter }).select('name email department');
     const leaderboard = [];
 
     for (let emp of employees) {
-      const leadsConverted = await Lead.countDocuments({ assignedEmployee: emp._id, stage: 'Converted' });
-      const ticketsResolved = await Ticket.countDocuments({ assignedEmployee: emp._id, status: { $in: ['Resolved', 'Closed'] } });
+      const leadsConverted = await Lead.countDocuments({ assignedEmployee: emp._id, stage: 'Converted', ...tenantFilter });
+      const ticketsResolved = await Ticket.countDocuments({ assignedEmployee: emp._id, status: { $in: ['Resolved', 'Closed'] }, ...tenantFilter });
       const totalRevenue = await Lead.aggregate([
-        { $match: { assignedEmployee: emp._id, stage: 'Converted' } },
+        { $match: { assignedEmployee: emp._id, stage: 'Converted', ...tenantFilter } },
         { $group: { _id: null, total: { $sum: '$expectedRevenue' } } }
       ]);
 
@@ -124,12 +126,11 @@ const getLeaderboard = async (req, res) => {
       });
     }
 
-    // Sort descending by score
     leaderboard.sort((a, b) => b.overallScore - a.overallScore);
 
-    res.json({ success: true, data: leaderboard.slice(0, 10) }); // Top 10
+    res.json({ success: true, data: leaderboard.slice(0, 10) });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
@@ -140,8 +141,9 @@ const getLeaderboard = async (req, res) => {
  */
 const updateEmployee = async (req, res) => {
   try {
+    const tenantFilter = getTenantFilter(req);
     const { department, status, role } = req.body;
-    const employee = await User.findById(req.params.id);
+    const employee = await User.findOne({ _id: req.params.id, ...tenantFilter });
 
     if (!employee) {
       return res.status(404).json({ success: false, error: 'Employee not found' });
@@ -149,7 +151,9 @@ const updateEmployee = async (req, res) => {
 
     if (department) employee.department = department;
     if (status) employee.status = status;
-    if (role && req.user.role === 'super_admin') employee.role = role;
+    if (role && (req.user.role === 'super_admin' || req.user.role === 'workspace_owner')) {
+      employee.role = role;
+    }
 
     await employee.save();
 
@@ -159,11 +163,12 @@ const updateEmployee = async (req, res) => {
       details: `Employee ${employee.name} status updated to ${employee.status}, department ${employee.department} by ${req.user.name}.`,
       module: 'Employee',
       ipAddress: req.ip,
+      tenant: getTenantId(req),
     });
 
     res.json({ success: true, data: employee });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 

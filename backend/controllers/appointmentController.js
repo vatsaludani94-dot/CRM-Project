@@ -1,6 +1,10 @@
 const Appointment = require('../models/Appointment');
 const Activity = require('../models/Activity');
 const Notification = require('../models/Notification');
+const Customer = require('../models/Customer');
+const Lead = require('../models/Lead');
+const User = require('../models/User');
+const { getTenantFilter, getTenantId } = require('../utils/tenantScope');
 
 /**
  * @desc    Get all appointments (calendar list)
@@ -9,16 +13,15 @@ const Notification = require('../models/Notification');
  */
 const getAppointments = async (req, res) => {
   try {
-    let query = {};
+    const tenantFilter = getTenantFilter(req);
+    let query = { ...tenantFilter };
     
-    // RBAC: Employees can see only appointments where they are host
     if (req.user.role === 'employee') {
       query.host = req.user._id;
     } else if (req.query.hostId) {
       query.host = req.query.hostId;
     }
 
-    // Filter by date range (calendar views)
     if (req.query.startDate && req.query.endDate) {
       query.appointmentDate = {
         $gte: new Date(req.query.startDate),
@@ -34,7 +37,7 @@ const getAppointments = async (req, res) => {
 
     res.json({ success: true, count: appointments.length, data: appointments });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
@@ -45,9 +48,32 @@ const getAppointments = async (req, res) => {
  */
 const createAppointment = async (req, res) => {
   try {
+    const tenantFilter = getTenantFilter(req);
+    const tenantId = getTenantId(req);
     const { subject, description, appointmentDate, startTime, endTime, customerId, leadId, hostId } = req.body;
     
     const targetHost = hostId || req.user._id;
+
+    if (targetHost) {
+      const hostUser = await User.findOne({ _id: targetHost, ...tenantFilter });
+      if (!hostUser) {
+        return res.status(400).json({ success: false, error: 'Assigned host does not belong to your workspace' });
+      }
+    }
+
+    if (customerId) {
+      const cust = await Customer.findOne({ _id: customerId, ...tenantFilter });
+      if (!cust) {
+        return res.status(400).json({ success: false, error: 'Customer does not belong to your workspace' });
+      }
+    }
+
+    if (leadId) {
+      const leadObj = await Lead.findOne({ _id: leadId, ...tenantFilter });
+      if (!leadObj) {
+        return res.status(400).json({ success: false, error: 'Lead does not belong to your workspace' });
+      }
+    }
 
     const appointment = new Appointment({
       subject,
@@ -58,26 +84,25 @@ const createAppointment = async (req, res) => {
       customer: customerId || null,
       lead: leadId || null,
       host: targetHost,
+      tenant: tenantId,
     });
 
     await appointment.save();
     
-    // Populate references
     await appointment.populate([
       { path: 'customer', select: 'companyName contactPerson' },
       { path: 'lead', select: 'company contactName' },
       { path: 'host', select: 'name email' }
     ]);
 
-    // Log global activity
     await Activity.create({
       user: req.user._id,
       action: 'Appointment Created',
       details: `Appointment "${appointment.subject}" scheduled for ${appointment.appointmentDate.toDateString()} by ${req.user.name}`,
       module: 'System',
+      tenant: tenantId,
     });
 
-    // Notify host if it is another user
     if (String(targetHost) !== String(req.user._id)) {
       const notification = await Notification.create({
         recipient: targetHost,
@@ -85,7 +110,8 @@ const createAppointment = async (req, res) => {
         title: 'New Appointment Booked',
         message: `Meeting "${appointment.subject}" has been scheduled for you on ${appointment.appointmentDate.toDateString()} at ${appointment.startTime}`,
         type: 'System',
-        link: '/dashboard', // will link to calendar
+        link: '/dashboard',
+        tenant: tenantId,
       });
 
       const io = req.app.get('io');
@@ -96,7 +122,7 @@ const createAppointment = async (req, res) => {
 
     res.status(201).json({ success: true, data: appointment });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
@@ -107,14 +133,35 @@ const createAppointment = async (req, res) => {
  */
 const updateAppointment = async (req, res) => {
   try {
-    const appointment = await Appointment.findById(req.params.id);
+    const tenantFilter = getTenantFilter(req);
+    const appointment = await Appointment.findOne({ _id: req.params.id, ...tenantFilter });
     if (!appointment) {
       return res.status(404).json({ success: false, error: 'Appointment not found' });
     }
 
-    // RBAC: Employees can only edit their own meetings
     if (req.user.role === 'employee' && String(appointment.host) !== String(req.user._id)) {
       return res.status(403).json({ success: false, error: 'Not authorized to modify this appointment' });
+    }
+
+    if (req.body.customerId) {
+      const cust = await Customer.findOne({ _id: req.body.customerId, ...tenantFilter });
+      if (!cust) {
+        return res.status(400).json({ success: false, error: 'Customer does not belong to your workspace' });
+      }
+    }
+
+    if (req.body.leadId) {
+      const leadObj = await Lead.findOne({ _id: req.body.leadId, ...tenantFilter });
+      if (!leadObj) {
+        return res.status(400).json({ success: false, error: 'Lead does not belong to your workspace' });
+      }
+    }
+
+    if (req.body.host) {
+      const hostUser = await User.findOne({ _id: req.body.host, ...tenantFilter });
+      if (!hostUser) {
+        return res.status(400).json({ success: false, error: 'Host user does not belong to your workspace' });
+      }
     }
 
     const fields = ['subject', 'description', 'appointmentDate', 'startTime', 'endTime', 'status', 'host', 'customerId', 'leadId'];
@@ -136,7 +183,7 @@ const updateAppointment = async (req, res) => {
 
     res.json({ success: true, data: appointment });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
@@ -147,28 +194,29 @@ const updateAppointment = async (req, res) => {
  */
 const deleteAppointment = async (req, res) => {
   try {
-    const appointment = await Appointment.findById(req.params.id);
+    const tenantFilter = getTenantFilter(req);
+    const appointment = await Appointment.findOne({ _id: req.params.id, ...tenantFilter });
     if (!appointment) {
       return res.status(404).json({ success: false, error: 'Appointment not found' });
     }
 
-    // RBAC
     if (req.user.role === 'employee' && String(appointment.host) !== String(req.user._id)) {
       return res.status(403).json({ success: false, error: 'Not authorized to delete this appointment' });
     }
 
-    await Appointment.findByIdAndDelete(req.params.id);
+    await Appointment.findOneAndDelete({ _id: req.params.id, ...tenantFilter });
 
     await Activity.create({
       user: req.user._id,
       action: 'Appointment Deleted',
       details: `Meeting "${appointment.subject}" scheduled for ${appointment.appointmentDate.toDateString()} was cancelled.`,
       module: 'System',
+      tenant: appointment.tenant,
     });
 
     res.json({ success: true, message: 'Appointment deleted successfully' });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 

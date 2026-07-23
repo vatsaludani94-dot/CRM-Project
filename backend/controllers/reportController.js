@@ -1,18 +1,14 @@
 const Customer = require('../models/Customer');
 const Lead = require('../models/Lead');
 const Ticket = require('../models/Ticket');
-const User = require('../models/User');
 const PDFDocument = require('pdfkit');
+const { getTenantFilter } = require('../utils/tenantScope');
 
-/**
- * Utility to convert JSON array to CSV string
- */
 const convertToCSV = (data, headers) => {
   const headerRow = headers.join(',') + '\n';
   const rows = data.map(row => 
     headers.map(header => {
       const val = row[header] !== undefined ? row[header] : '';
-      // Escape commas and quotes
       const stringified = typeof val === 'object' ? JSON.stringify(val) : String(val);
       const escaped = stringified.replace(/"/g, '""');
       return `"${escaped}"`;
@@ -21,15 +17,11 @@ const convertToCSV = (data, headers) => {
   return headerRow + rows;
 };
 
-/**
- * @desc    Export Customer Report
- * @route   GET /api/reports/customers
- * @access  Private (Admin, Manager)
- */
 const exportCustomerReport = async (req, res) => {
   try {
+    const tenantFilter = getTenantFilter(req);
     const format = req.query.format || 'csv';
-    const customers = await Customer.find().populate('assignedEmployee', 'name');
+    const customers = await Customer.find(tenantFilter).populate('assignedEmployee', 'name');
 
     if (format === 'csv') {
       const headers = ['customerCode', 'companyName', 'contactPerson', 'email', 'phone', 'industry', 'status', 'revenueGenerated', 'assignedEmployee'];
@@ -55,11 +47,9 @@ const exportCustomerReport = async (req, res) => {
       res.setHeader('Content-Disposition', 'attachment; filename="customer_report.pdf"');
       doc.pipe(res);
 
-      // Report Header
       doc.fillColor('#0f172a').fontSize(16).text('Grownox Technologies - Customer Directory Report', 30, 30);
       doc.fontSize(8).fillColor('#64748b').text(`Generated on: ${new Date().toLocaleString()}`, 30, 50);
 
-      // Table Header
       let y = 80;
       doc.rect(30, y, 780, 20).fill('#1e293b');
       doc.fillColor('#ffffff').fontSize(8).font('Helvetica-Bold');
@@ -71,7 +61,6 @@ const exportCustomerReport = async (req, res) => {
       doc.text('STATUS', 640, y + 6, { width: 50 });
       doc.text('REVENUE', 700, y + 6, { width: 100, align: 'right' });
 
-      // Rows
       y += 20;
       doc.font('Helvetica').fillColor('#334155');
       customers.forEach((c, index) => {
@@ -91,7 +80,6 @@ const exportCustomerReport = async (req, res) => {
           doc.font('Helvetica').fillColor('#334155');
         }
 
-        // Alternate row colors
         if (index % 2 === 0) {
           doc.rect(30, y, 780, 18).fill('#f8fafc');
         }
@@ -110,19 +98,15 @@ const exportCustomerReport = async (req, res) => {
       doc.end();
     }
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
-/**
- * @desc    Export Lead Report
- * @route   GET /api/reports/leads
- * @access  Private (Admin, Manager)
- */
 const exportLeadReport = async (req, res) => {
   try {
+    const tenantFilter = getTenantFilter(req);
     const format = req.query.format || 'csv';
-    const leads = await Lead.find().populate('assignedEmployee', 'name');
+    const leads = await Lead.find(tenantFilter).populate('assignedEmployee', 'name');
 
     if (format === 'csv') {
       const headers = ['company', 'contactName', 'email', 'phone', 'leadSource', 'expectedRevenue', 'stage', 'aiScore', 'assignedEmployee'];
@@ -199,19 +183,15 @@ const exportLeadReport = async (req, res) => {
       doc.end();
     }
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
-/**
- * @desc    Export Support Ticket Report
- * @route   GET /api/reports/tickets
- * @access  Private (Admin, Manager)
- */
 const exportTicketReport = async (req, res) => {
   try {
+    const tenantFilter = getTenantFilter(req);
     const format = req.query.format || 'csv';
-    const tickets = await Ticket.find().populate('customer', 'companyName').populate('assignedEmployee', 'name');
+    const tickets = await Ticket.find(tenantFilter).populate('customer', 'companyName').populate('assignedEmployee', 'name');
 
     if (format === 'csv') {
       const headers = ['ticketCode', 'title', 'category', 'priority', 'status', 'customer', 'assignedEmployee'];
@@ -286,7 +266,7 @@ const exportTicketReport = async (req, res) => {
       doc.end();
     }
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 

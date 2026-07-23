@@ -2,7 +2,7 @@ const EmailMessage = require('../models/EmailMessage');
 const User = require('../models/User');
 const Lead = require('../models/Lead');
 const Customer = require('../models/Customer');
-const Activity = require('../models/Activity');
+const { getTenantFilter, getTenantId } = require('../utils/tenantScope');
 
 // Mock OAuth URL generation
 const getOAuthUrl = (req, res) => {
@@ -17,7 +17,6 @@ const handleOAuthCallback = async (req, res) => {
   try {
     const { code, email } = req.body;
     
-    // Simulate updating user record with connected Gmail tokens
     const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(404).json({ success: false, error: 'User not found' });
@@ -40,8 +39,24 @@ const handleOAuthCallback = async (req, res) => {
 // Send email (outgoing)
 const sendEmail = async (req, res) => {
   try {
+    const tenantFilter = getTenantFilter(req);
+    const tenantId = getTenantId(req);
     const { subject, body, to, cc, bcc, customerId, leadId } = req.body;
     const user = await User.findById(req.user._id);
+
+    if (customerId) {
+      const cust = await Customer.findOne({ _id: customerId, ...tenantFilter });
+      if (!cust) {
+        return res.status(400).json({ success: false, error: 'Customer does not belong to your workspace' });
+      }
+    }
+
+    if (leadId) {
+      const leadObj = await Lead.findOne({ _id: leadId, ...tenantFilter });
+      if (!leadObj) {
+        return res.status(400).json({ success: false, error: 'Lead does not belong to your workspace' });
+      }
+    }
 
     const fromAddress = user.gmailOAuth?.connectedEmail || user.email;
 
@@ -57,12 +72,11 @@ const sendEmail = async (req, res) => {
       lead: leadId || undefined,
       threadId: 'thread_' + Math.random().toString(36).substring(7),
       messageId: 'msg_' + Math.random().toString(36).substring(7),
-      tenant: req.user.tenant,
+      tenant: tenantId,
     });
 
-    // Log to Customer activities
     if (customerId) {
-      const customer = await Customer.findById(customerId);
+      const customer = await Customer.findOne({ _id: customerId, ...tenantFilter });
       if (customer) {
         customer.activities.push({
           type: 'Email',
@@ -75,14 +89,15 @@ const sendEmail = async (req, res) => {
 
     res.status(201).json({ success: true, data: email });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
 };
 
-// Track email opens (simulating pixel request)
+// Track email opens
 const trackEmailOpen = async (req, res) => {
   try {
-    const email = await EmailMessage.findById(req.params.id);
+    const tenantFilter = getTenantFilter(req);
+    const email = await EmailMessage.findOne({ _id: req.params.id, ...tenantFilter });
     if (!email) {
       return res.status(404).json({ success: false, error: 'Email record not found' });
     }
@@ -92,9 +107,8 @@ const trackEmailOpen = async (req, res) => {
       email.tracking.openedAt = new Date();
       await email.save();
 
-      // Log in Customer timeline too if exists
       if (email.customer) {
-        const customer = await Customer.findById(email.customer);
+        const customer = await Customer.findOne({ _id: email.customer, ...tenantFilter });
         if (customer) {
           customer.activities.push({
             type: 'Email',
@@ -108,13 +122,14 @@ const trackEmailOpen = async (req, res) => {
 
     res.json({ success: true, data: email });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
 };
 
-// Receive mock incoming email (optionally auto-creates leads)
+// Receive mock incoming email
 const receiveIncomingEmail = async (req, res) => {
   try {
+    const tenantId = getTenantId(req);
     const { from, to, subject, body, autoCreateLead } = req.body;
 
     const email = await EmailMessage.create({
@@ -125,19 +140,19 @@ const receiveIncomingEmail = async (req, res) => {
       direction: 'incoming',
       threadId: 'thread_' + Math.random().toString(36).substring(7),
       messageId: 'msg_' + Math.random().toString(36).substring(7),
-      tenant: req.user.tenant,
+      tenant: tenantId,
     });
 
     let createdLead = null;
     if (autoCreateLead) {
-      // Auto-create lead
       createdLead = await Lead.create({
-        name: from.split('@')[0] || 'Incoming Email Lead',
+        company: from.split('@')[0] || 'Incoming Email Lead',
+        contactName: from.split('@')[0] || 'Incoming Contact',
         email: from,
-        source: 'Email',
+        leadSource: 'Email',
         stage: 'New',
-        notes: `Automatically created from incoming email with subject: ${subject}`,
-        tenant: req.user.tenant,
+        notes: [{ content: `Automatically created from incoming email with subject: ${subject}`, createdBy: req.user._id }],
+        tenant: tenantId,
       });
 
       email.lead = createdLead._id;
@@ -146,21 +161,22 @@ const receiveIncomingEmail = async (req, res) => {
 
     res.status(201).json({ success: true, data: email, createdLead });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
 };
 
 // Get email history for the workspace
 const getEmailHistory = async (req, res) => {
   try {
-    const emails = await EmailMessage.find({ tenant: req.user.tenant })
+    const tenantFilter = getTenantFilter(req);
+    const emails = await EmailMessage.find(tenantFilter)
       .populate('customer', 'companyName contactPerson')
-      .populate('lead', 'name email')
+      .populate('lead', 'company contactName email')
       .sort({ createdAt: -1 });
 
     res.json({ success: true, count: emails.length, data: emails });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
 };
 

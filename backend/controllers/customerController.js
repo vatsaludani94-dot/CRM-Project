@@ -6,7 +6,7 @@ const { autoCreateCustomerFolder } = require('./driveController');
 const EmailMessage = require('../models/EmailMessage');
 const Document = require('../models/Document');
 const Task = require('../models/Task');
-
+const { getTenantFilter, getTenantId } = require('../utils/tenantScope');
 
 /**
  * @desc    Get all customers with search and filtering
@@ -15,10 +15,11 @@ const Task = require('../models/Task');
  */
 const getCustomers = async (req, res) => {
   try {
+    const tenantFilter = getTenantFilter(req);
     const { search, status, industry, assignedEmployee } = req.query;
-    let query = {};
+    let query = { ...tenantFilter };
 
-    // RBAC: Employees can only see their assigned customers (unless they are Manager/SuperAdmin)
+    // RBAC: Employees can only see their assigned customers
     if (req.user.role === 'employee') {
       query.assignedEmployee = req.user._id;
     } else if (assignedEmployee) {
@@ -27,11 +28,16 @@ const getCustomers = async (req, res) => {
 
     // Search query
     if (search) {
-      query.$or = [
-        { companyName: { $regex: search, $options: 'i' } },
-        { contactPerson: { $regex: search, $options: 'i' } },
-        { customerCode: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
+      query.$and = [
+        tenantFilter,
+        {
+          $or: [
+            { companyName: { $regex: search, $options: 'i' } },
+            { contactPerson: { $regex: search, $options: 'i' } },
+            { customerCode: { $regex: search, $options: 'i' } },
+            { email: { $regex: search, $options: 'i' } },
+          ]
+        }
       ];
     }
 
@@ -45,7 +51,7 @@ const getCustomers = async (req, res) => {
 
     res.json({ success: true, count: customers.length, data: customers });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
@@ -56,7 +62,8 @@ const getCustomers = async (req, res) => {
  */
 const getCustomerById = async (req, res) => {
   try {
-    const customer = await Customer.findById(req.params.id)
+    const tenantFilter = getTenantFilter(req);
+    const customer = await Customer.findOne({ _id: req.params.id, ...tenantFilter })
       .populate('assignedEmployee', 'name email role')
       .populate('notes.createdBy', 'name email')
       .populate('activities.performedBy', 'name email')
@@ -76,7 +83,7 @@ const getCustomerById = async (req, res) => {
 
     res.json({ success: true, data: customer });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
@@ -87,7 +94,8 @@ const getCustomerById = async (req, res) => {
  */
 const getCustomer360 = async (req, res) => {
   try {
-    const customer = await Customer.findById(req.params.id)
+    const tenantFilter = getTenantFilter(req);
+    const customer = await Customer.findOne({ _id: req.params.id, ...tenantFilter })
       .populate('assignedEmployee', 'name email role department')
       .populate('notes.createdBy', 'name email profilePicture')
       .populate('activities.performedBy', 'name email')
@@ -97,15 +105,15 @@ const getCustomer360 = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Customer not found' });
     }
 
-    // Fetch all tickets for this customer
-    const tickets = await Ticket.find({ customer: customer._id })
+    // Fetch all tickets for this customer within tenant
+    const tickets = await Ticket.find({ customer: customer._id, ...tenantFilter })
       .populate('assignedEmployee', 'name email department')
       .sort({ createdAt: -1 });
 
-    // Fetch emails, documents, and tasks for unified timeline (Module K)
-    const emailsList = await EmailMessage.find({ customer: customer._id }).sort({ createdAt: -1 });
-    const documentsList = await Document.find({ customer: customer._id }).sort({ createdAt: -1 });
-    const tasksList = await Task.find({ customer: customer._id }).sort({ createdAt: -1 });
+    // Fetch emails, documents, and tasks for unified timeline
+    const emailsList = await EmailMessage.find({ customer: customer._id, ...tenantFilter }).sort({ createdAt: -1 });
+    const documentsList = await Document.find({ customer: customer._id, ...tenantFilter }).sort({ createdAt: -1 });
+    const tasksList = await Task.find({ customer: customer._id, ...tenantFilter }).sort({ createdAt: -1 });
 
     let timeline = [];
 
@@ -163,7 +171,7 @@ const getCustomer360 = async (req, res) => {
       }
     });
 
-    // Outgoing/Incoming Emails (Module K Timeline tracking)
+    // Outgoing/Incoming Emails
     emailsList.forEach(email => {
       timeline.push({
         event: email.direction === 'incoming' ? 'Email Received' : 'Email Sent',
@@ -199,7 +207,7 @@ const getCustomer360 = async (req, res) => {
       });
     });
 
-    // Activities Logged (Calls, Emails, Meetings)
+    // Activities Logged
     customer.activities.forEach(activity => {
       const performer = activity.performedBy ? activity.performedBy.name : 'Representative';
       let icon = 'phone';
@@ -242,7 +250,7 @@ const getCustomer360 = async (req, res) => {
     });
   } catch (error) {
     console.error('Customer 360 error:', error.message);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
@@ -253,11 +261,20 @@ const getCustomer360 = async (req, res) => {
  */
 const createCustomer = async (req, res) => {
   try {
+    const tenantFilter = getTenantFilter(req);
+    const tenantId = getTenantId(req);
     const { companyName, contactPerson, email, phone, address, industry, status, revenueGenerated, assignedEmployee } = req.body;
 
-    const customerExists = await Customer.findOne({ email });
+    const customerExists = await Customer.findOne({ email, ...tenantFilter });
     if (customerExists) {
-      return res.status(400).json({ success: false, error: 'Customer already exists with this email' });
+      return res.status(400).json({ success: false, error: 'Customer already exists with this email in your workspace' });
+    }
+
+    if (assignedEmployee) {
+      const emp = await User.findOne({ _id: assignedEmployee, ...tenantFilter });
+      if (!emp) {
+        return res.status(400).json({ success: false, error: 'Assigned employee does not belong to your workspace' });
+      }
     }
 
     const customer = new Customer({
@@ -270,35 +287,34 @@ const createCustomer = async (req, res) => {
       status: status || 'Active',
       revenueGenerated: revenueGenerated || 0,
       assignedEmployee: assignedEmployee || req.user._id,
+      tenant: tenantId,
       leadHistory: [{ stage: 'New', changedBy: req.user._id }]
     });
 
-    // If status is active/VIP immediately, simulate lead conversion history
     if (status && status !== 'Inactive') {
       customer.leadHistory.push({ stage: 'Converted', changedBy: req.user._id });
     }
 
     await customer.save();
 
-    // Auto-create Google Drive folder structure
     try {
-      await autoCreateCustomerFolder(customer, req.user.tenant);
+      await autoCreateCustomerFolder(customer, tenantId);
     } catch (driveErr) {
       console.error('Failed to auto-create customer folder:', driveErr.message);
     }
 
-    // Log System Activity
     await Activity.create({
       user: req.user._id,
       action: 'Customer Created',
       details: `Customer ${customer.companyName} (${customer.customerCode}) created by ${req.user.name}.`,
       module: 'Customer',
       ipAddress: req.ip,
+      tenant: tenantId,
     });
 
     res.status(201).json({ success: true, data: customer });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
@@ -309,12 +325,20 @@ const createCustomer = async (req, res) => {
  */
 const updateCustomer = async (req, res) => {
   try {
-    const customer = await Customer.findById(req.params.id);
+    const tenantFilter = getTenantFilter(req);
+    const customer = await Customer.findOne({ _id: req.params.id, ...tenantFilter });
     if (!customer) {
       return res.status(404).json({ success: false, error: 'Customer not found' });
     }
 
-    // Fields to update
+    if (req.body.assignedEmployee) {
+      const emp = await User.findOne({ _id: req.body.assignedEmployee, ...tenantFilter });
+      if (!emp) {
+        return res.status(400).json({ success: false, error: 'Assigned employee does not belong to your workspace' });
+      }
+    }
+
+    // Fields to update (ignore tenant field mutation)
     const updatableFields = [
       'companyName', 'contactPerson', 'email', 'phone', 'address', 'industry',
       'assignedEmployee', 'status', 'revenueGenerated'
@@ -334,11 +358,12 @@ const updateCustomer = async (req, res) => {
       details: `Customer ${customer.companyName} updated by ${req.user.name}.`,
       module: 'Customer',
       ipAddress: req.ip,
+      tenant: customer.tenant,
     });
 
     res.json({ success: true, data: customer });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
@@ -349,12 +374,11 @@ const updateCustomer = async (req, res) => {
  */
 const deleteCustomer = async (req, res) => {
   try {
-    const customer = await Customer.findById(req.params.id);
+    const tenantFilter = getTenantFilter(req);
+    const customer = await Customer.findOneAndDelete({ _id: req.params.id, ...tenantFilter });
     if (!customer) {
       return res.status(404).json({ success: false, error: 'Customer not found' });
     }
-
-    await Customer.findByIdAndDelete(req.params.id);
 
     await Activity.create({
       user: req.user._id,
@@ -362,11 +386,12 @@ const deleteCustomer = async (req, res) => {
       details: `Customer ${customer.companyName} (${customer.customerCode}) deleted by ${req.user.name}.`,
       module: 'Customer',
       ipAddress: req.ip,
+      tenant: customer.tenant,
     });
 
     res.json({ success: true, message: 'Customer record deleted successfully' });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
@@ -377,7 +402,8 @@ const deleteCustomer = async (req, res) => {
  */
 const addCustomerNote = async (req, res) => {
   try {
-    const customer = await Customer.findById(req.params.id);
+    const tenantFilter = getTenantFilter(req);
+    const customer = await Customer.findOne({ _id: req.params.id, ...tenantFilter });
     if (!customer) {
       return res.status(404).json({ success: false, error: 'Customer not found' });
     }
@@ -392,19 +418,17 @@ const addCustomerNote = async (req, res) => {
       createdBy: req.user._id,
     });
 
-    await customer.save();
-
-    // Log Activity
     customer.activities.push({
       type: 'Note',
       description: `Note added: "${content.substring(0, 30)}${content.length > 30 ? '...' : ''}"`,
       performedBy: req.user._id
     });
+
     await customer.save();
 
     res.status(201).json({ success: true, data: customer.notes[customer.notes.length - 1] });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
@@ -415,7 +439,8 @@ const addCustomerNote = async (req, res) => {
  */
 const logCustomerActivity = async (req, res) => {
   try {
-    const customer = await Customer.findById(req.params.id);
+    const tenantFilter = getTenantFilter(req);
+    const customer = await Customer.findOne({ _id: req.params.id, ...tenantFilter });
     if (!customer) {
       return res.status(404).json({ success: false, error: 'Customer not found' });
     }
@@ -435,7 +460,7 @@ const logCustomerActivity = async (req, res) => {
 
     res.status(201).json({ success: true, data: customer.activities[customer.activities.length - 1] });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 

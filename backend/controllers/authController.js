@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Tenant = require('../models/Tenant');
 const jwt = require('jsonwebtoken');
 const Activity = require('../models/Activity');
 const { OAuth2Client } = require('google-auth-library');
@@ -341,8 +342,135 @@ const getGoogleClientId = async (req, res) => {
   });
 };
 
+/**
+ * @desc    Register a new workspace (Tenant) & Workspace Owner
+ * @route   POST /api/auth/register-workspace
+ * @access  Public
+ */
+const registerWorkspace = async (req, res) => {
+  const { companyName, name, email, password } = req.body;
+
+  try {
+    if (!companyName || !name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide company name, owner name, email, and password',
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        error: 'Password must be at least 6 characters long',
+      });
+    }
+
+    // 1. Check if user already exists with this email
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(400).json({
+        success: false,
+        error: 'User already exists with this email address',
+      });
+    }
+
+    // 2. Generate clean subdomain from companyName
+    let baseSubdomain = companyName
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '')
+      .trim();
+
+    if (!baseSubdomain) {
+      baseSubdomain = 'workspace';
+    }
+
+    let subdomain = baseSubdomain;
+    let tenantExists = await Tenant.findOne({ subdomain });
+    if (tenantExists) {
+      const suffix = Math.floor(1000 + Math.random() * 9000);
+      subdomain = `${baseSubdomain}${suffix}`;
+    }
+
+    // 3. Create Tenant
+    let tenant;
+    try {
+      tenant = await Tenant.create({
+        name: companyName,
+        subdomain,
+        plan: 'free',
+        status: 'active',
+      });
+    } catch (err) {
+      if (err.code === 11000) {
+        subdomain = `${baseSubdomain}${Math.floor(10000 + Math.random() * 90000)}`;
+        tenant = await Tenant.create({
+          name: companyName,
+          subdomain,
+          plan: 'free',
+          status: 'active',
+        });
+      } else {
+        throw err;
+      }
+    }
+
+    // 4. Create User as workspace_owner
+    let user;
+    try {
+      user = await User.create({
+        name,
+        email,
+        password,
+        role: 'workspace_owner',
+        department: 'Management',
+        status: 'active',
+        tenant: tenant._id,
+      });
+    } catch (userErr) {
+      console.error('User creation failed during workspace registration. Rolling back Tenant:', userErr.message);
+      await Tenant.findByIdAndDelete(tenant._id);
+      throw userErr;
+    }
+
+    // 5. Link Tenant owner to User
+    tenant.owner = user._id;
+    await tenant.save();
+
+    // 6. Log Activity
+    await Activity.create({
+      user: user._id,
+      action: 'Workspace Registered',
+      details: `Workspace "${tenant.name}" (${tenant.subdomain}) created with Owner ${user.name} (${user.email}).`,
+      module: 'Authentication',
+      ipAddress: req.ip,
+    });
+
+    res.status(201).json({
+      success: true,
+      data: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        department: user.department,
+        tenant: {
+          _id: tenant._id,
+          name: tenant.name,
+          subdomain: tenant.subdomain,
+          plan: tenant.plan,
+        },
+        token: generateToken(user._id),
+      },
+    });
+  } catch (error) {
+    console.error('Workspace Registration Error:', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 module.exports = {
   registerUser,
+  registerWorkspace,
   loginUser,
   getMe,
   forgotPassword,

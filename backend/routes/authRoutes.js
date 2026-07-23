@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { registerUser, loginUser, getMe, forgotPassword, resetPasswordWithOtp, googleLogin, getGoogleClientId } = require('../controllers/authController');
+const { registerUser, registerWorkspace, loginUser, getMe, forgotPassword, resetPasswordWithOtp, googleLogin, getGoogleClientId } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
 const { authLimiter } = require('../middleware/rateLimitMiddleware');
 
@@ -21,6 +21,7 @@ const {
 
 // Public Auth Endpoints
 router.post('/register', registerUser);
+router.post('/register-workspace', registerWorkspace);
 router.post('/login', authLimiter, loginUser);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPasswordWithOtp);

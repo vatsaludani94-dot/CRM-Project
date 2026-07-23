@@ -1,20 +1,29 @@
 const Task = require('../models/Task');
 const Activity = require('../models/Activity');
+const Customer = require('../models/Customer');
+const Lead = require('../models/Lead');
+const User = require('../models/User');
+const { getTenantFilter, getTenantId } = require('../utils/tenantScope');
 
 const getTasks = async (req, res) => {
   try {
+    const tenantFilter = getTenantFilter(req);
     const { status, priority, assignedTo } = req.query;
-    let query = { tenant: req.user.tenant };
+    let query = { ...tenantFilter };
 
     if (status) query.status = status;
     if (priority) query.priority = priority;
     if (assignedTo) query.assignedTo = assignedTo;
 
-    // Support RBAC - employees see assigned + open tasks
     if (req.user.role === 'employee') {
-      query.$or = [
-        { assignedTo: req.user._id },
-        { assignedTo: null }
+      query.$and = [
+        tenantFilter,
+        {
+          $or: [
+            { assignedTo: req.user._id },
+            { assignedTo: null }
+          ]
+        }
       ];
     }
 
@@ -22,18 +31,41 @@ const getTasks = async (req, res) => {
       .populate('assignedTo', 'name email role')
       .populate('parentTask', 'title')
       .populate('customer', 'companyName contactPerson')
-      .populate('lead', 'name email')
+      .populate('lead', 'company contactName email')
       .sort({ dueDate: 1 });
 
     res.json({ success: true, count: tasks.length, data: tasks });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
 };
 
 const createTask = async (req, res) => {
   try {
+    const tenantFilter = getTenantFilter(req);
+    const tenantId = getTenantId(req);
     const { title, description, dueDate, priority, status, assignedTo, parentTaskId, customerId, leadId } = req.body;
+
+    if (assignedTo) {
+      const emp = await User.findOne({ _id: assignedTo, ...tenantFilter });
+      if (!emp) {
+        return res.status(400).json({ success: false, error: 'Assigned employee does not belong to your workspace' });
+      }
+    }
+
+    if (customerId) {
+      const cust = await Customer.findOne({ _id: customerId, ...tenantFilter });
+      if (!cust) {
+        return res.status(400).json({ success: false, error: 'Customer does not belong to your workspace' });
+      }
+    }
+
+    if (leadId) {
+      const leadObj = await Lead.findOne({ _id: leadId, ...tenantFilter });
+      if (!leadObj) {
+        return res.status(400).json({ success: false, error: 'Lead does not belong to your workspace' });
+      }
+    }
 
     const task = await Task.create({
       title,
@@ -45,20 +77,31 @@ const createTask = async (req, res) => {
       parentTask: parentTaskId || undefined,
       customer: customerId || undefined,
       lead: leadId || undefined,
-      tenant: req.user.tenant,
+      tenant: tenantId,
     });
 
     res.status(201).json({ success: true, data: task });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
 };
 
 const updateTask = async (req, res) => {
   try {
+    const tenantFilter = getTenantFilter(req);
+    const updateData = { ...req.body };
+    delete updateData.tenant;
+
+    if (updateData.assignedTo) {
+      const emp = await User.findOne({ _id: updateData.assignedTo, ...tenantFilter });
+      if (!emp) {
+        return res.status(400).json({ success: false, error: 'Assigned employee does not belong to your workspace' });
+      }
+    }
+
     const task = await Task.findOneAndUpdate(
-      { _id: req.params.id, tenant: req.user.tenant },
-      req.body,
+      { _id: req.params.id, ...tenantFilter },
+      updateData,
       { new: true, runValidators: true }
     );
     if (!task) {
@@ -66,26 +109,28 @@ const updateTask = async (req, res) => {
     }
     res.json({ success: true, data: task });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
 };
 
 const deleteTask = async (req, res) => {
   try {
-    const task = await Task.findOneAndDelete({ _id: req.params.id, tenant: req.user.tenant });
+    const tenantFilter = getTenantFilter(req);
+    const task = await Task.findOneAndDelete({ _id: req.params.id, ...tenantFilter });
     if (!task) {
       return res.status(404).json({ success: false, error: 'Task not found' });
     }
     res.json({ success: true, message: 'Task deleted successfully' });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
 };
 
 const addTaskComment = async (req, res) => {
   try {
+    const tenantFilter = getTenantFilter(req);
     const { text } = req.body;
-    const task = await Task.findOne({ _id: req.params.id, tenant: req.user.tenant });
+    const task = await Task.findOne({ _id: req.params.id, ...tenantFilter });
 
     if (!task) {
       return res.status(404).json({ success: false, error: 'Task not found' });
@@ -102,12 +147,12 @@ const addTaskComment = async (req, res) => {
 
     await task.save();
 
-    const updatedTask = await Task.findById(task._id)
+    const updatedTask = await Task.findOne({ _id: task._id, ...tenantFilter })
       .populate('comments.author', 'name email role profilePicture');
 
     res.status(201).json({ success: true, data: updatedTask.comments[updatedTask.comments.length - 1] });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
 };
 

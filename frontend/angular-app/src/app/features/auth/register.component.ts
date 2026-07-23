@@ -32,9 +32,23 @@ import { AuthService } from '../../core/services/auth.service';
               {{ errorMessage() }}
             </div>
 
-            <!-- Full Name -->
+            <!-- Company / Workspace Name -->
             <div>
-              <label for="name" class="block text-xs font-bold text-[#1c1917] uppercase tracking-wider mb-1">Full Name</label>
+              <label for="companyName" class="block text-xs font-bold text-[#1c1917] uppercase tracking-wider mb-1">Company / Workspace Name</label>
+              <div class="relative">
+                <span class="material-icons absolute left-3 top-2.5 text-[#44403c] text-lg">business</span>
+                <input 
+                  id="companyName" 
+                  type="text" 
+                  formControlName="companyName" 
+                  placeholder="Acme Technologies" 
+                  class="w-full pl-10 pr-4 py-2.5 bg-white border border-[#e7e5e4] text-[#1c1917] font-medium rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-amber-600">
+              </div>
+            </div>
+
+            <!-- Full Name (Owner Name) -->
+            <div>
+              <label for="name" class="block text-xs font-bold text-[#1c1917] uppercase tracking-wider mb-1">Owner Name</label>
               <div class="relative">
                 <span class="material-icons absolute left-3 top-2.5 text-[#44403c] text-lg">person</span>
                 <input 
@@ -106,6 +120,7 @@ export class RegisterComponent {
   errorMessage = signal<string | null>(null);
 
   registerForm: FormGroup = this.fb.group({
+    companyName: ['', [Validators.required]],
     name: ['', [Validators.required]],
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(6)]]
@@ -117,14 +132,14 @@ export class RegisterComponent {
     this.isLoading.set(true);
     this.errorMessage.set(null);
 
-    this.authService.register(this.registerForm.value).subscribe({
+    this.authService.registerWorkspace(this.registerForm.value).subscribe({
       next: () => {
         this.isLoading.set(false);
         this.router.navigate(['/dashboard']);
       },
       error: (err) => {
         this.isLoading.set(false);
-        this.errorMessage.set(err.error?.error || err.message || 'Registration failed');
+        this.errorMessage.set(err.error?.error || err.message || 'Workspace registration failed');
       }
     });
   }

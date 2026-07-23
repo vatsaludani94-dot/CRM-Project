@@ -1,23 +1,25 @@
 const Website = require('../models/Website');
 const Funnel = require('../models/Funnel');
+const { getTenantFilter, getTenantId } = require('../utils/tenantScope');
 
 // Website Controllers
 const getWebsites = async (req, res) => {
   try {
-    const websites = await Website.find({ tenant: req.user.tenant }).sort({ createdAt: -1 });
+    const tenantFilter = getTenantFilter(req);
+    const websites = await Website.find(tenantFilter).sort({ createdAt: -1 });
     res.json({ success: true, count: websites.length, data: websites });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
 };
 
 const createWebsite = async (req, res) => {
   try {
+    const tenantId = getTenantId(req);
     const { name, template, seo, sections } = req.body;
 
     const subdomain = `${name.toLowerCase().replace(/[^a-z0-9]/g, '')}-${Date.now().toString().slice(-4)}`;
 
-    // Seed default sections based on template if not provided
     const defaultSections = sections || [
       { type: 'Hero', title: `Welcome to ${name}`, subtitle: 'Modern SaaS and Enterprise Automation platform.', content: { buttonText: 'Get Started' } },
       { type: 'Features', title: 'Enterprise Core Features', content: { list: ['Workflow Automation', 'Gmail Center', 'Collaboration Chat'] } },
@@ -34,20 +36,24 @@ const createWebsite = async (req, res) => {
       subdomain,
       seo: seo || { title: `${name} - Platform`, description: 'Built with GrownX Web Builder' },
       sections: defaultSections,
-      tenant: req.user.tenant,
+      tenant: tenantId,
     });
 
     res.status(201).json({ success: true, data: website });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
 };
 
 const updateWebsite = async (req, res) => {
   try {
+    const tenantFilter = getTenantFilter(req);
+    const updateData = { ...req.body };
+    delete updateData.tenant;
+
     const website = await Website.findOneAndUpdate(
-      { _id: req.params.id, tenant: req.user.tenant },
-      req.body,
+      { _id: req.params.id, ...tenantFilter },
+      updateData,
       { new: true, runValidators: true }
     );
     if (!website) {
@@ -55,14 +61,15 @@ const updateWebsite = async (req, res) => {
     }
     res.json({ success: true, data: website });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
 };
 
 const publishWebsite = async (req, res) => {
   try {
+    const tenantFilter = getTenantFilter(req);
     const { published, customDomain } = req.body;
-    const website = await Website.findOne({ _id: req.params.id, tenant: req.user.tenant });
+    const website = await Website.findOne({ _id: req.params.id, ...tenantFilter });
 
     if (!website) {
       return res.status(404).json({ success: false, error: 'Website not found' });
@@ -76,34 +83,37 @@ const publishWebsite = async (req, res) => {
     await website.save();
     res.json({ success: true, data: website });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
 };
 
 const deleteWebsite = async (req, res) => {
   try {
-    const website = await Website.findOneAndDelete({ _id: req.params.id, tenant: req.user.tenant });
+    const tenantFilter = getTenantFilter(req);
+    const website = await Website.findOneAndDelete({ _id: req.params.id, ...tenantFilter });
     if (!website) {
       return res.status(404).json({ success: false, error: 'Website not found' });
     }
     res.json({ success: true, message: 'Website deleted successfully' });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
 };
 
 // Funnel Controllers
 const getFunnels = async (req, res) => {
   try {
-    const funnels = await Funnel.find({ tenant: req.user.tenant }).sort({ createdAt: -1 });
+    const tenantFilter = getTenantFilter(req);
+    const funnels = await Funnel.find(tenantFilter).sort({ createdAt: -1 });
     res.json({ success: true, count: funnels.length, data: funnels });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
 };
 
 const createFunnel = async (req, res) => {
   try {
+    const tenantId = getTenantId(req);
     const { name, template, steps } = req.body;
 
     const defaultSteps = steps || [
@@ -116,20 +126,24 @@ const createFunnel = async (req, res) => {
       name,
       template: template || 'Lead Generation Funnel',
       steps: defaultSteps,
-      tenant: req.user.tenant,
+      tenant: tenantId,
     });
 
     res.status(201).json({ success: true, data: funnel });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
 };
 
 const updateFunnel = async (req, res) => {
   try {
+    const tenantFilter = getTenantFilter(req);
+    const updateData = { ...req.body };
+    delete updateData.tenant;
+
     const funnel = await Funnel.findOneAndUpdate(
-      { _id: req.params.id, tenant: req.user.tenant },
-      req.body,
+      { _id: req.params.id, ...tenantFilter },
+      updateData,
       { new: true, runValidators: true }
     );
     if (!funnel) {
@@ -137,13 +151,15 @@ const updateFunnel = async (req, res) => {
     }
     res.json({ success: true, data: funnel });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
 };
 
 const cloneFunnel = async (req, res) => {
   try {
-    const sourceFunnel = await Funnel.findOne({ _id: req.params.id, tenant: req.user.tenant });
+    const tenantFilter = getTenantFilter(req);
+    const tenantId = getTenantId(req);
+    const sourceFunnel = await Funnel.findOne({ _id: req.params.id, ...tenantFilter });
     if (!sourceFunnel) {
       return res.status(404).json({ success: false, error: 'Source funnel not found' });
     }
@@ -163,19 +179,20 @@ const cloneFunnel = async (req, res) => {
         conversionRate: 0,
         revenue: 0,
       },
-      tenant: req.user.tenant,
+      tenant: tenantId,
     });
 
     res.status(201).json({ success: true, data: clonedFunnel });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
 };
 
 const trackFunnelMetric = async (req, res) => {
   try {
-    const { metric, amount } = req.body; // metric: 'visitors' | 'leads' | 'appointments' | 'revenue'
-    const funnel = await Funnel.findOne({ _id: req.params.id, tenant: req.user.tenant });
+    const tenantFilter = getTenantFilter(req);
+    const { metric, amount } = req.body;
+    const funnel = await Funnel.findOne({ _id: req.params.id, ...tenantFilter });
 
     if (!funnel) {
       return res.status(404).json({ success: false, error: 'Funnel not found' });
@@ -186,7 +203,6 @@ const trackFunnelMetric = async (req, res) => {
     else if (metric === 'appointments') funnel.stats.appointments += 1;
     else if (metric === 'revenue') funnel.stats.revenue += (amount || 0);
 
-    // Calculate Conversion Rate
     const visitors = funnel.stats.visitors || 1;
     const leads = funnel.stats.leads || 0;
     funnel.stats.conversionRate = parseFloat(((leads / visitors) * 100).toFixed(2));
@@ -194,19 +210,20 @@ const trackFunnelMetric = async (req, res) => {
     await funnel.save();
     res.json({ success: true, data: funnel.stats });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
 };
 
 const deleteFunnel = async (req, res) => {
   try {
-    const funnel = await Funnel.findOneAndDelete({ _id: req.params.id, tenant: req.user.tenant });
+    const tenantFilter = getTenantFilter(req);
+    const funnel = await Funnel.findOneAndDelete({ _id: req.params.id, ...tenantFilter });
     if (!funnel) {
       return res.status(404).json({ success: false, error: 'Funnel not found' });
     }
     res.json({ success: true, message: 'Funnel deleted successfully' });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
 };
 

@@ -2,6 +2,7 @@ const Payroll = require('../models/Payroll');
 const User = require('../models/User');
 const Activity = require('../models/Activity');
 const PDFService = require('../services/pdfService');
+const { getTenantFilter, getTenantId } = require('../utils/tenantScope');
 
 /**
  * @desc    Get payroll history list with filters
@@ -10,10 +11,10 @@ const PDFService = require('../services/pdfService');
  */
 const getPayrolls = async (req, res) => {
   try {
+    const tenantFilter = getTenantFilter(req);
     const { month, employeeId } = req.query;
-    let query = {};
+    let query = { ...tenantFilter };
 
-    // RBAC: Employees can only see their own payroll. Admins/Managers can filter.
     if (req.user.role === 'employee') {
       query.employee = req.user._id;
     } else {
@@ -28,7 +29,7 @@ const getPayrolls = async (req, res) => {
 
     res.json({ success: true, count: payrolls.length, data: payrolls });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
@@ -39,16 +40,16 @@ const getPayrolls = async (req, res) => {
  */
 const createPayroll = async (req, res) => {
   try {
+    const tenantFilter = getTenantFilter(req);
+    const tenantId = getTenantId(req);
     const { employeeId, month, baseSalary, bonus, deductions, status } = req.body;
 
-    // Verify employee exists and is not customer
-    const employee = await User.findById(employeeId);
+    const employee = await User.findOne({ _id: employeeId, ...tenantFilter });
     if (!employee || employee.role === 'customer') {
-      return res.status(400).json({ success: false, error: 'Must assign payroll to a valid company employee' });
+      return res.status(400).json({ success: false, error: 'Must assign payroll to a valid company employee in your workspace' });
     }
 
-    // Check if payroll already exists for this employee + month
-    const payrollExists = await Payroll.findOne({ employee: employeeId, month });
+    const payrollExists = await Payroll.findOne({ employee: employeeId, month, ...tenantFilter });
     if (payrollExists) {
       return res.status(400).json({ success: false, error: `Payroll already configured for employee in month ${month}` });
     }
@@ -60,6 +61,7 @@ const createPayroll = async (req, res) => {
       bonus: bonus || 0,
       deductions: deductions || 0,
       status: status || 'Draft',
+      tenant: tenantId,
     });
 
     await payroll.save();
@@ -70,11 +72,12 @@ const createPayroll = async (req, res) => {
       details: `Payroll for employee ${employee.name} for month ${month} created with net salary $${payroll.netSalary} by ${req.user.name}.`,
       module: 'Payroll',
       ipAddress: req.ip,
+      tenant: tenantId,
     });
 
     res.status(201).json({ success: true, data: payroll });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
@@ -85,7 +88,8 @@ const createPayroll = async (req, res) => {
  */
 const updatePayroll = async (req, res) => {
   try {
-    const payroll = await Payroll.findById(req.params.id);
+    const tenantFilter = getTenantFilter(req);
+    const payroll = await Payroll.findOne({ _id: req.params.id, ...tenantFilter });
     if (!payroll) {
       return res.status(404).json({ success: false, error: 'Payroll record not found' });
     }
@@ -101,7 +105,7 @@ const updatePayroll = async (req, res) => {
 
     res.json({ success: true, data: payroll });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
@@ -112,40 +116,36 @@ const updatePayroll = async (req, res) => {
  */
 const downloadPayslip = async (req, res) => {
   try {
-    const payroll = await Payroll.findById(req.params.id).populate('employee', 'name email department role');
+    const tenantFilter = getTenantFilter(req);
+    const payroll = await Payroll.findOne({ _id: req.params.id, ...tenantFilter }).populate('employee', 'name email department role');
     if (!payroll) {
       return res.status(404).json({ success: false, error: 'Payroll record not found' });
     }
 
-    // RBAC check: Employees can only download their own payslip
     if (req.user.role === 'employee' && payroll.employee._id.toString() !== req.user._id.toString()) {
       return res.status(403).json({ success: false, error: 'Unauthorized to download this employee payslip' });
     }
 
-    // Generate PDF Buffer
     const pdfBuffer = await PDFService.generatePayslip(payroll);
-
-    // Format clean filename: payslip-2026-06-john_sales.pdf
     const sanitizedName = payroll.employee.name.toLowerCase().replace(/[^a-z0-9]/g, '_');
     const filename = `payslip-${payroll.month}-${sanitizedName}.pdf`;
 
-    // Send headers for PDF file download
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.setHeader('Content-Length', pdfBuffer.length);
     res.send(pdfBuffer);
 
-    // Log Activity
     await Activity.create({
       user: req.user._id,
       action: 'Payslip Downloaded',
       details: `Payslip for employee ${payroll.employee.name} (Month: ${payroll.month}) downloaded.`,
       module: 'Payroll',
       ipAddress: req.ip,
+      tenant: payroll.tenant,
     });
   } catch (error) {
     console.error('PDF Download Error:', error.message);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 

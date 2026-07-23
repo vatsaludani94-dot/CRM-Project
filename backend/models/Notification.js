@@ -32,12 +32,17 @@ const NotificationSchema = new mongoose.Schema({
     enum: ['Ticket', 'Lead', 'Payroll', 'System', 'General'],
     default: 'General',
   },
+  tenant: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Tenant',
+  },
   createdAt: {
     type: Date,
     default: Date.now,
   },
 });
 
+NotificationSchema.index({ tenant: 1, recipient: 1, read: 1, createdAt: -1 });
 NotificationSchema.index({ recipient: 1, read: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Notification', NotificationSchema);

@@ -11,10 +11,13 @@ export const authGuard: CanActivateFn = (route, state) => {
   if (currentUser) {
     // Check if route has role restrictions
     const requiredRoles = route.data['roles'] as Array<string>;
-    if (requiredRoles && !requiredRoles.includes(currentUser.role)) {
-      // Role not authorized - redirect to home page or dashboard
-      router.navigate(['/dashboard']);
-      return false;
+    if (requiredRoles) {
+      const isAllowed = requiredRoles.includes(currentUser.role) ||
+        (currentUser.role === 'workspace_owner' && (requiredRoles.includes('manager') || requiredRoles.includes('super_admin')));
+      if (!isAllowed) {
+        router.navigate(['/dashboard']);
+        return false;
+      }
     }
     
     // Authorized

@@ -4,7 +4,7 @@ const Task = require('../models/Task');
 const Lead = require('../models/Lead');
 const Customer = require('../models/Customer');
 const Ticket = require('../models/Ticket');
-const Activity = require('../models/Activity');
+const { getTenantFilter, getTenantId } = require('../utils/tenantScope');
 
 // Helper to simulate workflow step execution
 const executeWorkflowStep = async (step, entityType, entityId, tenantId) => {
@@ -13,15 +13,12 @@ const executeWorkflowStep = async (step, entityType, entityId, tenantId) => {
 
   try {
     if (type === 'Delay') {
-      // In a real environment, we'd queue this with a job scheduler. 
-      // For local demo, we'll simulate delay log entries.
       console.log(`Delaying workflow step for ${config.delayDuration} ${config.delayUnit}`);
     } else if (type === 'Condition') {
-      // Evaluate basic condition
       let entity;
-      if (entityType === 'Lead') entity = await Lead.findById(entityId);
-      else if (entityType === 'Customer') entity = await Customer.findById(entityId);
-      else if (entityType === 'Ticket') entity = await Ticket.findById(entityId);
+      if (entityType === 'Lead') entity = await Lead.findOne({ _id: entityId, tenant: tenantId });
+      else if (entityType === 'Customer') entity = await Customer.findOne({ _id: entityId, tenant: tenantId });
+      else if (entityType === 'Ticket') entity = await Ticket.findOne({ _id: entityId, tenant: tenantId });
 
       if (!entity) {
         throw new Error(`${entityType} entity not found for condition evaluation`);
@@ -50,7 +47,6 @@ const executeWorkflowStep = async (step, entityType, entityId, tenantId) => {
         execution.error = `Condition field '${config.conditionField}' [${fieldValue}] does not match [${matchValue}]`;
       }
     } else if (type === 'Action') {
-      // Execute trigger action
       switch (config.actionType) {
         case 'Create Task':
           await Task.create({
@@ -65,7 +61,6 @@ const executeWorkflowStep = async (step, entityType, entityId, tenantId) => {
         case 'Send Email':
         case 'Send SMS':
         case 'Send WhatsApp Message':
-          // Mock sending action
           console.log(`[Workflow Outbound] Sending ${config.actionType} to entity: ${entityId}`);
           break;
 
@@ -116,7 +111,6 @@ const triggerWorkflowEvents = async (triggerName, entityType, entityId, tenantId
         stepResults.push(res);
 
         if (!res.success && step.type === 'Condition') {
-          // If condition fails, abort downstream execution
           allPassed = false;
           break;
         }
@@ -136,34 +130,39 @@ const triggerWorkflowEvents = async (triggerName, entityType, entityId, tenantId
 
 const getWorkflows = async (req, res) => {
   try {
-    const query = { tenant: req.user.tenant };
-    const workflows = await Workflow.find(query).sort({ createdAt: -1 });
+    const tenantFilter = getTenantFilter(req);
+    const workflows = await Workflow.find(tenantFilter).sort({ createdAt: -1 });
     res.json({ success: true, count: workflows.length, data: workflows });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
 const createWorkflow = async (req, res) => {
   try {
+    const tenantId = getTenantId(req);
     const { name, trigger, steps } = req.body;
     const workflow = await Workflow.create({
       name,
       trigger,
       steps,
-      tenant: req.user.tenant,
+      tenant: tenantId,
     });
     res.status(201).json({ success: true, data: workflow });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
 const updateWorkflow = async (req, res) => {
   try {
+    const tenantFilter = getTenantFilter(req);
+    const updateData = { ...req.body };
+    delete updateData.tenant;
+
     const workflow = await Workflow.findOneAndUpdate(
-      { _id: req.params.id, tenant: req.user.tenant },
-      req.body,
+      { _id: req.params.id, ...tenantFilter },
+      updateData,
       { new: true, runValidators: true }
     );
     if (!workflow) {
@@ -171,30 +170,32 @@ const updateWorkflow = async (req, res) => {
     }
     res.json({ success: true, data: workflow });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
 const deleteWorkflow = async (req, res) => {
   try {
-    const workflow = await Workflow.findOneAndDelete({ _id: req.params.id, tenant: req.user.tenant });
+    const tenantFilter = getTenantFilter(req);
+    const workflow = await Workflow.findOneAndDelete({ _id: req.params.id, ...tenantFilter });
     if (!workflow) {
       return res.status(404).json({ success: false, error: 'Workflow not found' });
     }
     res.json({ success: true, message: 'Workflow deleted successfully' });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
 const getWorkflowLogs = async (req, res) => {
   try {
-    const logs = await WorkflowLog.find({ tenant: req.user.tenant })
+    const tenantFilter = getTenantFilter(req);
+    const logs = await WorkflowLog.find(tenantFilter)
       .populate('workflow', 'name trigger')
       .sort({ createdAt: -1 });
     res.json({ success: true, count: logs.length, data: logs });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 

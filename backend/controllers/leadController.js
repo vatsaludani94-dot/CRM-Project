@@ -1,7 +1,9 @@
 const Lead = require('../models/Lead');
 const Customer = require('../models/Customer');
 const Activity = require('../models/Activity');
+const User = require('../models/User');
 const AIService = require('../services/aiService');
+const { getTenantFilter, getTenantId } = require('../utils/tenantScope');
 
 /**
  * @desc    Get all leads
@@ -10,7 +12,8 @@ const AIService = require('../services/aiService');
  */
 const getLeads = async (req, res) => {
   try {
-    let query = {};
+    const tenantFilter = getTenantFilter(req);
+    let query = { ...tenantFilter };
     
     // RBAC: Employees can only see their assigned leads
     if (req.user.role === 'employee') {
@@ -23,7 +26,7 @@ const getLeads = async (req, res) => {
 
     res.json({ success: true, count: leads.length, data: leads });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
@@ -34,7 +37,16 @@ const getLeads = async (req, res) => {
  */
 const createLead = async (req, res) => {
   try {
+    const tenantFilter = getTenantFilter(req);
+    const tenantId = getTenantId(req);
     const { company, contactName, email, phone, leadSource, expectedRevenue, assignedEmployee } = req.body;
+
+    if (assignedEmployee) {
+      const emp = await User.findOne({ _id: assignedEmployee, ...tenantFilter });
+      if (!emp) {
+        return res.status(400).json({ success: false, error: 'Assigned employee does not belong to your workspace' });
+      }
+    }
 
     const lead = new Lead({
       company,
@@ -45,6 +57,7 @@ const createLead = async (req, res) => {
       expectedRevenue: expectedRevenue || 0,
       assignedEmployee: assignedEmployee || req.user._id,
       stage: 'New',
+      tenant: tenantId,
     });
 
     // Predict AI conversion score
@@ -63,11 +76,12 @@ const createLead = async (req, res) => {
       details: `Lead for ${lead.company} created by ${req.user.name}. Initial AI Score: ${lead.aiScore}%`,
       module: 'Lead',
       ipAddress: req.ip,
+      tenant: tenantId,
     });
 
     res.status(201).json({ success: true, data: lead });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
@@ -78,7 +92,8 @@ const createLead = async (req, res) => {
  */
 const updateLead = async (req, res) => {
   try {
-    const lead = await Lead.findById(req.params.id);
+    const tenantFilter = getTenantFilter(req);
+    const lead = await Lead.findOne({ _id: req.params.id, ...tenantFilter });
     if (!lead) {
       return res.status(404).json({ success: false, error: 'Lead not found' });
     }
@@ -86,6 +101,13 @@ const updateLead = async (req, res) => {
     // Check RBAC: Employees can only edit their own assigned leads
     if (req.user.role === 'employee' && lead.assignedEmployee && lead.assignedEmployee.toString() !== req.user._id.toString()) {
       return res.status(403).json({ success: false, error: 'Not authorized to edit this lead' });
+    }
+
+    if (req.body.assignedEmployee) {
+      const emp = await User.findOne({ _id: req.body.assignedEmployee, ...tenantFilter });
+      if (!emp) {
+        return res.status(400).json({ success: false, error: 'Assigned employee does not belong to your workspace' });
+      }
     }
 
     const { company, contactName, email, phone, leadSource, expectedRevenue, stage, assignedEmployee } = req.body;
@@ -97,7 +119,6 @@ const updateLead = async (req, res) => {
       if (fieldsToUpdate[field] !== undefined) {
         if (field === 'stage' && lead.stage !== fieldsToUpdate[field]) {
           stageChanged = true;
-          // Log stage update inside activity log
           lead.activityLog.push({
             type: 'System',
             description: `Stage moved from ${lead.stage} to ${fieldsToUpdate[field]}`,
@@ -118,23 +139,22 @@ const updateLead = async (req, res) => {
 
     await lead.save();
 
-    // Log global activity
     await Activity.create({
       user: req.user._id,
       action: stageChanged ? 'Lead Stage Updated' : 'Lead Updated',
       details: `${lead.company} lead ${stageChanged ? `moved to ${lead.stage}` : 'details updated'} by ${req.user.name}. AI Score: ${lead.aiScore}%`,
       module: 'Lead',
       ipAddress: req.ip,
+      tenant: lead.tenant,
     });
 
-    // If stage was moved to 'Converted', automatically trigger customer creation helper!
     if (lead.stage === 'Converted') {
       await autoConvertLeadToCustomer(lead, req.user._id);
     }
 
     res.json({ success: true, data: lead });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
@@ -145,12 +165,11 @@ const updateLead = async (req, res) => {
  */
 const deleteLead = async (req, res) => {
   try {
-    const lead = await Lead.findById(req.params.id);
+    const tenantFilter = getTenantFilter(req);
+    const lead = await Lead.findOneAndDelete({ _id: req.params.id, ...tenantFilter });
     if (!lead) {
       return res.status(404).json({ success: false, error: 'Lead not found' });
     }
-
-    await Lead.findByIdAndDelete(req.params.id);
 
     await Activity.create({
       user: req.user._id,
@@ -158,11 +177,12 @@ const deleteLead = async (req, res) => {
       details: `Lead for ${lead.company} deleted by ${req.user.name}.`,
       module: 'Lead',
       ipAddress: req.ip,
+      tenant: lead.tenant,
     });
 
     res.json({ success: true, message: 'Lead deleted successfully' });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
@@ -173,7 +193,8 @@ const deleteLead = async (req, res) => {
  */
 const addLeadNote = async (req, res) => {
   try {
-    const lead = await Lead.findById(req.params.id);
+    const tenantFilter = getTenantFilter(req);
+    const lead = await Lead.findOne({ _id: req.params.id, ...tenantFilter });
     if (!lead) {
       return res.status(404).json({ success: false, error: 'Lead not found' });
     }
@@ -188,7 +209,6 @@ const addLeadNote = async (req, res) => {
       createdBy: req.user._id,
     });
 
-    // Recalculate AI Score (since interaction count increased)
     lead.aiScore = await AIService.scoreLead({
       leadSource: lead.leadSource,
       expectedRevenue: lead.expectedRevenue,
@@ -200,35 +220,33 @@ const addLeadNote = async (req, res) => {
 
     res.status(201).json({ success: true, data: lead.notes[lead.notes.length - 1], aiScore: lead.aiScore });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
 /**
- * Helper to auto-convert a Lead to a Customer
+ * Helper to auto-convert a Lead to a Customer within tenant scope
  */
 const autoConvertLeadToCustomer = async (lead, userId) => {
   try {
-    // Check if customer already exists for this email
-    let customer = await Customer.findOne({ email: lead.email });
+    let customer = await Customer.findOne({ email: lead.email, tenant: lead.tenant });
     if (customer) {
-      console.log(`Customer with email ${lead.email} already exists. Skipping customer creation.`);
+      console.log(`Customer with email ${lead.email} already exists in workspace. Skipping customer creation.`);
       return;
     }
 
-    // Map lead fields to customer fields
     customer = new Customer({
       companyName: lead.company,
       contactPerson: lead.contactName,
       email: lead.email,
       phone: lead.phone,
-      industry: 'Software & Technology', // Default industry or prompt
+      industry: 'Software & Technology',
       assignedEmployee: lead.assignedEmployee,
       status: 'Active',
       revenueGenerated: lead.expectedRevenue,
+      tenant: lead.tenant,
     });
 
-    // Copy notes
     lead.notes.forEach(note => {
       customer.notes.push({
         content: note.content,
@@ -237,7 +255,6 @@ const autoConvertLeadToCustomer = async (lead, userId) => {
       });
     });
 
-    // Copy activities
     lead.activityLog.forEach(activity => {
       customer.activities.push({
         type: activity.type === 'Proposal' ? 'Note' : activity.type,
@@ -247,14 +264,12 @@ const autoConvertLeadToCustomer = async (lead, userId) => {
       });
     });
 
-    // Log the conversion activity in activities list
     customer.activities.push({
       type: 'Lead Converted',
       description: `Lead converted successfully by Representative. Expected contract value: $${lead.expectedRevenue}`,
       performedBy: userId,
     });
 
-    // Add conversion history log
     customer.leadHistory.push({
       stage: 'New',
       changedBy: userId,
@@ -267,12 +282,12 @@ const autoConvertLeadToCustomer = async (lead, userId) => {
 
     await customer.save();
 
-    // Log global activity
     await Activity.create({
       user: userId,
       action: 'Lead Converted to Customer',
       details: `Lead ${lead.company} successfully converted to Customer ${customer.customerCode}. Contract: $${customer.revenueGenerated}`,
       module: 'Customer',
+      tenant: lead.tenant,
     });
 
     console.log(`Lead ${lead.company} successfully converted to Customer ${customer.customerCode}.`);

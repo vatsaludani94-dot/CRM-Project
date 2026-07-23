@@ -43,6 +43,10 @@ const AppointmentSchema = new mongoose.Schema(
       ref: 'User',
       required: [true, 'Please assign an employee host'],
     },
+    tenant: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Tenant',
+    },
   },
   {
     timestamps: true,
@@ -50,6 +54,7 @@ const AppointmentSchema = new mongoose.Schema(
 );
 
 // Indexes for Calendar sorting
+AppointmentSchema.index({ tenant: 1, appointmentDate: 1 });
 AppointmentSchema.index({ appointmentDate: 1, host: 1 });
 
 module.exports = mongoose.model('Appointment', AppointmentSchema);

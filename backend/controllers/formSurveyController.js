@@ -5,38 +5,45 @@ const SurveySubmission = require('../models/SurveySubmission');
 const Lead = require('../models/Lead');
 const Customer = require('../models/Customer');
 const Ticket = require('../models/Ticket');
+const { getTenantFilter, getTenantId } = require('../utils/tenantScope');
 
 // FORMS
 const getForms = async (req, res) => {
   try {
-    const forms = await Form.find({ tenant: req.user.tenant }).sort({ createdAt: -1 });
+    const tenantFilter = getTenantFilter(req);
+    const forms = await Form.find(tenantFilter).sort({ createdAt: -1 });
     res.json({ success: true, count: forms.length, data: forms });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
 };
 
 const createForm = async (req, res) => {
   try {
+    const tenantId = getTenantId(req);
     const { name, fields, themeSettings, submissionAction } = req.body;
     const form = await Form.create({
       name,
       fields,
       themeSettings,
       submissionAction: submissionAction || 'Create Lead',
-      tenant: req.user.tenant,
+      tenant: tenantId,
     });
     res.status(201).json({ success: true, data: form });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
 };
 
 const updateForm = async (req, res) => {
   try {
+    const tenantFilter = getTenantFilter(req);
+    const updateData = { ...req.body };
+    delete updateData.tenant;
+
     const form = await Form.findOneAndUpdate(
-      { _id: req.params.id, tenant: req.user.tenant },
-      req.body,
+      { _id: req.params.id, ...tenantFilter },
+      updateData,
       { new: true, runValidators: true }
     );
     if (!form) {
@@ -44,32 +51,33 @@ const updateForm = async (req, res) => {
     }
     res.json({ success: true, data: form });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
 };
 
 const deleteForm = async (req, res) => {
   try {
-    const form = await Form.findOneAndDelete({ _id: req.params.id, tenant: req.user.tenant });
+    const tenantFilter = getTenantFilter(req);
+    const form = await Form.findOneAndDelete({ _id: req.params.id, ...tenantFilter });
     if (!form) {
       return res.status(404).json({ success: false, error: 'Form not found' });
     }
     res.json({ success: true, message: 'Form deleted successfully' });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
 };
 
 const submitForm = async (req, res) => {
   try {
-    const { formData } = req.body; // e.g. { Name: "Alice", Email: "alice@gmail.com", Phone: "12345" }
-    const form = await Form.findOne({ _id: req.params.id, tenant: req.user.tenant });
+    const { formData } = req.body;
+    const form = await Form.findById(req.params.id);
 
     if (!form) {
       return res.status(404).json({ success: false, error: 'Form not found' });
     }
 
-    // Capture entities creation
+    const formTenantId = form.tenant;
     let createdEntityId = null;
     const emailKey = Object.keys(formData).find(k => k.toLowerCase().includes('email')) || 'Email';
     const phoneKey = Object.keys(formData).find(k => k.toLowerCase().includes('phone') || k.toLowerCase().includes('number')) || 'Phone';
@@ -82,13 +90,14 @@ const submitForm = async (req, res) => {
 
     if (form.submissionAction === 'Create Lead') {
       const lead = await Lead.create({
-        name: entityName,
+        company: entityName,
+        contactName: entityName,
         email: entityEmail,
         phone: entityPhone,
-        source: 'Web Form',
+        leadSource: 'Web Form',
         stage: 'New',
-        notes: `Submitted form: ${form.name}. Raw data: ${JSON.stringify(formData)}`,
-        tenant: req.user.tenant,
+        notes: [{ content: `Submitted form: ${form.name}. Raw data: ${JSON.stringify(formData)}`, createdBy: req.user ? req.user._id : undefined }],
+        tenant: formTenantId,
       });
       createdEntityId = lead._id;
     } else if (form.submissionAction === 'Create Customer') {
@@ -98,7 +107,7 @@ const submitForm = async (req, res) => {
         email: entityEmail,
         phone: entityPhone,
         status: 'Active',
-        tenant: req.user.tenant,
+        tenant: formTenantId,
       });
       createdEntityId = customer._id;
     } else if (form.submissionAction === 'Create Ticket') {
@@ -107,7 +116,7 @@ const submitForm = async (req, res) => {
         description: `Raw data submitted: ${JSON.stringify(formData)}`,
         status: 'Open',
         priority: 'Medium',
-        tenant: req.user.tenant,
+        tenant: formTenantId,
       });
       createdEntityId = ticket._id;
     }
@@ -116,7 +125,7 @@ const submitForm = async (req, res) => {
       form: form._id,
       data: formData,
       createdEntityId,
-      tenant: req.user.tenant,
+      tenant: formTenantId,
     });
 
     res.status(201).json({ success: true, data: submission });
@@ -127,44 +136,51 @@ const submitForm = async (req, res) => {
 
 const getFormSubmissions = async (req, res) => {
   try {
-    const submissions = await FormSubmission.find({ form: req.params.id, tenant: req.user.tenant })
+    const tenantFilter = getTenantFilter(req);
+    const submissions = await FormSubmission.find({ form: req.params.id, ...tenantFilter })
       .sort({ createdAt: -1 });
     res.json({ success: true, count: submissions.length, data: submissions });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
 };
 
 // SURVEYS
 const getSurveys = async (req, res) => {
   try {
-    const surveys = await Survey.find({ tenant: req.user.tenant }).sort({ createdAt: -1 });
+    const tenantFilter = getTenantFilter(req);
+    const surveys = await Survey.find(tenantFilter).sort({ createdAt: -1 });
     res.json({ success: true, count: surveys.length, data: surveys });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
 };
 
 const createSurvey = async (req, res) => {
   try {
+    const tenantId = getTenantId(req);
     const { name, type, questions } = req.body;
     const survey = await Survey.create({
       name,
       type,
       questions,
-      tenant: req.user.tenant,
+      tenant: tenantId,
     });
     res.status(201).json({ success: true, data: survey });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
 };
 
 const updateSurvey = async (req, res) => {
   try {
+    const tenantFilter = getTenantFilter(req);
+    const updateData = { ...req.body };
+    delete updateData.tenant;
+
     const survey = await Survey.findOneAndUpdate(
-      { _id: req.params.id, tenant: req.user.tenant },
-      req.body,
+      { _id: req.params.id, ...tenantFilter },
+      updateData,
       { new: true, runValidators: true }
     );
     if (!survey) {
@@ -172,26 +188,27 @@ const updateSurvey = async (req, res) => {
     }
     res.json({ success: true, data: survey });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
 };
 
 const deleteSurvey = async (req, res) => {
   try {
-    const survey = await Survey.findOneAndDelete({ _id: req.params.id, tenant: req.user.tenant });
+    const tenantFilter = getTenantFilter(req);
+    const survey = await Survey.findOneAndDelete({ _id: req.params.id, ...tenantFilter });
     if (!survey) {
       return res.status(404).json({ success: false, error: 'Survey not found' });
     }
     res.json({ success: true, message: 'Survey deleted successfully' });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
 };
 
 const submitSurvey = async (req, res) => {
   try {
     const { respondentEmail, answers, score, npsScore } = req.body;
-    const survey = await Survey.findOne({ _id: req.params.id, tenant: req.user.tenant });
+    const survey = await Survey.findById(req.params.id);
 
     if (!survey) {
       return res.status(404).json({ success: false, error: 'Survey not found' });
@@ -203,7 +220,7 @@ const submitSurvey = async (req, res) => {
       answers,
       score: score || 0,
       npsScore: npsScore !== undefined ? npsScore : undefined,
-      tenant: req.user.tenant,
+      tenant: survey.tenant,
     });
 
     res.status(201).json({ success: true, data: submission });
@@ -214,8 +231,9 @@ const submitSurvey = async (req, res) => {
 
 const getSurveyAnalytics = async (req, res) => {
   try {
+    const tenantFilter = getTenantFilter(req);
     const surveyId = req.params.id;
-    const submissions = await SurveySubmission.find({ survey: surveyId, tenant: req.user.tenant });
+    const submissions = await SurveySubmission.find({ survey: surveyId, ...tenantFilter });
 
     let promoter = 0, detractor = 0, passive = 0;
     let totalScore = 0;
@@ -245,7 +263,7 @@ const getSurveyAnalytics = async (req, res) => {
       submissions
     });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
 };
 

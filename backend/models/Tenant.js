@@ -28,6 +28,10 @@ const TenantSchema = new mongoose.Schema(
       type: Date,
       default: () => new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14-day default
     },
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
     whiteLabelSettings: {
       logo: { type: String, default: '' },
       customDomain: { type: String, default: '' },

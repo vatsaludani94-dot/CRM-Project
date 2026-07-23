@@ -8,10 +8,11 @@ export interface UserProfile {
   _id: string;
   name: string;
   email: string;
-  role: 'super_admin' | 'manager' | 'employee' | 'customer';
+  role: 'super_admin' | 'workspace_owner' | 'manager' | 'employee' | 'customer';
   department: string;
   token?: string;
   profilePicture?: string;
+  tenant?: any;
 }
 
 @Injectable({
@@ -115,6 +116,23 @@ export class AuthService {
     );
   }
 
+  registerWorkspace(data: { companyName: string; name: string; email: string; password: string }): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/register-workspace`, data).pipe(
+      map(response => {
+        if (response && response.success && response.data) {
+          const user = response.data;
+          if (user.token) {
+            localStorage.setItem('nexus_user', JSON.stringify(user));
+            this.currentUserSubject.next(user);
+            this.userSignal.set(user);
+          }
+          return user;
+        }
+        throw new Error(response.error || 'Workspace registration failed');
+      })
+    );
+  }
+
   forgotPassword(email: string): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/forgot-password`, { email });
   }
@@ -139,11 +157,18 @@ export class AuthService {
   hasRole(allowedRoles: string[]): boolean {
     const user = this.currentUserValue;
     if (!user) return false;
+    if (user.role === 'workspace_owner' && (allowedRoles.includes('manager') || allowedRoles.includes('super_admin'))) {
+      return true;
+    }
     return allowedRoles.includes(user.role);
   }
 
   isSuperAdmin(): boolean {
     return this.currentUserValue?.role === 'super_admin';
+  }
+
+  isWorkspaceOwner(): boolean {
+    return this.currentUserValue?.role === 'workspace_owner';
   }
 
   isManager(): boolean {

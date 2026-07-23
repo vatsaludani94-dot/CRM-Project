@@ -1,4 +1,5 @@
 const AIService = require('../services/aiService');
+const { getTenantFilter } = require('../utils/tenantScope');
 
 /**
  * @desc    Test Ticket Classification
@@ -147,12 +148,13 @@ const analyzeMeetingTranscript = async (req, res) => {
  */
 const assessDealRisk = async (req, res) => {
   try {
+    const tenantFilter = getTenantFilter(req);
     const { leadId, name, stage, expectedRevenue, daysInactive } = req.body;
     let leadData = { name, stage, expectedRevenue, daysInactive };
 
     if (leadId) {
       const Lead = require('../models/Lead');
-      const lead = await Lead.findById(leadId);
+      const lead = await Lead.findOne({ _id: leadId, ...tenantFilter });
       if (lead) {
         leadData = {
           name: lead.contactName || lead.company,
@@ -167,19 +169,20 @@ const assessDealRisk = async (req, res) => {
     const assessment = await AIService.detectDealRisk(leadData);
     res.json({ success: true, data: assessment });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
 /**
- * @desc    Generate pipeline sales forecasting
+ * @desc    Generate pipeline sales forecasting (tenant scoped)
  * @route   GET /api/ai/pipeline-forecast
  * @access  Private
  */
 const getPipelineForecast = async (req, res) => {
   try {
+    const tenantFilter = getTenantFilter(req);
     const Lead = require('../models/Lead');
-    const leads = await Lead.find({ tenant: req.user.tenant, stage: { $ne: 'Lost' } });
+    const leads = await Lead.find({ stage: { $ne: 'Lost' }, ...tenantFilter });
     
     const leadCount = leads.length;
     const totalRevenue = leads.reduce((sum, l) => sum + (l.expectedRevenue || 0), 0);
@@ -187,29 +190,29 @@ const getPipelineForecast = async (req, res) => {
     const forecast = await AIService.generatePipelineForecast(leadCount, totalRevenue);
     res.json({ success: true, data: forecast });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
 /**
- * @desc    Generate executive dashboard insights
+ * @desc    Generate executive dashboard insights (tenant scoped)
  * @route   GET /api/ai/business-insights
  * @access  Private
  */
 const getBusinessInsights = async (req, res) => {
   try {
+    const tenantFilter = getTenantFilter(req);
     const Lead = require('../models/Lead');
     const Customer = require('../models/Customer');
     const Ticket = require('../models/Ticket');
 
-    const activeLeads = await Lead.countDocuments({ tenant: req.user.tenant, stage: { $nin: ['Converted', 'Lost'] } });
-    const openTickets = await Ticket.countDocuments({ tenant: req.user.tenant, status: { $nin: ['Resolved', 'Closed'] } });
-    const customers = await Customer.find({ tenant: req.user.tenant });
+    const activeLeads = await Lead.countDocuments({ stage: { $nin: ['Converted', 'Lost'] }, ...tenantFilter });
+    const openTickets = await Ticket.countDocuments({ status: { $nin: ['Resolved', 'Closed'] }, ...tenantFilter });
+    const customers = await Customer.find(tenantFilter);
     const totalRevenue = customers.reduce((sum, c) => sum + (c.revenueGenerated || 0), 0);
 
-    // Calculate generic conversion rate
-    const totalLeads = await Lead.countDocuments({ tenant: req.user.tenant });
-    const convertedLeads = await Lead.countDocuments({ tenant: req.user.tenant, stage: 'Converted' });
+    const totalLeads = await Lead.countDocuments(tenantFilter);
+    const convertedLeads = await Lead.countDocuments({ stage: 'Converted', ...tenantFilter });
     const conversionRate = totalLeads > 0 ? Math.round((convertedLeads / totalLeads) * 100) : 42;
 
     const insights = await AIService.generateBusinessInsights({
@@ -221,7 +224,7 @@ const getBusinessInsights = async (req, res) => {
 
     res.json({ success: true, data: insights });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
@@ -235,7 +238,6 @@ const getWebsiteAssistantResponse = async (req, res) => {
     const fs = require('fs');
     const path = require('path');
     
-    // Load USER_GUIDE.md context
     let userGuide = '';
     const possiblePaths = [
       path.join(__dirname, '..', 'USER_GUIDE.md'),
@@ -271,14 +273,13 @@ const getWebsiteAssistantResponse = async (req, res) => {
       }
     }
 
-    // Heuristics fallback parser
     const q = question.toLowerCase();
     let answer = '';
 
     if (q.includes('payroll')) {
       answer = 'Yes, employees can view their personal assigned payroll statement payslips and download them as formal PDFs, while administrators and managers can configure base salary, bonuses, deductions, and release payments.';
     } else if (q.includes('role') || q.includes('credential') || q.includes('login') || q.includes('password')) {
-      answer = 'GrownX CRM supports 5 key user roles: Super Admin (admin@grownox.com), Sales Manager (manager@grownox.com), Sales Rep (employee@grownox.com), HR & Support Rep (alice@grownox.com), and Customer (customer@grownox.com). In our demo, you can log in to any role instantly with one click!';
+      answer = 'GrownX CRM supports key user roles: Super Admin, Workspace Owner, Manager, Employee, and Customer.';
     } else if (q.includes('start') || q.includes('run') || q.includes('install') || q.includes('local')) {
       answer = 'To run locally: 1. Start your local MongoDB server. 2. Navigate to the backend folder and run `npm run seed` and `npm run dev`. 3. Navigate to frontend/angular-app and run `npm start` (serves on http://localhost:4200). You can also run the dev launcher `start-dev.bat` in the root folder.';
     } else if (q.includes('workflow') || q.includes('automation')) {
@@ -316,4 +317,3 @@ module.exports = {
   getBusinessInsights,
   getWebsiteAssistantResponse,
 };
-

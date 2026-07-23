@@ -40,4 +40,17 @@ const protect = async (req, res, next) => {
   }
 };
 
-module.exports = { protect };
+const requireTenant = (req, res, next) => {
+  if (req.user && req.user.role === 'super_admin') {
+    return next();
+  }
+  if (!req.user || !req.user.tenant) {
+    return res.status(403).json({
+      success: false,
+      error: 'Not authorized: User is not associated with any workspace tenant',
+    });
+  }
+  next();
+};
+
+module.exports = { protect, requireTenant };

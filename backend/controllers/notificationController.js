@@ -1,4 +1,5 @@
 const Notification = require('../models/Notification');
+const { getTenantFilter } = require('../utils/tenantScope');
 
 /**
  * @desc    Get all notifications for logged-in user
@@ -7,14 +8,15 @@ const Notification = require('../models/Notification');
  */
 const getNotifications = async (req, res) => {
   try {
-    const notifications = await Notification.find({ recipient: req.user._id })
+    const tenantFilter = getTenantFilter(req);
+    const notifications = await Notification.find({ recipient: req.user._id, ...tenantFilter })
       .populate('sender', 'name profilePicture')
       .sort({ createdAt: -1 })
       .limit(50);
 
     res.json({ success: true, count: notifications.length, data: notifications });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
@@ -25,9 +27,11 @@ const getNotifications = async (req, res) => {
  */
 const markAsRead = async (req, res) => {
   try {
+    const tenantFilter = getTenantFilter(req);
     const notification = await Notification.findOne({
       _id: req.params.id,
-      recipient: req.user._id
+      recipient: req.user._id,
+      ...tenantFilter
     });
 
     if (!notification) {
@@ -39,7 +43,7 @@ const markAsRead = async (req, res) => {
 
     res.json({ success: true, data: notification });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
@@ -50,14 +54,15 @@ const markAsRead = async (req, res) => {
  */
 const markAllAsRead = async (req, res) => {
   try {
+    const tenantFilter = getTenantFilter(req);
     await Notification.updateMany(
-      { recipient: req.user._id, read: false },
+      { recipient: req.user._id, read: false, ...tenantFilter },
       { $set: { read: true } }
     );
 
     res.json({ success: true, message: 'All notifications marked as read' });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 
@@ -68,14 +73,16 @@ const markAllAsRead = async (req, res) => {
  */
 const getUnreadCount = async (req, res) => {
   try {
+    const tenantFilter = getTenantFilter(req);
     const count = await Notification.countDocuments({
       recipient: req.user._id,
-      read: false
+      read: false,
+      ...tenantFilter
     });
 
     res.json({ success: true, count });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
 };
 

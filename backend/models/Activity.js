@@ -21,12 +21,17 @@ const ActivitySchema = new mongoose.Schema({
     required: true,
   },
   ipAddress: String,
+  tenant: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Tenant',
+  },
   createdAt: {
     type: Date,
     default: Date.now,
   },
 });
 
+ActivitySchema.index({ tenant: 1, createdAt: -1 });
 ActivitySchema.index({ module: 1, createdAt: -1 });
 ActivitySchema.index({ user: 1, createdAt: -1 });
 
