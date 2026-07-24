@@ -4,7 +4,10 @@ const Lead = require('../models/Lead');
 const { autoCreateCustomerFolder } = require('./driveController');
 const DriveFolder = require('../models/DriveFolder');
 const DriveFile = require('../models/DriveFile');
-const { getTenantFilter, getTenantId } = require('../utils/tenantScope');
+const { getTenantFilter, getTenantId, getWorkspaceIdentity } = require('../utils/tenantScope');
+const PDFService = require('../services/pdfService');
+const { sendOutboundEmail } = require('../services/invoice-email.service');
+const mongoose = require('mongoose');
 
 const getDocuments = async (req, res) => {
   try {
@@ -16,7 +19,7 @@ const getDocuments = async (req, res) => {
     if (status) query.status = status;
 
     const documents = await Document.find(query)
-      .populate('customer', 'companyName contactPerson')
+      .populate('customer', 'companyName contactPerson email phone')
       .populate('lead', 'company contactName email')
       .sort({ createdAt: -1 });
 
@@ -86,12 +89,17 @@ const createDocument = async (req, res) => {
       discountAmount,
       taxAmount,
       netAmount,
+      amountPaid: 0,
+      amountDue: netAmount,
+      creditBalance: 0,
+      paymentHistory: [],
     };
 
     const doc = await Document.create({
       name,
       type,
       status: status || 'Draft',
+      documentNumber: `${type.substring(0, 3).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`,
       metadata: updatedMetadata,
       customer: customerId || undefined,
       lead: leadId || undefined,
@@ -189,9 +197,15 @@ const updateDocument = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Export Document PDF buffer with validation
+ * @route   GET /api/documents/:id/pdf
+ * @access  Private
+ */
 const exportDocumentPdf = async (req, res) => {
   try {
     const tenantFilter = getTenantFilter(req);
+    const tenantId = getTenantId(req);
     const doc = await Document.findOne({ _id: req.params.id, ...tenantFilter })
       .populate('customer', 'companyName contactPerson email phone')
       .populate('lead', 'company contactName email');
@@ -200,12 +214,17 @@ const exportDocumentPdf = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Document not found' });
     }
 
+    const workspaceIdentity = await getWorkspaceIdentity(tenantId, req.user);
+    const pdfBuffer = await PDFService.generateDocumentPdf(doc, workspaceIdentity);
+
+    if (!pdfBuffer || pdfBuffer.length === 0) {
+      return res.status(500).json({ success: false, error: 'Generated PDF buffer is empty or corrupted' });
+    }
+
+    const safeFilename = doc.name.replace(/[^a-zA-Z0-9_-]/g, '_');
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${doc.name.replace(/\s+/g, '_')}_v${doc.version}.pdf"`);
-    
-    const dummyPdfContent = Buffer.from(`%PDF-1.4\n%GrownX Document Generator\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /Resources << >> /Contents 4 0 R >>\nendobj\n4 0 obj\n<< /Length 100 >>\nstream\nBT /F1 12 Tf 50 700 Td (GrownX ${doc.type}: ${doc.name}) Tj ET\nBT /F1 10 Tf 50 650 Td (Status: ${doc.status} - Total Amount: $${doc.metadata.netAmount}) Tj ET\nendstream\nendobj\nxref\n0 5\n0000000000 65535 f\n0000000018 00000 n\n0000000069 00000 n\n0000000135 00000 n\n0000000212 00000 n\ntrailer\n<< /Size 5 /Root 1 0 R >>\nstartxref\n360\n%%EOF`);
-    
-    res.send(dummyPdfContent);
+    res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}_v${doc.version}.pdf"`);
+    res.send(pdfBuffer);
   } catch (err) {
     res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
@@ -232,7 +251,6 @@ const transitionDocument = async (req, res) => {
       return res.status(400).json({ success: false, error: `Invalid target status. Valid values: ${validStatuses.join(', ')}` });
     }
 
-    // Protection: Cannot move Accepted/Paid back to Draft
     if (['Accepted', 'Paid', 'Approved'].includes(doc.status) && targetStatus === 'Draft') {
       return res.status(400).json({ success: false, error: `Cannot return document from ${doc.status} back to Draft` });
     }
@@ -240,7 +258,6 @@ const transitionDocument = async (req, res) => {
     const previousStatus = doc.status;
     doc.status = targetStatus;
 
-    // Proposal acceptance handling -> Auto-generate Invoice if missing
     let generatedInvoice = null;
     if (doc.type === 'Proposal' && ['Accepted', 'Approved'].includes(targetStatus)) {
       if (!doc.metadata?.linkedInvoice) {
@@ -259,6 +276,7 @@ const transitionDocument = async (req, res) => {
             netAmount: doc.metadata?.netAmount || 0,
             amountPaid: 0,
             amountDue: doc.metadata?.netAmount || 0,
+            creditBalance: 0,
             linkedProposal: doc._id,
             notes: doc.metadata?.notes || ''
           },
@@ -282,7 +300,6 @@ const transitionDocument = async (req, res) => {
 
     await doc.save();
 
-    // Log Activity on Customer if linked
     if (doc.customer) {
       const customer = await Customer.findOne({ _id: doc.customer, ...tenantFilter });
       if (customer) {
@@ -307,7 +324,35 @@ const transitionDocument = async (req, res) => {
 };
 
 /**
- * @desc    Record payment against an invoice
+ * Recalculate document payments & customer balances safely
+ */
+const recalculateDocumentFinances = (doc) => {
+  const paymentHistory = doc.metadata.paymentHistory || [];
+  const totalPaid = parseFloat(paymentHistory.reduce((sum, p) => sum + (p.amount || 0), 0).toFixed(2));
+  const netAmount = doc.metadata.netAmount || 0;
+
+  const amountDue = Math.max(0, parseFloat((netAmount - totalPaid).toFixed(2)));
+  const creditBalance = Math.max(0, parseFloat((totalPaid - netAmount).toFixed(2)));
+
+  doc.metadata.amountPaid = totalPaid;
+  doc.metadata.amountDue = amountDue;
+  doc.metadata.creditBalance = creditBalance;
+
+  doc.markModified('metadata');
+
+  if (amountDue === 0 && totalPaid > 0) {
+    doc.status = 'Paid';
+  } else if (totalPaid > 0 && amountDue > 0) {
+    doc.status = 'Partially_Paid';
+  } else if (totalPaid === 0 && doc.status === 'Paid') {
+    doc.status = 'Draft';
+  }
+
+  return { totalPaid, amountDue, creditBalance };
+};
+
+/**
+ * @desc    Record payment against an invoice (supporting overpayment & customer credit)
  * @route   POST /api/documents/:id/payments
  * @access  Private (Admin, Manager, Employee)
  */
@@ -331,63 +376,43 @@ const recordInvoicePayment = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Payment amount must be a positive number' });
     }
 
-    const currentAmountPaid = doc.metadata?.amountPaid || 0;
-    const netAmount = doc.metadata?.netAmount || 0;
-    const currentAmountDue = doc.metadata?.amountDue !== undefined ? doc.metadata.amountDue : Math.max(0, netAmount - currentAmountPaid);
-
-    // Overpayment protection
-    if (paymentAmount > currentAmountDue && currentAmountDue > 0) {
-      return res.status(400).json({
-        success: false,
-        error: `Payment amount ($${paymentAmount}) exceeds current outstanding balance ($${currentAmountDue})`
-      });
-    }
-
-    const newAmountPaid = parseFloat((currentAmountPaid + paymentAmount).toFixed(2));
-    const newAmountDue = Math.max(0, parseFloat((netAmount - newAmountPaid).toFixed(2)));
-
-    doc.metadata = {
-      ...doc.metadata.toObject(),
-      amountPaid: newAmountPaid,
-      amountDue: newAmountDue,
-    };
-
-    if (newAmountDue === 0) {
-      doc.status = 'Paid';
-    } else if (newAmountPaid > 0) {
-      doc.status = 'Partially_Paid';
-    }
-
     if (!doc.metadata.paymentHistory) {
       doc.metadata.paymentHistory = [];
     }
 
-    doc.metadata.paymentHistory.push({
+    const newPaymentId = new mongoose.Types.ObjectId();
+    const newPaymentRecord = {
+      _id: newPaymentId,
+      paymentId: newPaymentId.toString(),
       amount: paymentAmount,
       paymentMethod: paymentMethod || 'Bank Transfer',
       transactionRef: transactionRef || '',
       notes: notes || '',
       recordedBy: req.user._id,
       date: new Date()
-    });
+    };
 
+    doc.metadata.paymentHistory.push(newPaymentRecord);
+
+    const { totalPaid, amountDue, creditBalance } = recalculateDocumentFinances(doc);
     await doc.save();
 
-    // Update Customer revenue & activity if customer linked
     if (doc.customer) {
       const customer = await Customer.findOne({ _id: doc.customer, ...tenantFilter });
       if (customer) {
         customer.revenueGenerated = (customer.revenueGenerated || 0) + paymentAmount;
+        if (creditBalance > 0) {
+          customer.creditBalance = (customer.creditBalance || 0) + creditBalance;
+        }
         customer.activities.push({
           type: 'Note',
-          description: `Payment of $${paymentAmount.toLocaleString()} recorded for Invoice "${doc.name}". Status: ${doc.status} (Remaining: $${newAmountDue.toLocaleString()})`,
+          description: `Payment of $${paymentAmount.toLocaleString()} recorded for Invoice "${doc.name}". Status: ${doc.status} (Due: $${amountDue.toLocaleString()}${creditBalance > 0 ? `, Credit: $${creditBalance.toLocaleString()}` : ''})`,
           performedBy: req.user._id
         });
         await customer.save();
       }
     }
 
-    // Trigger workflow event
     try {
       const { triggerWorkflowEvents } = require('./workflowController');
       await triggerWorkflowEvents('Customer Converted', 'Document', doc._id, tenantId);
@@ -396,7 +421,258 @@ const recordInvoicePayment = async (req, res) => {
     res.status(201).json({
       success: true,
       message: `Payment of $${paymentAmount} recorded successfully`,
+      data: doc,
+      paymentRecord: newPaymentRecord
+    });
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
+  }
+};
+
+/**
+ * @desc    Correct an existing payment entry with audit trail
+ * @route   PUT /api/documents/:id/payments/:paymentId
+ * @access  Private (Admin, Manager only)
+ */
+const correctInvoicePayment = async (req, res) => {
+  try {
+    const tenantFilter = getTenantFilter(req);
+    const doc = await Document.findOne({ _id: req.params.id, ...tenantFilter });
+    if (!doc) {
+      return res.status(404).json({ success: false, error: 'Document not found' });
+    }
+
+    // RBAC Authorization: Manager & Super Admin only
+    if (!['super_admin', 'manager'].includes(req.user.role)) {
+      return res.status(403).json({ success: false, error: 'Unauthorized: Financial payment correction requires manager or workspace owner role' });
+    }
+
+    const { paymentId } = req.params;
+    const { amount, paymentMethod, transactionRef, notes, reason } = req.body;
+
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ success: false, error: 'Correction reason is mandatory for audit trail' });
+    }
+
+    const paymentIndex = (doc.metadata.paymentHistory || []).findIndex(
+      p => (p._id && p._id.toString() === paymentId) || (p.paymentId && p.paymentId === paymentId)
+    );
+
+    if (paymentIndex === -1) {
+      return res.status(404).json({ success: false, error: 'Payment record not found in invoice history' });
+    }
+
+    const existingPayment = doc.metadata.paymentHistory[paymentIndex];
+    const originalAmount = existingPayment.amount;
+    const newAmount = amount !== undefined ? Number(amount) : originalAmount;
+
+    if (isNaN(newAmount) || newAmount <= 0) {
+      return res.status(400).json({ success: false, error: 'Corrected payment amount must be a positive number' });
+    }
+
+    if (!existingPayment.correctionHistory) {
+      existingPayment.correctionHistory = [];
+    }
+
+    existingPayment.correctionHistory.push({
+      originalAmount,
+      correctedAmount: newAmount,
+      reason: reason.trim(),
+      correctedBy: req.user._id,
+      correctedAt: new Date()
+    });
+
+    existingPayment.amount = newAmount;
+    if (paymentMethod) existingPayment.paymentMethod = paymentMethod;
+    if (transactionRef !== undefined) existingPayment.transactionRef = transactionRef;
+    if (notes !== undefined) existingPayment.notes = notes;
+    existingPayment.isCorrected = true;
+
+    doc.metadata.paymentHistory[paymentIndex] = existingPayment;
+
+    const { totalPaid, amountDue, creditBalance } = recalculateDocumentFinances(doc);
+    await doc.save();
+
+    // Recalculate customer revenue
+    if (doc.customer) {
+      const customer = await Customer.findOne({ _id: doc.customer, ...tenantFilter });
+      if (customer) {
+        const diff = newAmount - originalAmount;
+        customer.revenueGenerated = Math.max(0, (customer.revenueGenerated || 0) + diff);
+        customer.activities.push({
+          type: 'Note',
+          description: `Payment corrected from $${originalAmount} to $${newAmount} for Invoice "${doc.name}". Reason: "${reason.trim()}"`,
+          performedBy: req.user._id
+        });
+        await customer.save();
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Payment corrected from $${originalAmount} to $${newAmount} successfully`,
       data: doc
+    });
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
+  }
+};
+
+/**
+ * @desc    Delete/Void a payment entry from invoice
+ * @route   DELETE /api/documents/:id/payments/:paymentId
+ * @access  Private (Admin, Manager only)
+ */
+const deleteInvoicePayment = async (req, res) => {
+  try {
+    const tenantFilter = getTenantFilter(req);
+    const doc = await Document.findOne({ _id: req.params.id, ...tenantFilter });
+    if (!doc) {
+      return res.status(404).json({ success: false, error: 'Document not found' });
+    }
+
+    if (!['super_admin', 'manager'].includes(req.user.role)) {
+      return res.status(403).json({ success: false, error: 'Unauthorized: Deleting financial payments requires manager or workspace owner role' });
+    }
+
+    const { paymentId } = req.params;
+    const paymentIndex = (doc.metadata.paymentHistory || []).findIndex(
+      p => (p._id && p._id.toString() === paymentId) || (p.paymentId && p.paymentId === paymentId)
+    );
+
+    if (paymentIndex === -1) {
+      return res.status(404).json({ success: false, error: 'Payment record not found' });
+    }
+
+    const removedPayment = doc.metadata.paymentHistory[paymentIndex];
+    doc.metadata.paymentHistory.splice(paymentIndex, 1);
+
+    const { totalPaid, amountDue } = recalculateDocumentFinances(doc);
+    await doc.save();
+
+    if (doc.customer) {
+      const customer = await Customer.findOne({ _id: doc.customer, ...tenantFilter });
+      if (customer) {
+        customer.revenueGenerated = Math.max(0, (customer.revenueGenerated || 0) - removedPayment.amount);
+        customer.activities.push({
+          type: 'Note',
+          description: `Payment of $${removedPayment.amount} voided/deleted for Invoice "${doc.name}".`,
+          performedBy: req.user._id
+        });
+        await customer.save();
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Payment of $${removedPayment.amount} deleted successfully`,
+      data: doc
+    });
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
+  }
+};
+
+/**
+ * @desc    Send Proposal Email to Client with PDF Attachment
+ * @route   POST /api/documents/:id/send
+ * @access  Private (Admin, Manager, Employee)
+ */
+const sendProposalEmail = async (req, res) => {
+  try {
+    const tenantFilter = getTenantFilter(req);
+    const tenantId = getTenantId(req);
+    const doc = await Document.findOne({ _id: req.params.id, ...tenantFilter })
+      .populate('customer', 'companyName contactPerson email phone')
+      .populate('lead', 'company contactName email');
+
+    if (!doc) {
+      return res.status(404).json({ success: false, error: 'Document not found' });
+    }
+
+    if (doc.type !== 'Proposal') {
+      return res.status(400).json({ success: false, error: 'Only Proposal documents can be sent via this endpoint' });
+    }
+
+    const { recipientEmail, recipientName, cc, subject, message } = req.body;
+    const targetEmail = recipientEmail || doc.customer?.email || doc.lead?.email;
+
+    if (!targetEmail || !targetEmail.trim() || !/^\S+@\S+\.\S+$/.test(targetEmail.trim())) {
+      return res.status(400).json({ success: false, error: 'Valid client recipient email address is required' });
+    }
+
+    const workspaceIdentity = await getWorkspaceIdentity(tenantId, req.user);
+    const pdfBuffer = await PDFService.generateDocumentPdf(doc, workspaceIdentity);
+
+    if (!pdfBuffer || pdfBuffer.length === 0) {
+      return res.status(500).json({ success: false, error: 'Failed to generate proposal PDF attachment' });
+    }
+
+    const emailSubject = subject || `Proposal: ${doc.name} - ${workspaceIdentity.workspaceName}`;
+    const emailBodyHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #fafaf9; border: 1px solid #e7e5e4; border-radius: 16px; padding: 32px;">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <h2 style="color: #1c1917; margin: 0;">${workspaceIdentity.workspaceName}</h2>
+          <p style="color: #44403c; font-size: 14px; margin-top: 4px;">Commercial Sales Proposal</p>
+        </div>
+        <div style="background: #ffffff; border: 1px solid #e7e5e4; border-radius: 12px; padding: 24px;">
+          <p style="color: #1c1917; font-size: 14px;">Dear ${recipientName || doc.customer?.contactPerson || doc.lead?.contactName || 'Valued Client'},</p>
+          <p style="color: #44403c; font-size: 14px; line-height: 1.5;">${message || 'Please find attached our official sales proposal for your review.'}</p>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin: 20px 0;">
+            <p style="margin: 0; font-size: 13px; font-weight: bold; color: #0f172a;">Proposal Summary:</p>
+            <p style="margin: 4px 0 0 0; font-size: 13px; color: #475569;">Document Name: <strong>${doc.name}</strong></p>
+            <p style="margin: 4px 0 0 0; font-size: 13px; color: #16a34a; font-weight: bold;">Total Amount: $${(doc.metadata?.netAmount || 0).toLocaleString()}</p>
+          </div>
+          <p style="color: #574c43; font-size: 12px; margin-top: 16px;">The complete detailed document is attached to this email as a PDF file.</p>
+        </div>
+      </div>
+    `;
+
+    // Attempt actual email delivery
+    let deliveryResult;
+    try {
+      deliveryResult = await sendOutboundEmail({
+        to: targetEmail.trim(),
+        subject: emailSubject,
+        html: emailBodyHtml,
+        attachments: [
+          {
+            filename: `${doc.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`,
+            content: pdfBuffer,
+            contentType: 'application/pdf',
+          }
+        ],
+        fromName: workspaceIdentity.communicationEmailName,
+        fromEmail: workspaceIdentity.communicationEmail,
+      });
+    } catch (deliveryErr) {
+      return res.status(500).json({
+        success: false,
+        error: `Proposal delivery failed: ${deliveryErr.message}`
+      });
+    }
+
+    // UPDATE STATUS ONLY AFTER SUCCESSFUL DELIVERY
+    doc.status = 'Sent';
+    await doc.save();
+
+    if (doc.customer) {
+      const customer = await Customer.findOne({ _id: doc.customer, ...tenantFilter });
+      if (customer) {
+        customer.activities.push({
+          type: 'Email',
+          description: `Sent Proposal "${doc.name}" via email to ${targetEmail}`,
+          performedBy: req.user._id
+        });
+        await customer.save();
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Proposal successfully delivered to ${targetEmail}`,
+      data: doc,
+      messageId: deliveryResult.messageId
     });
   } catch (err) {
     res.status(err.statusCode || 500).json({ success: false, error: err.message });
@@ -411,4 +687,7 @@ module.exports = {
   exportDocumentPdf,
   transitionDocument,
   recordInvoicePayment,
+  correctInvoicePayment,
+  deleteInvoicePayment,
+  sendProposalEmail,
 };

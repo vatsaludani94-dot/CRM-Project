@@ -7,6 +7,8 @@ const {
   resendRegistrationCode,
   loginUser,
   getMe,
+  getWorkspaceSettings,
+  updateWorkspaceSettings,
   forgotPassword,
   resetPasswordWithOtp,
   googleLogin,
@@ -53,7 +55,12 @@ router.post('/passkey/verify-login', passkeyLimiter, verifyLogin);
 router.post('/2fa/challenge', totpLimiter, challenge2FA);
 
 // Private profile & operations
-router.get('/me', protect, getMe);
+router.get('/settings', protect, getWorkspaceSettings);
+router.put('/settings', protect, updateWorkspaceSettings);
+router.get('/workspace/settings', protect, getWorkspaceSettings);
+router.put('/workspace/settings', protect, updateWorkspaceSettings);
+router.get('/workspace-settings', protect, getWorkspaceSettings);
+router.put('/workspace-settings', protect, updateWorkspaceSettings);
 router.post('/logout', protect, logoutUser);
 router.post('/revoke-sessions', protect, revokeAllSessions);
 router.post('/passkey/register-options', protect, passkeyLimiter, getRegisterOptions);

@@ -242,10 +242,40 @@ const sendOwnerSalesAlertEmail = async ({ buyerName, buyerEmail, planName, amoun
   return await transporter.sendMail(mailOptions);
 };
 
+/**
+ * Generic Outbound CRM Email Sender with Custom Workspace Identity support
+ */
+const sendOutboundEmail = async ({ to, subject, html, text, attachments, fromName, fromEmail }) => {
+  const transporter = createTransporter();
+  
+  const senderEmail = fromEmail || process.env.SMTP_FROM || process.env.SMTP_USER || 'grownxcrm@gmail.com';
+  const senderName = fromName || 'GrownX CRM';
+  const fromFormatted = `"${senderName}" <${senderEmail}>`;
+
+  const mailOptions = {
+    from: fromFormatted,
+    to,
+    subject,
+    text: text || (html ? html.replace(/<[^>]*>?/gm, '') : ''),
+    html: html || `<p>${text}</p>`,
+    attachments: attachments || [],
+  };
+
+  try {
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`[EMAIL SERVICE] Message sent to ${to}. ID: ${result.messageId}`);
+    return result;
+  } catch (err) {
+    console.error(`[EMAIL SERVICE ERROR] Failed to deliver email to ${to}:`, err.message);
+    throw new Error(`Email delivery failed: ${err.message}`);
+  }
+};
+
 module.exports = {
   sendOtpEmail,
   sendRegistrationVerificationEmail,
   sendInvitationEmail,
   sendCustomerInvoiceEmail,
   sendOwnerSalesAlertEmail,
+  sendOutboundEmail,
 };

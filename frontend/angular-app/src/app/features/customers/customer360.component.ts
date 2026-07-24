@@ -279,7 +279,7 @@ export interface TimelineEvent {
                         </span>
                       </td>
                       <td class="py-3 text-right space-x-2">
-                        <button *ngIf="prop.status === 'Draft'" (click)="transitionDoc(prop._id, 'Sent')" class="text-sky-600 hover:text-sky-500 font-bold text-[11px]">Send</button>
+                        <button *ngIf="prop.status === 'Draft'" (click)="openSendProposalModal(prop)" class="text-sky-600 hover:text-sky-500 font-bold text-[11px] bg-sky-50 px-2.5 py-1 rounded-lg">Send via Email</button>
                         <button *ngIf="prop.status !== 'Accepted'" (click)="transitionDoc(prop._id, 'Accepted')" class="text-emerald-600 hover:text-emerald-500 font-bold text-[11px]">Accept & Invoice</button>
                         <button *ngIf="prop.status !== 'Rejected' && prop.status !== 'Accepted'" (click)="transitionDoc(prop._id, 'Rejected')" class="text-rose-500 hover:text-rose-400 font-bold text-[11px]">Reject</button>
                       </td>
@@ -404,6 +404,51 @@ export interface TimelineEvent {
         </div>
       </div>
 
+      <!-- Modal: Send Proposal via Outbound Email with PDF Attachment -->
+      <div *ngIf="sendProposalModalDoc()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn">
+        <div class="bg-white border border-slate-200 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5">
+          <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+            <h3 class="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+              <span class="material-icons text-sky-600">send</span>
+              <span>Send Proposal PDF via Email</span>
+            </h3>
+            <button (click)="sendProposalModalDoc.set(null)" class="text-slate-400 hover:text-slate-600">
+              <span class="material-icons text-sm">close</span>
+            </button>
+          </div>
+
+          <div class="space-y-3 text-xs">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Recipient Email Address</label>
+              <input type="email" [(ngModel)]="sendProposalEmailAddr" placeholder="client@company.com" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 font-bold text-slate-900 focus:ring-2 focus:ring-sky-500">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Recipient Name</label>
+              <input type="text" [(ngModel)]="sendProposalRecipientName" placeholder="Client Contact Name" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 font-bold text-slate-900">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Subject</label>
+              <input type="text" [(ngModel)]="sendProposalSubject" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 font-bold text-slate-900">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Message Body</label>
+              <textarea [(ngModel)]="sendProposalMessage" rows="3" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 font-medium text-slate-900"></textarea>
+            </div>
+            <div class="bg-sky-50 p-3 rounded-xl border border-sky-100 text-[11px] text-sky-800 font-semibold flex items-center gap-2">
+              <span class="material-icons text-sm text-sky-600">picture_as_pdf</span>
+              <span>Official PDF Document will be generated and attached automatically.</span>
+            </div>
+          </div>
+
+          <div class="flex gap-3 pt-2">
+            <button (click)="sendProposalModalDoc.set(null)" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700 font-bold text-xs">Cancel</button>
+            <button (click)="submitSendProposal()" [disabled]="!sendProposalEmailAddr || sendProposalLoading" class="flex-1 py-2 bg-sky-600 hover:bg-sky-500 disabled:bg-slate-200 text-white rounded-xl font-bold text-xs shadow-md">
+              {{ sendProposalLoading ? 'Delivering...' : 'Send Proposal Email' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
     </div>
   `,
   styles: [`
@@ -432,6 +477,14 @@ export class Customer360Component implements OnInit {
   paymentMethod = 'Bank Transfer';
   paymentRef = '';
   paymentNotes = '';
+
+  // Send proposal modal state
+  sendProposalModalDoc = signal<any | null>(null);
+  sendProposalEmailAddr = '';
+  sendProposalRecipientName = '';
+  sendProposalSubject = '';
+  sendProposalMessage = '';
+  sendProposalLoading = false;
 
   ngOnInit() {
     const customerId = this.route.snapshot.paramMap.get('id');
@@ -512,6 +565,42 @@ export class Customer360Component implements OnInit {
         this.paymentModalInvoice.set(null);
         const customerId = this.customer360().customer._id;
         this.load360(customerId);
+      }
+    });
+  }
+
+  openSendProposalModal(prop: any) {
+    this.sendProposalModalDoc.set(prop);
+    const cust = this.customer360()?.customer || {};
+    this.sendProposalEmailAddr = cust.email || '';
+    this.sendProposalRecipientName = cust.contactPerson || cust.companyName || '';
+    this.sendProposalSubject = `Proposal: ${prop.name}`;
+    this.sendProposalMessage = `Please find attached our official sales proposal (${prop.name}) for your review.`;
+    this.sendProposalLoading = false;
+  }
+
+  submitSendProposal() {
+    const prop = this.sendProposalModalDoc();
+    if (!prop || !this.sendProposalEmailAddr) return;
+
+    this.sendProposalLoading = true;
+    const payload = {
+      recipientEmail: this.sendProposalEmailAddr,
+      recipientName: this.sendProposalRecipientName,
+      subject: this.sendProposalSubject,
+      message: this.sendProposalMessage
+    };
+
+    this.apiService.sendProposalEmail(prop._id, payload).subscribe({
+      next: (res) => {
+        this.sendProposalLoading = false;
+        this.sendProposalModalDoc.set(null);
+        const customerId = this.customer360().customer._id;
+        this.load360(customerId);
+      },
+      error: (err) => {
+        this.sendProposalLoading = false;
+        alert(`Proposal email delivery failed: ${err.error?.error || err.message}`);
       }
     });
   }

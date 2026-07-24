@@ -115,6 +115,7 @@ socketHandler(io);
 
 // Mount routes
 app.use('/api/auth', authRoutes);
+app.use('/api/workspace', authRoutes);
 app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/leads', leadRoutes);

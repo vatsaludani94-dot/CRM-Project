@@ -35,13 +35,11 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ success: false, error: 'User already exists with this email' });
     }
 
-    let targetRole = role || 'customer';
+    let targetRole = role || 'super_admin';
     if (role && ['super_admin', 'manager'].includes(role)) {
       if (!req.user || req.user.role !== 'super_admin') {
-        return res.status(403).json({
-          success: false,
-          error: 'Only Super Admins can register managers or other admins',
-        });
+        // If an unauthenticated user registers a new workspace, grant super_admin to workspace creator
+        targetRole = 'super_admin';
       }
     }
 
@@ -54,10 +52,24 @@ const registerUser = async (req, res) => {
     });
 
     if (user) {
+      // Auto-create tenant for workspace owner
+      const reqWorkspaceName = req.body.workspaceName || req.body.companyName || `${name}'s Workspace`;
+      const tenant = await Tenant.create({
+        name: reqWorkspaceName,
+        workspaceName: reqWorkspaceName,
+        owner: user._id,
+        subdomain: reqWorkspaceName.toLowerCase().replace(/[^a-z0-9]/g, '') + '-' + Math.floor(1000 + Math.random() * 9000),
+        communicationEmail: user.email,
+        communicationEmailName: reqWorkspaceName,
+        communicationEmailStatus: 'unconfigured'
+      });
+      user.tenant = tenant._id;
+      await user.save();
+
       await Activity.create({
         user: req.user ? req.user._id : user._id,
         action: 'User Registered',
-        details: `User ${user.name} (${user.email}) registered with role ${user.role}.`,
+        details: `User ${user.name} (${user.email}) registered with workspace ${tenant.name}.`,
         module: 'Authentication',
         ipAddress: req.ip,
       });
@@ -143,12 +155,101 @@ const loginUser = async (req, res) => {
  */
 const getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).populate('tenant', 'name subdomain plan status');
+    const user = await User.findById(req.user._id).populate('tenant', 'name workspaceName communicationEmail communicationEmailName communicationEmailStatus theme subdomain plan status whiteLabelSettings');
     if (user) {
-      res.json({ success: true, data: user });
+      const { getWorkspaceIdentity } = require('../utils/tenantScope');
+      const tenantId = user.tenant ? user.tenant._id : null;
+      const workspaceIdentity = await getWorkspaceIdentity(tenantId, user);
+      
+      res.json({
+        success: true,
+        data: {
+          ...user.toObject(),
+          workspaceIdentity
+        }
+      });
     } else {
       res.status(404).json({ success: false, error: 'User not found' });
     }
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+/**
+ * @desc    Get Workspace Identity & Communication Settings
+ * @route   GET /api/workspace/settings
+ * @access  Private
+ */
+const getWorkspaceSettings = async (req, res) => {
+  try {
+    const { getTenantId, getWorkspaceIdentity } = require('../utils/tenantScope');
+    const tenantId = getTenantId(req);
+    const workspaceIdentity = await getWorkspaceIdentity(tenantId, req.user);
+    res.json({ success: true, data: workspaceIdentity });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+/**
+ * @desc    Update Workspace Identity & Outbound Email Identity
+ * @route   PUT /api/workspace/settings
+ * @access  Private (Admin / Manager)
+ */
+const updateWorkspaceSettings = async (req, res) => {
+  try {
+    const Tenant = require('../models/Tenant');
+    const { getTenantId } = require('../utils/tenantScope');
+    const tenantId = getTenantId(req);
+    if (!tenantId) {
+      return res.status(400).json({ success: false, error: 'No workspace tenant found for user' });
+    }
+
+    const tenant = await Tenant.findById(tenantId);
+    if (!tenant) {
+      return res.status(404).json({ success: false, error: 'Tenant record not found' });
+    }
+
+    const { workspaceName, communicationEmail, communicationEmailName, theme, primaryColor, secondaryColor, logo } = req.body;
+
+    if (workspaceName !== undefined) {
+      tenant.workspaceName = workspaceName;
+      tenant.name = workspaceName; // Keep legacy name in sync
+    }
+
+    if (communicationEmail !== undefined) {
+      tenant.communicationEmail = communicationEmail;
+      // Mark verified if provided
+      tenant.communicationEmailStatus = communicationEmail ? 'verified' : 'unconfigured';
+    }
+
+    if (communicationEmailName !== undefined) {
+      tenant.communicationEmailName = communicationEmailName;
+    }
+
+    if (theme !== undefined) {
+      tenant.theme = theme;
+    }
+
+    if (primaryColor || secondaryColor || logo !== undefined) {
+      tenant.whiteLabelSettings = {
+        logo: logo !== undefined ? logo : tenant.whiteLabelSettings?.logo || '',
+        primaryColor: primaryColor || tenant.whiteLabelSettings?.primaryColor || '#6366f1',
+        secondaryColor: secondaryColor || tenant.whiteLabelSettings?.secondaryColor || '#0f172a',
+      };
+    }
+
+    await tenant.save();
+
+    const { getWorkspaceIdentity } = require('../utils/tenantScope');
+    const updatedIdentity = await getWorkspaceIdentity(tenantId, req.user);
+
+    res.json({
+      success: true,
+      message: 'Workspace identity & communication settings updated successfully',
+      data: updatedIdentity,
+    });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -671,6 +772,8 @@ module.exports = {
   resendRegistrationCode,
   loginUser,
   getMe,
+  getWorkspaceSettings,
+  updateWorkspaceSettings,
   forgotPassword,
   resetPassword: resetPasswordWithOtp,
   resetPasswordWithOtp,

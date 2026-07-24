@@ -39,10 +39,18 @@ const handleOAuthCallback = async (req, res) => {
 // Send email (outgoing)
 const sendEmail = async (req, res) => {
   try {
+    const { getTenantFilter, getTenantId, getWorkspaceIdentity } = require('../utils/tenantScope');
+    const { sendOutboundEmail } = require('../services/invoice-email.service');
     const tenantFilter = getTenantFilter(req);
     const tenantId = getTenantId(req);
     const { subject, body, to, cc, bcc, customerId, leadId } = req.body;
-    const user = await User.findById(req.user._id);
+
+    if (!to || !to.trim() || !/^\S+@\S+\.\S+$/.test(to.trim())) {
+      return res.status(400).json({ success: false, error: 'Valid recipient email address is required' });
+    }
+    if (!subject || !subject.trim()) {
+      return res.status(400).json({ success: false, error: 'Email subject is required' });
+    }
 
     if (customerId) {
       const cust = await Customer.findOne({ _id: customerId, ...tenantFilter });
@@ -58,20 +66,40 @@ const sendEmail = async (req, res) => {
       }
     }
 
-    const fromAddress = user.gmailOAuth?.connectedEmail || user.email;
+    // Resolve Outbound Workspace Communication Identity
+    const identity = await getWorkspaceIdentity(tenantId, req.user);
+    const fromAddress = identity.communicationEmail;
+    const fromName = identity.communicationEmailName;
 
-    const email = await EmailMessage.create({
+    // Attempt actual email delivery via Nodemailer/SMTP
+    let deliveryResult;
+    try {
+      deliveryResult = await sendOutboundEmail({
+        to: to.trim(),
+        subject: subject.trim(),
+        html: body,
+        fromName,
+        fromEmail: fromAddress,
+      });
+    } catch (deliveryErr) {
+      return res.status(500).json({
+        success: false,
+        error: `Email delivery failed: ${deliveryErr.message}`
+      });
+    }
+
+    const emailRecord = await EmailMessage.create({
       subject,
       body,
-      from: fromAddress,
-      to,
+      from: `${fromName} <${fromAddress}>`,
+      to: to.trim(),
       cc: cc || [],
       bcc: bcc || [],
       direction: 'outgoing',
       customer: customerId || undefined,
       lead: leadId || undefined,
       threadId: 'thread_' + Math.random().toString(36).substring(7),
-      messageId: 'msg_' + Math.random().toString(36).substring(7),
+      messageId: deliveryResult.messageId || ('msg_' + Math.random().toString(36).substring(7)),
       tenant: tenantId,
     });
 
@@ -87,7 +115,11 @@ const sendEmail = async (req, res) => {
       }
     }
 
-    res.status(201).json({ success: true, data: email });
+    res.status(201).json({
+      success: true,
+      message: 'Email delivered successfully',
+      data: emailRecord
+    });
   } catch (err) {
     res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }

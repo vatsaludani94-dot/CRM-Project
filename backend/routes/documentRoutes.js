@@ -7,7 +7,10 @@ const {
   updateDocument,
   exportDocumentPdf,
   transitionDocument,
-  recordInvoicePayment
+  recordInvoicePayment,
+  correctInvoicePayment,
+  deleteInvoicePayment,
+  sendProposalEmail,
 } = require('../controllers/documentController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -23,6 +26,9 @@ router.route('/:id')
 
 router.get('/:id/pdf', exportDocumentPdf);
 router.post('/:id/transition', transitionDocument);
+router.post('/:id/send', sendProposalEmail);
 router.post('/:id/payments', recordInvoicePayment);
+router.put('/:id/payments/:paymentId', correctInvoicePayment);
+router.delete('/:id/payments/:paymentId', deleteInvoicePayment);
 
 module.exports = router;

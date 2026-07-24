@@ -1,13 +1,28 @@
 const mongoose = require('mongoose');
 
+const CorrectionRecordSchema = new mongoose.Schema({
+  originalAmount: Number,
+  correctedAmount: Number,
+  reason: String,
+  correctedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  },
+  correctedAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
 const PaymentRecordSchema = new mongoose.Schema({
+  paymentId: String,
   amount: {
     type: Number,
     required: true,
   },
   paymentMethod: {
     type: String,
-    enum: ['Bank Transfer', 'Credit Card', 'Stripe', 'Check', 'Cash', 'Other'],
+    enum: ['Bank Transfer', 'Credit Card', 'Stripe', 'Check', 'Cheque', 'Cash', 'Other'],
     default: 'Bank Transfer',
   },
   transactionRef: {
@@ -26,6 +41,11 @@ const PaymentRecordSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  isCorrected: {
+    type: Boolean,
+    default: false,
+  },
+  correctionHistory: [CorrectionRecordSchema],
 });
 
 const DocumentSchema = new mongoose.Schema(
@@ -66,6 +86,7 @@ const DocumentSchema = new mongoose.Schema(
       netAmount: { type: Number, default: 0 },
       amountPaid: { type: Number, default: 0 },
       amountDue: { type: Number, default: 0 },
+      creditBalance: { type: Number, default: 0 },
       paymentHistory: [PaymentRecordSchema],
       signaturePng: String,
       notes: String,

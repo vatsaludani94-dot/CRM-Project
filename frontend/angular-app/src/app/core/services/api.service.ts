@@ -467,6 +467,24 @@ export class ApiService {
   recordInvoicePayment(id: string, payload: { amount: number; paymentMethod?: string; transactionRef?: string; notes?: string }): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/documents/${id}/payments`, payload);
   }
+  correctInvoicePayment(id: string, paymentId: string, payload: { amount?: number; paymentMethod?: string; transactionRef?: string; notes?: string; reason: string }): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/documents/${id}/payments/${paymentId}`, payload);
+  }
+  deleteInvoicePayment(id: string, paymentId: string): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/documents/${id}/payments/${paymentId}`);
+  }
+  sendProposalEmail(id: string, payload: { recipientEmail: string; recipientName?: string; cc?: string[]; subject?: string; message?: string }): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/documents/${id}/send`, payload);
+  }
+  getMe(): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/auth/me`);
+  }
+  getWorkspaceSettings(): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/workspace/settings`);
+  }
+  updateWorkspaceSettings(data: any): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/workspace/settings`, data);
+  }
 
   // 20. Task Management
   getTasks(params?: any): Observable<any> {

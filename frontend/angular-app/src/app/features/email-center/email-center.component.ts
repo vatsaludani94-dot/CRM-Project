@@ -24,144 +24,147 @@ interface EmailSequence {
       <!-- Header -->
       <div class="flex justify-between items-center">
         <div>
-          <h1 class="text-2xl font-extrabold text-slate-800 text-[#1c1917] tracking-tight">Gmail Center</h1>
-          <p class="text-sm text-[#574c43] mt-1">Authenticate inbox, track opens, send templates, and manage marketing sequences.</p>
+          <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Gmail Center</h1>
+          <p class="text-sm text-slate-500 mt-1">Authenticate inbox, track opens, send templates, and manage marketing sequences.</p>
         </div>
         
-        <!-- Connection Portal Button -->
+        <!-- Integration Connection Status Badge & Action -->
         <div>
-          <button *ngIf="!gmailConnected()" (click)="connectGoogleOAuth()" class="bg-indigo-600 hover:bg-indigo-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center gap-2">
-            <span class="material-icons text-sm">link</span> Connect Gmail Workspace
-          </button>
-          <div *ngIf="gmailConnected()" class="flex items-center gap-2.5 bg-slate-900 border border-slate-900 px-4 py-2 rounded-xl text-xs font-semibold">
+          <div *ngIf="!gmailConnected()" class="flex items-center gap-3 bg-white border border-slate-200 px-4 py-2 rounded-xl text-xs font-semibold shadow-sm">
+            <span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span>
+            <span class="text-slate-600 font-medium">Email account not connected</span>
+            <button (click)="connectGoogleOAuth()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ml-2">
+              <span class="material-icons text-xs">link</span> Connect Email
+            </button>
+          </div>
+
+          <div *ngIf="gmailConnected()" class="flex items-center gap-2.5 bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl text-xs font-semibold shadow-sm">
             <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span class="text-[#1c1917]">Connected:</span>
+            <span class="text-slate-400">Connected:</span>
             <strong class="text-white">{{ connectedEmail() }}</strong>
           </div>
         </div>
       </div>
 
       <!-- Navigation Tabs -->
-      <div class="flex border-b border-slate-200 border-[#e7e5e4] gap-6 text-sm font-semibold">
-        <button (click)="setTab('inbox')" [class.border-indigo-500]="activeTab() === 'inbox'" [class.text-indigo-500]="activeTab() === 'inbox'" class="pb-3 border-b-2 border-transparent text-[#44403c] hover:text-slate-700 dark:hover:text-[#1c1917] transition-all">
+      <div class="flex border-b border-slate-200 gap-6 text-sm font-semibold">
+        <button (click)="setTab('inbox')" [class.border-indigo-600]="activeTab() === 'inbox'" [class.text-indigo-600]="activeTab() === 'inbox'" class="pb-3 border-b-2 border-transparent text-slate-600 hover:text-slate-900 transition-all">
           Mail Inbox
         </button>
-        <button (click)="setTab('compose')" [class.border-indigo-500]="activeTab() === 'compose'" [class.text-indigo-500]="activeTab() === 'compose'" class="pb-3 border-b-2 border-transparent text-[#44403c] hover:text-slate-700 dark:hover:text-[#1c1917] transition-all">
+        <button (click)="setTab('compose')" [class.border-indigo-600]="activeTab() === 'compose'" [class.text-indigo-600]="activeTab() === 'compose'" class="pb-3 border-b-2 border-transparent text-slate-600 hover:text-slate-900 transition-all">
           Compose Message
         </button>
-        <button (click)="setTab('templates')" [class.border-indigo-500]="activeTab() === 'templates'" [class.text-indigo-500]="activeTab() === 'templates'" class="pb-3 border-b-2 border-transparent text-[#44403c] hover:text-slate-700 dark:hover:text-[#1c1917] transition-all">
+        <button (click)="setTab('templates')" [class.border-indigo-600]="activeTab() === 'templates'" [class.text-indigo-600]="activeTab() === 'templates'" class="pb-3 border-b-2 border-transparent text-slate-600 hover:text-slate-900 transition-all">
           Email Templates
         </button>
-        <button (click)="setTab('sequences')" [class.border-indigo-500]="activeTab() === 'sequences'" [class.text-indigo-500]="activeTab() === 'sequences'" class="pb-3 border-b-2 border-transparent text-[#44403c] hover:text-slate-700 dark:hover:text-[#1c1917] transition-all">
+        <button (click)="setTab('sequences')" [class.border-indigo-600]="activeTab() === 'sequences'" [class.text-indigo-600]="activeTab() === 'sequences'" class="pb-3 border-b-2 border-transparent text-slate-600 hover:text-slate-900 transition-all">
           Sequences
         </button>
-        <button (click)="setTab('simulator')" [class.border-indigo-500]="activeTab() === 'simulator'" [class.text-indigo-500]="activeTab() === 'simulator'" class="pb-3 border-b-2 border-transparent text-[#44403c] hover:text-slate-700 dark:hover:text-[#1c1917] transition-all">
+        <button (click)="setTab('simulator')" [class.border-indigo-600]="activeTab() === 'simulator'" [class.text-indigo-600]="activeTab() === 'simulator'" class="pb-3 border-b-2 border-transparent text-slate-600 hover:text-slate-900 transition-all">
           Simulation Tools
         </button>
       </div>
 
       <!-- Tab Content: Inbox -->
-      <div *ngIf="activeTab() === 'inbox'" class="bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 rounded-2xl shadow-sm overflow-hidden animate-fadeIn">
-        <div class="p-6 border-b border-slate-100 border-[#e7e5e4] flex justify-between items-center">
-          <h4 class="font-extrabold text-sm text-slate-700 text-[#1c1917] uppercase tracking-wider">Messages Log</h4>
-          <button (click)="loadHistory()" class="text-xs text-indigo-500 hover:text-indigo-400 font-bold flex items-center gap-1">
+      <div *ngIf="activeTab() === 'inbox'" class="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm overflow-hidden animate-fadeIn">
+        <div class="p-4 border-b border-slate-100 flex justify-between items-center mb-4">
+          <h4 class="font-extrabold text-xs text-slate-600 uppercase tracking-wider">Outbound & Inbound Message Log</h4>
+          <button (click)="loadHistory()" class="text-xs text-indigo-600 hover:text-indigo-500 font-bold flex items-center gap-1">
             <span class="material-icons text-sm">sync</span> Sync History
           </button>
         </div>
 
-        <div class="divide-y divide-slate-100 dark:divide-slate-700">
-          <div *ngFor="let mail of emails()" class="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-50 dark:hover:bg-slate-700/35 transition-colors">
+        <div class="divide-y divide-slate-100">
+          <div *ngFor="let mail of emails()" class="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-50 transition-colors">
             
             <div class="flex items-start gap-4 flex-1">
               <span class="material-icons p-2.5 rounded-xl" [ngClass]="{
-                'bg-emerald-500/10 text-emerald-400': mail.direction === 'incoming',
-                'bg-indigo-500/10 text-indigo-400': mail.direction === 'outgoing'
+                'bg-emerald-50 text-emerald-600': mail.direction === 'incoming',
+                'bg-indigo-50 text-indigo-600': mail.direction === 'outgoing'
               }">
                 {{ mail.direction === 'incoming' ? 'inbox' : 'send' }}
               </span>
               <div class="space-y-1">
                 <div class="flex items-center gap-2">
-                  <span class="text-xs text-[#574c43]">
+                  <span class="text-xs text-slate-500">
                     {{ mail.direction === 'incoming' ? 'From:' : 'To:' }}
                   </span>
-                  <strong class="text-xs text-slate-800 text-[#1c1917]">
+                  <strong class="text-xs text-slate-900">
                     {{ mail.direction === 'incoming' ? mail.from : mail.to }}
                   </strong>
                 </div>
-                <h4 class="text-sm font-bold text-[#44403c]">{{ mail.subject }}</h4>
-                <p class="text-xs text-[#44403c] max-w-2xl">{{ mail.body }}</p>
+                <h4 class="text-sm font-bold text-slate-900">{{ mail.subject }}</h4>
+                <p class="text-xs text-slate-600 max-w-2xl">{{ mail.body }}</p>
               </div>
             </div>
 
             <!-- Email Actions / Tracking status -->
             <div class="flex items-center gap-3 shrink-0 self-end md:self-center">
-              
-              <!-- Open tracking indicators -->
-              <div *ngIf="mail.direction === 'outgoing'" class="flex items-center gap-1.5 text-[10px] font-bold text-[#44403c] border border-[#e7e5e4] px-2.5 py-1 rounded-lg">
-                <span class="material-icons text-[12px]" [class.text-emerald-400]="mail.tracking?.opened">
+              <div *ngIf="mail.direction === 'outgoing'" class="flex items-center gap-1.5 text-[10px] font-bold text-slate-600 border border-slate-200 px-2.5 py-1 rounded-lg">
+                <span class="material-icons text-[12px]" [class.text-emerald-500]="mail.tracking?.opened">
                   {{ mail.tracking?.opened ? 'visibility' : 'visibility_off' }}
                 </span>
                 <span *ngIf="mail.tracking?.opened">Opened ({{ mail.tracking.openedAt | date:'shortTime' }})</span>
                 <span *ngIf="!mail.tracking?.opened">Unopened</span>
-                <button *ngIf="!mail.tracking?.opened" (click)="simulateEmailOpen(mail._id)" class="text-indigo-400 hover:text-indigo-300 font-extrabold ml-2">Open Pix</button>
+                <button *ngIf="!mail.tracking?.opened" (click)="simulateEmailOpen(mail._id)" class="text-indigo-600 hover:text-indigo-500 font-extrabold ml-2">Simulate Open</button>
               </div>
 
-              <span class="text-[10px] text-[#44403c] font-semibold bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-md">
+              <span class="text-[10px] text-slate-500 font-semibold bg-slate-100 px-2 py-0.5 rounded-md">
                 {{ mail.createdAt | date:'shortTime' }}
               </span>
             </div>
 
           </div>
 
-          <div *ngIf="emails().length === 0" class="text-center py-12 text-[#44403c] font-semibold">
-            Your sync history is clean. Connect Gmail or mock incoming messages to load details.
+          <div *ngIf="emails().length === 0" class="text-center py-12 text-slate-400 font-semibold">
+            No message logs found. Compose an outbound email or test incoming email triggers.
           </div>
         </div>
       </div>
 
       <!-- Tab Content: Compose -->
-      <div *ngIf="activeTab() === 'compose'" class="max-w-2xl bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 p-6 rounded-2xl shadow-sm animate-fadeIn space-y-4">
-        <h4 class="font-extrabold text-sm text-slate-700 text-[#1c1917] uppercase tracking-wider mb-2">Send Outbound Message</h4>
+      <div *ngIf="activeTab() === 'compose'" class="max-w-2xl bg-white border border-slate-200 p-6 rounded-2xl shadow-sm animate-fadeIn space-y-4">
+        <h4 class="font-extrabold text-xs text-slate-600 uppercase tracking-wider mb-2">Send Outbound CRM Message</h4>
         
         <div class="grid grid-cols-1 gap-4 text-xs">
           <div>
-            <label class="block text-[10px] font-bold uppercase tracking-wider text-[#44403c] mb-1">To Email Address</label>
-            <input type="email" [(ngModel)]="composeTo" placeholder="recipient@client.com" class="w-full bg-slate-50 bg-white border border-slate-200 border-[#e7e5e4] rounded-xl px-4 py-3 text-slate-800 text-[#1c1917]">
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">To Email Address</label>
+            <input type="email" [(ngModel)]="composeTo" placeholder="recipient@client.com" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 font-semibold">
           </div>
           <div>
-            <label class="block text-[10px] font-bold uppercase tracking-wider text-[#44403c] mb-1">Subject</label>
-            <input type="text" [(ngModel)]="composeSubject" placeholder="Regarding partnership" class="w-full bg-slate-50 bg-white border border-slate-200 border-[#e7e5e4] rounded-xl px-4 py-3 text-slate-800 text-[#1c1917]">
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Subject</label>
+            <input type="text" [(ngModel)]="composeSubject" placeholder="Regarding partnership proposal" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 font-semibold">
           </div>
           <div>
-            <label class="block text-[10px] font-bold uppercase tracking-wider text-[#44403c] mb-1">Select Template (Optional)</label>
-            <select (change)="applyTemplate($event)" class="w-full bg-slate-50 bg-white border border-slate-200 border-[#e7e5e4] rounded-xl px-4 py-3 text-slate-800 text-[#1c1917]">
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Select Template (Optional)</label>
+            <select (change)="applyTemplate($event)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 font-semibold">
               <option value="">-- No Template Selected --</option>
               <option *ngFor="let temp of templates(); let idx = index" [value]="idx">{{ temp.name }}</option>
             </select>
           </div>
           <div>
-            <label class="block text-[10px] font-bold uppercase tracking-wider text-[#44403c] mb-1">Email Body</label>
-            <textarea [(ngModel)]="composeBody" rows="6" placeholder="Write message..." class="w-full bg-slate-50 bg-white border border-slate-200 border-[#e7e5e4] rounded-xl px-4 py-3 text-slate-800 text-[#1c1917]"></textarea>
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Email Body</label>
+            <textarea [(ngModel)]="composeBody" rows="6" placeholder="Write message..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 font-semibold"></textarea>
           </div>
         </div>
 
         <div class="flex justify-end pt-2">
-          <button (click)="sendMessage()" [disabled]="!composeTo || !composeBody" class="bg-indigo-600 hover:bg-indigo-600 disabled:opacity-50 text-white font-bold text-xs px-6 py-3 rounded-xl shadow-md transition-all">
-            Send Message via Gmail
+          <button (click)="sendMessage()" [disabled]="!composeTo || !composeBody" class="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs px-6 py-3 rounded-xl shadow-md transition-all">
+            Send Outbound Email
           </button>
         </div>
       </div>
 
       <!-- Tab Content: Templates -->
       <div *ngIf="activeTab() === 'templates'" class="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fadeIn">
-        <div *ngFor="let temp of templates()" class="bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 p-6 rounded-2xl shadow-sm flex flex-col justify-between space-y-4">
+        <div *ngFor="let temp of templates()" class="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm flex flex-col justify-between space-y-4">
           <div class="space-y-2">
-            <span class="material-icons text-indigo-400 bg-indigo-500/10 p-2 rounded-xl">article</span>
-            <h4 class="text-md font-bold text-slate-800 text-[#1c1917] pt-2">{{ temp.name }}</h4>
-            <p class="text-[10px] font-semibold text-[#44403c]">Subject: {{ temp.subject }}</p>
-            <p class="text-xs text-[#292524] leading-relaxed truncate-3-lines">{{ temp.body }}</p>
+            <span class="material-icons text-indigo-600 bg-indigo-50 p-2 rounded-xl">article</span>
+            <h4 class="text-md font-bold text-slate-900 pt-2">{{ temp.name }}</h4>
+            <p class="text-[10px] font-semibold text-slate-500">Subject: {{ temp.subject }}</p>
+            <p class="text-xs text-slate-600 leading-relaxed truncate-3-lines">{{ temp.body }}</p>
           </div>
-          <button (click)="selectTemplateToCompose(temp)" class="w-full bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 text-[#44403c] py-2.5 rounded-xl text-xs font-bold transition-all">
+          <button (click)="selectTemplateToCompose(temp)" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 py-2.5 rounded-xl text-xs font-bold transition-all">
             Use in Composer
           </button>
         </div>
@@ -169,55 +172,55 @@ interface EmailSequence {
 
       <!-- Tab Content: Sequences -->
       <div *ngIf="activeTab() === 'sequences'" class="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fadeIn">
-        <div *ngFor="let seq of sequences()" class="bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 p-6 rounded-2xl shadow-sm space-y-4">
+        <div *ngFor="let seq of sequences()" class="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-4">
           <div class="flex justify-between items-start">
-            <h4 class="text-md font-bold text-slate-900 text-[#1c1917] flex items-center gap-1.5">
-              <span class="material-icons text-violet-400">stacked_line_chart</span> {{ seq.name }}
+            <h4 class="text-md font-bold text-slate-900 flex items-center gap-1.5">
+              <span class="material-icons text-violet-600">stacked_line_chart</span> {{ seq.name }}
             </h4>
-            <span class="text-[9px] font-black uppercase text-indigo-500 bg-indigo-500/10 px-2 py-0.5 rounded-full">Automated</span>
+            <span class="text-[9px] font-bold uppercase text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">Automated</span>
           </div>
 
-          <div class="space-y-3 pl-4 border-l-2 border-slate-200 border-[#e7e5e4]">
+          <div class="space-y-3 pl-4 border-l-2 border-slate-200">
             <div *ngFor="let step of seq.steps; let idx = index" class="relative text-xs">
-              <div class="absolute -left-[22px] top-1.5 h-2 w-2 rounded-full bg-slate-300 border border-white"></div>
-              <strong class="text-slate-700 dark:text-[#1c1917]">Step {{ idx+1 }} (After {{ step.delayDays }} Days)</strong>
-              <p class="text-[10px] text-[#44403c] mt-0.5">Subject: {{ step.subject }}</p>
+              <div class="absolute -left-[22px] top-1.5 h-2 w-2 rounded-full bg-slate-400 border border-white"></div>
+              <strong class="text-slate-800">Step {{ idx+1 }} (After {{ step.delayDays }} Days)</strong>
+              <p class="text-[10px] text-slate-500 mt-0.5">Subject: {{ step.subject }}</p>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Tab Content: Simulator (Incoming Email Mock to trigger Lead Creation) -->
-      <div *ngIf="activeTab() === 'simulator'" class="max-w-xl bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 p-6 rounded-2xl shadow-sm animate-fadeIn space-y-5">
+      <!-- Tab Content: Simulator -->
+      <div *ngIf="activeTab() === 'simulator'" class="max-w-xl bg-white border border-slate-200 p-6 rounded-2xl shadow-sm animate-fadeIn space-y-5">
         <div>
-          <h4 class="font-extrabold text-sm text-slate-800 text-[#1c1917] uppercase tracking-wider mb-1">Simulate Receiving Incoming Email</h4>
-          <p class="text-xs text-[#44403c]">Simulate how GrownX intercepts incoming emails. Optionally verify automated lead creations.</p>
+          <h4 class="font-extrabold text-xs text-slate-600 uppercase tracking-wider mb-1">Simulate Incoming Customer Email</h4>
+          <p class="text-xs text-slate-500">Test how incoming emails are logged into timelines and trigger auto lead creation.</p>
         </div>
 
         <div class="grid grid-cols-1 gap-4 text-xs">
           <div>
-            <label class="block text-[10px] font-bold uppercase tracking-wider text-[#44403c] mb-1">Sender Email address</label>
-            <input type="email" [(ngModel)]="simFrom" placeholder="client@outlook.com" class="w-full bg-slate-50 bg-white border border-slate-200 border-[#e7e5e4] rounded-xl px-4 py-3 text-slate-900 text-[#1c1917]">
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Sender Email address</label>
+            <input type="email" [(ngModel)]="simFrom" placeholder="client@outlook.com" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 font-semibold">
           </div>
           <div>
-            <label class="block text-[10px] font-bold uppercase tracking-wider text-[#44403c] mb-1">Subject</label>
-            <input type="text" [(ngModel)]="simSubject" placeholder="Need a quotation for 50 licenses" class="w-full bg-slate-50 bg-white border border-slate-200 border-[#e7e5e4] rounded-xl px-4 py-3 text-slate-900 text-[#1c1917]">
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Subject</label>
+            <input type="text" [(ngModel)]="simSubject" placeholder="Need quotation for 50 licenses" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 font-semibold">
           </div>
           <div>
-            <label class="block text-[10px] font-bold uppercase tracking-wider text-[#44403c] mb-1">Email Content</label>
-            <textarea [(ngModel)]="simBody" rows="4" placeholder="Hello, I would like to trial GrownX for my team..." class="w-full bg-slate-50 bg-white border border-slate-200 border-[#e7e5e4] rounded-xl px-4 py-3 text-slate-900 text-[#1c1917]"></textarea>
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Email Content</label>
+            <textarea [(ngModel)]="simBody" rows="4" placeholder="Hello, I would like to request a demo..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 font-semibold"></textarea>
           </div>
           <div class="flex items-center gap-2.5 pt-2">
-            <input type="checkbox" [(ngModel)]="simAutoCreateLead" id="simAutoCreateLead" class="rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 h-4 w-4 bg-slate-950">
-            <label for="simAutoCreateLead" class="font-semibold text-[#44403c] cursor-pointer">
+            <input type="checkbox" [(ngModel)]="simAutoCreateLead" id="simAutoCreateLead" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+            <label for="simAutoCreateLead" class="font-semibold text-slate-700 cursor-pointer">
               Auto-create Lead on matching email address
             </label>
           </div>
         </div>
 
         <div class="flex justify-end pt-2">
-          <button (click)="simulateIncomingMail()" [disabled]="!simFrom || !simBody" class="bg-indigo-600 hover:bg-indigo-600 disabled:opacity-50 text-white font-bold text-xs px-6 py-3 rounded-xl shadow-md transition-all">
-            Trigger Incoming Sync
+          <button (click)="simulateIncomingMail()" [disabled]="!simFrom || !simBody" class="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs px-6 py-3 rounded-xl shadow-md transition-all">
+            Trigger Incoming Mail Sync
           </button>
         </div>
       </div>
@@ -244,7 +247,7 @@ export class EmailCenterComponent implements OnInit {
   private apiService = inject(ApiService);
 
   gmailConnected = signal<boolean>(false);
-  connectedEmail = signal<string>('user@grownox.com');
+  connectedEmail = signal<string>('');
   activeTab = signal<string>('inbox');
   emails = signal<any[]>([]);
 
@@ -259,40 +262,25 @@ export class EmailCenterComponent implements OnInit {
   simBody = '';
   simAutoCreateLead = true;
 
-  // Static Predefined Templates (Module B Email Templates)
   templates = signal<EmailTemplate[]>([
     {
       name: 'SaaS Welcome Email',
       subject: 'Welcome to GrownX CRM Technologies! ⚡',
-      body: 'Hi there,\n\nThanks for signing up to GrownX CRM! We are thrilled to support your sales operations. Feel free to explore your Visual Workflows under /workflows to set up welcome email notifications on lead conversions.\n\nBest,\nThe GrownX Team'
+      body: 'Hi there,\n\nThanks for signing up to GrownX CRM! We are thrilled to support your sales operations.'
     },
     {
       name: 'Quotations Proposal Follow-up',
       subject: 'Reviewing your Service Agreement Proposal',
-      body: 'Dear client,\n\nI have generated the service proposal agreement PDF for your review. Please visit the documents portal to inspect line items, discounts, and sign the document digitally.\n\nKind regards,\nAccount Executive'
-    },
-    {
-      name: 'Re-engagement Memo',
-      subject: 'Checking in on your Sales Pipeline performance',
-      body: 'Hi [Name],\n\nI noticed your pipeline deals have been inactive for some days. GrownX CRM has detected high risk on two expected accounts. Shall we schedule a brief alignment call tomorrow?\n\nSincerely,\nCustomer Success'
+      body: 'Dear client,\n\nI have generated the service proposal agreement PDF for your review. Please inspect attached PDF and let us know.'
     }
   ]);
 
-  // Predefined Sequences (Module B Sequences)
   sequences = signal<EmailSequence[]>([
     {
       name: 'Enterprise Cold Outreach Sequence',
       steps: [
         { delayDays: 1, subject: 'Scale your team operations visually', body: 'Introducing GrownX command centers...' },
-        { delayDays: 3, subject: 'Quick question regarding Gmail/Drive syncs', body: 'Wondering if your team needs auto customer folders...' },
-        { delayDays: 7, subject: 'Final follow-up proposal agreement', body: 'Giving a trial walkthrough of white-labeling...' }
-      ]
-    },
-    {
-      name: 'Support Ticket Feedback Sequence',
-      steps: [
-        { delayDays: 1, subject: 'Help us improve: customer feedback survey', body: 'Please fill this brief CSAT feedback quiz...' },
-        { delayDays: 5, subject: 'Follow up: Ticket resolution audit', body: 'Ensuring your engineer aligned with decisions...' }
+        { delayDays: 3, subject: 'Quick question regarding Gmail/Drive syncs', body: 'Wondering if your team needs auto customer folders...' }
       ]
     }
   ]);
@@ -307,20 +295,33 @@ export class EmailCenterComponent implements OnInit {
   }
 
   checkOAuthConnection() {
-    // In our mock model, check if OAuth sync is active
-    // We default to false until the user clicks link
-    this.gmailConnected.set(true); // Connected by default for seamless out-of-the-box local demo!
+    this.apiService.getMe().subscribe({
+      next: (res: any) => {
+        if (res.success && res.data?.gmailOAuth?.emailSyncActive && res.data?.gmailOAuth?.connectedEmail) {
+          this.gmailConnected.set(true);
+          this.connectedEmail.set(res.data.gmailOAuth.connectedEmail);
+        } else {
+          this.gmailConnected.set(false);
+          this.connectedEmail.set('');
+        }
+      },
+      error: () => {
+        this.gmailConnected.set(false);
+      }
+    });
   }
 
   connectGoogleOAuth() {
     this.apiService.getOAuthUrl().subscribe({
       next: (res) => {
         if (res.success && res.url) {
-          // Direct login callback simulation
-          this.apiService.connectGmail(this.connectedEmail(), 'mock_code').subscribe({
+          this.apiService.connectGmail('owner.workspace@apextech.com', 'mock_code').subscribe({
             next: (authRes) => {
-              this.gmailConnected.set(true);
-              this.loadHistory();
+              if (authRes.success) {
+                this.gmailConnected.set(true);
+                this.connectedEmail.set('owner.workspace@apextech.com');
+                this.loadHistory();
+              }
             }
           });
         }
@@ -368,6 +369,9 @@ export class EmailCenterComponent implements OnInit {
         this.composeBody = '';
         this.loadHistory();
         this.setTab('inbox');
+      },
+      error: (err) => {
+        alert(`Email delivery failed: ${err.error?.error || err.message}`);
       }
     });
   }

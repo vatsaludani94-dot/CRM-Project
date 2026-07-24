@@ -1,3 +1,6 @@
+const Tenant = require('../models/Tenant');
+const User = require('../models/User');
+
 /**
  * Helper to build a safe tenant filter for database queries.
  * @param {Object} req - Express request object containing req.user
@@ -38,7 +41,62 @@ const getTenantId = (req) => {
   return null;
 };
 
+/**
+ * Resolves complete Workspace Identity, separating auth email from outbound communication email.
+ * @param {ObjectId|string} tenantId 
+ * @param {Object} userReq 
+ */
+const getWorkspaceIdentity = async (tenantId, userReq) => {
+  if (!tenantId) {
+    return {
+      workspaceName: 'GrownX CRM Workspace',
+      communicationEmail: userReq?.email || 'contact@grownxcrm.com',
+      communicationEmailName: userReq?.name || 'GrownX Support',
+      communicationEmailStatus: 'unconfigured',
+      theme: 'light',
+    };
+  }
+
+  try {
+    const tenant = await Tenant.findById(tenantId).populate('owner', 'name email');
+    if (!tenant) {
+      return {
+        workspaceName: 'GrownX CRM Workspace',
+        communicationEmail: userReq?.email || 'contact@grownxcrm.com',
+        communicationEmailName: userReq?.name || 'GrownX Support',
+        communicationEmailStatus: 'unconfigured',
+        theme: 'light',
+      };
+    }
+
+    const workspaceName = tenant.workspaceName || tenant.name || 'GrownX Workspace';
+    const ownerEmail = tenant.owner ? tenant.owner.email : userReq?.email;
+    const communicationEmail = tenant.communicationEmail || ownerEmail || 'contact@grownxcrm.com';
+    const communicationEmailName = tenant.communicationEmailName || workspaceName;
+    const communicationEmailStatus = tenant.communicationEmailStatus || (tenant.communicationEmail ? 'verified' : 'unconfigured');
+
+    return {
+      tenantId: tenant._id,
+      workspaceName,
+      communicationEmail,
+      communicationEmailName,
+      communicationEmailStatus,
+      theme: tenant.theme || 'light',
+      whiteLabelSettings: tenant.whiteLabelSettings || {},
+    };
+  } catch (err) {
+    return {
+      workspaceName: 'GrownX CRM Workspace',
+      communicationEmail: userReq?.email || 'contact@grownxcrm.com',
+      communicationEmailName: userReq?.name || 'GrownX Support',
+      communicationEmailStatus: 'unconfigured',
+      theme: 'light',
+    };
+  }
+};
+
 module.exports = {
   getTenantFilter,
   getTenantId,
+  getWorkspaceIdentity,
 };
