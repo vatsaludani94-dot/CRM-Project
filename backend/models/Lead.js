@@ -65,7 +65,7 @@ const LeadSchema = new mongoose.Schema(
     },
     leadSource: {
       type: String,
-      enum: ['Website', 'Referral', 'Cold Call', 'Social Media', 'Partner', 'Email Campaign', 'Other'],
+      enum: ['Website', 'Referral', 'Cold Call', 'Social Media', 'Organic', 'Paid Ad', 'Email', 'Web Form', 'Other'],
       default: 'Website',
     },
     expectedRevenue: {
@@ -74,8 +74,17 @@ const LeadSchema = new mongoose.Schema(
     },
     stage: {
       type: String,
-      enum: ['New', 'Contacted', 'Interested', 'Proposal Sent', 'Negotiation', 'Converted', 'Lost'],
       default: 'New',
+    },
+    stageKey: {
+      type: String,
+      default: 'NEW',
+      uppercase: true,
+    },
+    lostReason: {
+      type: String,
+      enum: ['Price', 'Competitor', 'No Response', 'Feature Gap', 'Not Interested', 'Other', null],
+      default: null,
     },
     assignedEmployee: {
       type: mongoose.Schema.Types.ObjectId,

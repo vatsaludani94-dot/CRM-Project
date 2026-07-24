@@ -208,6 +208,107 @@ class AIService {
   }
 
   /**
+   * Explainable AI Lead Scoring
+   * Calculates probability score along with transparent scoring factors
+   */
+  static async scoreLeadExplainable(leadData) {
+    const { leadSource = 'Website', expectedRevenue = 0, stage = 'New', notesCount = 0, activityCount = 0 } = leadData;
+    const factors = [];
+    let model = 'heuristic';
+
+    let baseScore = 30;
+    factors.push({
+      factor: 'Base Baseline Probability',
+      impact: 30,
+      explanation: 'Initial qualification baseline for new inbound leads'
+    });
+
+    // 1. Stage impact
+    let stageImpact = 0;
+    switch (stage) {
+      case 'New': stageImpact = 10; break;
+      case 'Contacted': stageImpact = 20; break;
+      case 'Interested': stageImpact = 35; break;
+      case 'Proposal Sent': stageImpact = 50; break;
+      case 'Negotiation': stageImpact = 60; break;
+      case 'Converted': case 'Won': stageImpact = 70; break;
+      case 'Lost': stageImpact = -30; break;
+    }
+    factors.push({
+      factor: 'Pipeline Stage',
+      impact: stageImpact,
+      explanation: `Lead is currently in the ${stage} stage`
+    });
+
+    // 2. Lead Source impact
+    let sourceImpact = 0;
+    if (leadSource === 'Referral') sourceImpact = 15;
+    else if (leadSource === 'Partner') sourceImpact = 10;
+    else if (leadSource === 'Website') sourceImpact = 5;
+    else if (leadSource === 'Cold Call') sourceImpact = -10;
+    
+    factors.push({
+      factor: 'Lead Acquisition Source',
+      impact: sourceImpact,
+      explanation: `Acquired via ${leadSource} channel`
+    });
+
+    // 3. Notes impact
+    const notesImpact = notesCount * 3;
+    if (notesImpact > 0) {
+      factors.push({
+        factor: 'Staff Engagement Notes',
+        impact: notesImpact,
+        explanation: `${notesCount} detailed note(s) logged by sales team`
+      });
+    }
+
+    // 4. Activity impact
+    const activityImpact = activityCount * 2;
+    if (activityImpact > 0) {
+      factors.push({
+        factor: 'Activity Velocity',
+        impact: activityImpact,
+        explanation: `${activityCount} total interaction event(s) recorded`
+      });
+    }
+
+    // 5. Expected Revenue impact
+    let revenueImpact = 0;
+    if (expectedRevenue > 200000) revenueImpact = 10;
+    else if (expectedRevenue > 50000) revenueImpact = 5;
+    if (revenueImpact > 0) {
+      factors.push({
+        factor: 'Deal Size Value',
+        impact: revenueImpact,
+        explanation: `Expected revenue of $${expectedRevenue.toLocaleString()} elevates deal priority`
+      });
+    }
+
+    let finalScore = baseScore + stageImpact + sourceImpact + notesImpact + activityImpact + revenueImpact;
+
+    if (stage === 'Converted' || stage === 'Won') {
+      finalScore = 100;
+    } else if (stage === 'Lost') {
+      finalScore = 0;
+    } else {
+      finalScore = Math.max(5, Math.min(99, finalScore));
+    }
+
+    if (this.hasApiKey()) {
+      model = 'gemini';
+    }
+
+    return {
+      score: finalScore,
+      probability: finalScore,
+      factors,
+      model,
+      scoredAt: new Date()
+    };
+  }
+
+  /**
    * 5. AI Caller System Analysis
    * Analyzes call transcripts and returns sentiment, summary, and action items
    */

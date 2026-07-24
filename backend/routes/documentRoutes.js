@@ -6,6 +6,8 @@ const {
   createDocument,
   updateDocument,
   exportDocumentPdf,
+  transitionDocument,
+  recordInvoicePayment
 } = require('../controllers/documentController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -20,5 +22,7 @@ router.route('/:id')
   .put(updateDocument);
 
 router.get('/:id/pdf', exportDocumentPdf);
+router.post('/:id/transition', transitionDocument);
+router.post('/:id/payments', recordInvoicePayment);
 
 module.exports = router;

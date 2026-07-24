@@ -79,6 +79,14 @@ const createLead = async (req, res) => {
       tenant: tenantId,
     });
 
+    // Trigger automated workflows
+    try {
+      const { triggerWorkflowEvents } = require('./workflowController');
+      await triggerWorkflowEvents('Lead Created', 'Lead', lead._id, tenantId);
+    } catch (wfErr) {
+      console.error('Workflow trigger on lead creation error:', wfErr.message);
+    }
+
     res.status(201).json({ success: true, data: lead });
   } catch (error) {
     res.status(error.statusCode || 500).json({ success: false, error: error.message });
@@ -110,9 +118,30 @@ const updateLead = async (req, res) => {
       }
     }
 
-    const { company, contactName, email, phone, leadSource, expectedRevenue, stage, assignedEmployee } = req.body;
+    const { company, contactName, email, phone, leadSource, expectedRevenue, stage, stageKey, lostReason, assignedEmployee } = req.body;
 
-    const fieldsToUpdate = { company, contactName, email, phone, leadSource, expectedRevenue, stage, assignedEmployee };
+    // If stage is being changed via updateLead, validate Lost Reason if target is Lost
+    if (stage && stage !== lead.stage) {
+      const PipelineStage = require('../models/PipelineStage');
+      const tenantId = getTenantId(req);
+      const targetStage = await PipelineStage.findOne({
+        tenant: tenantId,
+        $or: [{ name: stage }, { key: (stageKey || stage).toUpperCase() }]
+      });
+
+      if (targetStage && (targetStage.isLost || (targetStage.exitRules && targetStage.exitRules.includes('require_lost_reason')))) {
+        const validReasons = ['Price', 'Competitor', 'No Response', 'Feature Gap', 'Not Interested', 'Other'];
+        if (!lostReason || !validReasons.includes(lostReason)) {
+          return res.status(400).json({
+            success: false,
+            error: `Lost reason is required when moving lead to a Lost stage. Valid reasons: ${validReasons.join(', ')}`
+          });
+        }
+        lead.lostReason = lostReason;
+      }
+    }
+
+    const fieldsToUpdate = { company, contactName, email, phone, leadSource, expectedRevenue, stage, stageKey, lostReason, assignedEmployee };
     let stageChanged = false;
 
     Object.keys(fieldsToUpdate).forEach(field => {
@@ -121,7 +150,7 @@ const updateLead = async (req, res) => {
           stageChanged = true;
           lead.activityLog.push({
             type: 'System',
-            description: `Stage moved from ${lead.stage} to ${fieldsToUpdate[field]}`,
+            description: `Stage moved from ${lead.stage} to ${fieldsToUpdate[field]}${lead.lostReason ? ` (Reason: ${lead.lostReason})` : ''}`,
             performedBy: req.user._id
           });
         }
@@ -148,11 +177,122 @@ const updateLead = async (req, res) => {
       tenant: lead.tenant,
     });
 
-    if (lead.stage === 'Converted') {
+    if (lead.stage === 'Converted' || lead.stage === 'Won' || lead.stageKey === 'WON') {
       await autoConvertLeadToCustomer(lead, req.user._id);
     }
 
     res.json({ success: true, data: lead });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
+  }
+};
+
+/**
+ * @desc    Controlled stage transition for a lead
+ * @route   POST /api/leads/:id/transition
+ * @access  Private (Admin, Manager, Employee)
+ */
+const transitionLead = async (req, res) => {
+  try {
+    const tenantFilter = getTenantFilter(req);
+    const tenantId = getTenantId(req);
+    const lead = await Lead.findOne({ _id: req.params.id, ...tenantFilter });
+    if (!lead) {
+      return res.status(404).json({ success: false, error: 'Lead not found' });
+    }
+
+    // Check RBAC: Employees can only transition their own assigned leads
+    if (req.user.role === 'employee' && lead.assignedEmployee && lead.assignedEmployee.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, error: 'Not authorized to transition this lead' });
+    }
+
+    const { targetStageKey, targetStageName, lostReason } = req.body;
+    const searchTarget = targetStageKey || targetStageName;
+    if (!searchTarget) {
+      return res.status(400).json({ success: false, error: 'targetStageKey or targetStageName is required' });
+    }
+
+    const PipelineStage = require('../models/PipelineStage');
+    const { ensureDefaultStages } = require('./pipelineController');
+    await ensureDefaultStages(tenantId);
+
+    const targetStage = await PipelineStage.findOne({
+      tenant: tenantId,
+      $or: [{ key: searchTarget.toUpperCase() }, { name: searchTarget }]
+    });
+
+    if (!targetStage) {
+      return res.status(400).json({ success: false, error: `Target pipeline stage not found for '${searchTarget}'` });
+    }
+
+    // Validate Lost Reason requirement
+    const validLostReasons = ['Price', 'Competitor', 'No Response', 'Feature Gap', 'Not Interested', 'Other'];
+    if (targetStage.isLost || (targetStage.exitRules && targetStage.exitRules.includes('require_lost_reason'))) {
+      if (!lostReason || !validLostReasons.includes(lostReason)) {
+        return res.status(400).json({
+          success: false,
+          error: `Lost reason is required when moving lead to a Lost stage. Valid reasons: ${validLostReasons.join(', ')}`
+        });
+      }
+      lead.lostReason = lostReason;
+    } else {
+      lead.lostReason = null;
+    }
+
+    const previousStage = lead.stage;
+    const previousStageKey = lead.stageKey || 'NEW';
+
+    lead.stage = targetStage.name;
+    lead.stageKey = targetStage.key;
+
+    lead.activityLog.push({
+      type: 'System',
+      description: `Stage moved from ${previousStage} to ${targetStage.name}${lead.lostReason ? ` (Reason: ${lead.lostReason})` : ''}`,
+      performedBy: req.user._id
+    });
+
+    // Recalculate AI Score based on updates
+    lead.aiScore = await AIService.scoreLead({
+      leadSource: lead.leadSource,
+      expectedRevenue: lead.expectedRevenue,
+      stage: lead.stage,
+      notesCount: lead.notes.length
+    });
+
+    await lead.save();
+
+    await Activity.create({
+      user: req.user._id,
+      action: 'Lead Stage Updated',
+      details: `${lead.company} lead moved to ${targetStage.name}${lead.lostReason ? ` (${lead.lostReason})` : ''} by ${req.user.name}. AI Score: ${lead.aiScore}%`,
+      module: 'Lead',
+      ipAddress: req.ip,
+      tenant: lead.tenant,
+    });
+
+    // If Won/Converted, auto-convert to customer
+    if (targetStage.isWon || targetStage.key === 'WON' || targetStage.name === 'Won' || targetStage.name === 'Converted') {
+      await autoConvertLeadToCustomer(lead, req.user._id);
+    }
+
+    const eventPayload = {
+      eventType: 'lead.stage_changed',
+      tenantId: lead.tenant,
+      leadId: lead._id,
+      previousStageKey,
+      newStageKey: targetStage.key,
+      previousStageName: previousStage,
+      newStageName: targetStage.name,
+      changedBy: req.user._id,
+      timestamp: new Date()
+    };
+
+    res.json({
+      success: true,
+      data: lead,
+      stage: targetStage,
+      event: eventPayload
+    });
   } catch (error) {
     res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
@@ -296,10 +436,232 @@ const autoConvertLeadToCustomer = async (lead, userId) => {
   }
 };
 
+/**
+ * @desc    Get unified chronological engagement timeline for a lead
+ * @route   GET /api/leads/:id/timeline
+ * @access  Private (Admin, Manager, Employee)
+ */
+const getLeadTimeline = async (req, res) => {
+  try {
+    const tenantFilter = getTenantFilter(req);
+    const lead = await Lead.findOne({ _id: req.params.id, ...tenantFilter }).populate('assignedEmployee', 'name email');
+    if (!lead) {
+      return res.status(404).json({ success: false, error: 'Lead not found' });
+    }
+
+    // RBAC: Employees can only view timeline for assigned leads
+    if (req.user.role === 'employee' && lead.assignedEmployee && lead.assignedEmployee._id.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, error: 'Not authorized to view timeline for this lead' });
+    }
+
+    const LeadScoreHistory = require('../models/LeadScoreHistory');
+    const WorkflowLog = require('../models/WorkflowLog');
+
+    const scoreHistory = await LeadScoreHistory.find({ lead: lead._id, ...tenantFilter }).sort({ createdAt: -1 });
+    const workflowLogs = await WorkflowLog.find({ entityId: lead._id, ...tenantFilter }).populate('workflow', 'name trigger').sort({ createdAt: -1 });
+
+    const timelineEvents = [];
+
+    // 1. Lead creation
+    timelineEvents.push({
+      type: 'Lead Created',
+      title: 'Lead Profile Created',
+      description: `Inbound lead profile created for ${lead.company} (${lead.contactName}). Expected value: $${lead.expectedRevenue.toLocaleString()}`,
+      date: lead.createdAt,
+      icon: 'person_add',
+      badgeColor: '#3b82f6',
+      source: 'System'
+    });
+
+    // 2. Lead activity log entries
+    lead.activityLog.forEach(act => {
+      let icon = 'history';
+      let badgeColor = '#6b7280';
+      if (act.type === 'Email') { icon = 'mail'; badgeColor = '#0284c7'; }
+      else if (act.type === 'Call') { icon = 'call'; badgeColor = '#8b5cf6'; }
+      else if (act.type === 'Meeting') { icon = 'calendar_month'; badgeColor = '#eab308'; }
+      else if (act.type === 'Proposal') { icon = 'receipt_long'; badgeColor = '#d97706'; }
+      else if (act.type === 'System') { icon = 'alt_route'; badgeColor = '#10b981'; }
+
+      timelineEvents.push({
+        type: act.type || 'Activity',
+        title: `${act.type || 'Activity'} Event`,
+        description: act.description,
+        date: act.date,
+        icon,
+        badgeColor,
+        source: 'User'
+      });
+    });
+
+    // 3. Lead notes
+    lead.notes.forEach(note => {
+      timelineEvents.push({
+        type: 'Note Added',
+        title: 'Staff Interaction Note',
+        description: note.content,
+        date: note.createdAt,
+        icon: 'sticky_note_2',
+        badgeColor: '#ec4899',
+        source: 'Staff'
+      });
+    });
+
+    // 4. Score History
+    scoreHistory.forEach(sh => {
+      timelineEvents.push({
+        type: 'AI Score Updated',
+        title: `AI Score Updated to ${sh.newScore}% (${sh.scoreChange >= 0 ? '+' : ''}${sh.scoreChange}%)`,
+        description: `Recalculated via ${sh.model} model. Reason: ${sh.reason}`,
+        date: sh.createdAt,
+        icon: 'psychology',
+        badgeColor: '#f59e0b',
+        source: 'AI Engine'
+      });
+    });
+
+    // 5. Workflow logs
+    workflowLogs.forEach(wl => {
+      timelineEvents.push({
+        type: 'Workflow Executed',
+        title: `Workflow Automated: ${wl.workflow ? wl.workflow.name : 'Automation Rule'}`,
+        description: `Executed trigger [${wl.workflow ? wl.workflow.trigger : 'System'}] with status: ${wl.status}`,
+        date: wl.createdAt,
+        icon: 'auto_mode',
+        badgeColor: '#6366f1',
+        source: 'Workflow Engine'
+      });
+    });
+
+    // Sort chronologically (newest first)
+    timelineEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    res.json({
+      success: true,
+      leadId: lead._id,
+      count: timelineEvents.length,
+      data: timelineEvents
+    });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
+  }
+};
+
+/**
+ * @desc    Get detailed explainable lead score & history
+ * @route   GET /api/leads/:id/score
+ * @access  Private (Admin, Manager, Employee)
+ */
+const getLeadScore = async (req, res) => {
+  try {
+    const tenantFilter = getTenantFilter(req);
+    const lead = await Lead.findOne({ _id: req.params.id, ...tenantFilter });
+    if (!lead) {
+      return res.status(404).json({ success: false, error: 'Lead not found' });
+    }
+
+    const LeadScoreHistory = require('../models/LeadScoreHistory');
+    const scoreAnalysis = await AIService.scoreLeadExplainable({
+      leadSource: lead.leadSource,
+      expectedRevenue: lead.expectedRevenue,
+      stage: lead.stage,
+      notesCount: lead.notes.length,
+      activityCount: lead.activityLog.length
+    });
+
+    const recentHistory = await LeadScoreHistory.find({ lead: lead._id, ...tenantFilter })
+      .sort({ createdAt: -1 })
+      .limit(10);
+
+    res.json({
+      success: true,
+      data: {
+        currentScore: lead.aiScore,
+        probability: scoreAnalysis.probability,
+        factors: scoreAnalysis.factors,
+        model: scoreAnalysis.model,
+        lastScoredAt: lead.updatedAt,
+        history: recentHistory
+      }
+    });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
+  }
+};
+
+/**
+ * @desc    Manually refresh explainable lead AI score and log score history
+ * @route   POST /api/leads/:id/score/refresh
+ * @access  Private (Admin, Manager, Employee)
+ */
+const refreshLeadScore = async (req, res) => {
+  try {
+    const tenantFilter = getTenantFilter(req);
+    const tenantId = getTenantId(req);
+    const lead = await Lead.findOne({ _id: req.params.id, ...tenantFilter });
+    if (!lead) {
+      return res.status(404).json({ success: false, error: 'Lead not found' });
+    }
+
+    const LeadScoreHistory = require('../models/LeadScoreHistory');
+    const previousScore = lead.aiScore || 50;
+
+    const scoreAnalysis = await AIService.scoreLeadExplainable({
+      leadSource: lead.leadSource,
+      expectedRevenue: lead.expectedRevenue,
+      stage: lead.stage,
+      notesCount: lead.notes.length,
+      activityCount: lead.activityLog.length
+    });
+
+    const newScore = scoreAnalysis.score;
+    const scoreChange = newScore - previousScore;
+
+    lead.aiScore = newScore;
+    lead.activityLog.push({
+      type: 'System',
+      description: `AI Score refreshed: ${previousScore}% → ${newScore}% (${scoreChange >= 0 ? '+' : ''}${scoreChange}%)`,
+      performedBy: req.user._id
+    });
+    await lead.save();
+
+    // Create Score History Record
+    const historyRecord = await LeadScoreHistory.create({
+      lead: lead._id,
+      tenant: tenantId,
+      previousScore,
+      newScore,
+      scoreChange,
+      factors: scoreAnalysis.factors,
+      model: scoreAnalysis.model,
+      reason: `Manual score refresh by ${req.user.name}`
+    });
+
+    res.json({
+      success: true,
+      message: 'Lead AI score refreshed successfully',
+      data: {
+        currentScore: newScore,
+        probability: newScore,
+        scoreChange,
+        factors: scoreAnalysis.factors,
+        model: scoreAnalysis.model,
+        historyEntry: historyRecord
+      }
+    });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
+  }
+};
+
 module.exports = {
   getLeads,
   createLead,
   updateLead,
+  transitionLead,
   deleteLead,
   addLeadNote,
+  getLeadTimeline,
+  getLeadScore,
+  refreshLeadScore,
 };

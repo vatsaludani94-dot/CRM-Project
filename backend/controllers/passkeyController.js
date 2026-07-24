@@ -61,7 +61,7 @@ const getRegisterOptions = async (req, res) => {
       userDisplayName: user.name,
       attestationType: 'none',
       excludeCredentials: user.passkeys.map(p => ({
-        id: Buffer.from(p.credentialID, 'base64url'),
+        id: String(p.credentialID),
         type: 'public-key',
         transports: p.transports || [],
       })),
@@ -123,13 +123,17 @@ const verifyRegistration = async (req, res) => {
     });
 
     if (verification.verified && verification.registrationInfo) {
-      const { credentialID, credentialPublicKey, counter, transports } = verification.registrationInfo;
+      const regInfo = verification.registrationInfo;
+      const credIdStr = regInfo.credential?.id || (typeof regInfo.credentialID === 'string' ? regInfo.credentialID : Buffer.from(regInfo.credentialID).toString('base64url'));
+      const credPubKeyStr = regInfo.credential?.publicKey ? Buffer.from(regInfo.credential.publicKey).toString('base64url') : Buffer.from(regInfo.credentialPublicKey).toString('base64url');
+      const counterVal = regInfo.credential?.counter ?? regInfo.counter ?? 0;
+      const transportsArr = regInfo.credential?.transports || regInfo.transports || [];
 
       user.passkeys.push({
-        credentialID: Buffer.from(credentialID).toString('base64url'),
-        credentialPublicKey: Buffer.from(credentialPublicKey).toString('base64url'),
-        counter,
-        transports: transports || [],
+        credentialID: credIdStr,
+        credentialPublicKey: credPubKeyStr,
+        counter: counterVal,
+        transports: transportsArr,
         deviceName: deviceName || 'Security Key',
       });
 
@@ -242,9 +246,10 @@ const verifyLogin = async (req, res) => {
       expectedOrigin,
       expectedRPID: rpID,
       authenticator: {
-        credentialID: Buffer.from(passkey.credentialID, 'base64url'),
+        credentialID: passkey.credentialID,
         credentialPublicKey: Buffer.from(passkey.credentialPublicKey, 'base64url'),
         counter: passkey.counter || 0,
+        transports: passkey.transports || [],
       },
     });
 

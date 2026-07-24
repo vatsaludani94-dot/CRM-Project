@@ -18,9 +18,13 @@ export class ApiService {
 
   constructor(private http: HttpClient) {}
 
-  // 1. Dashboard
+  // 1. Dashboard & Global Search
   getDashboard(): Observable<any> {
     return this.http.get<any>(`${this.baseUrl}/dashboard`);
+  }
+
+  globalSearch(query: string): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/dashboard/search?q=${encodeURIComponent(query)}`);
   }
 
   // 2. Customers
@@ -64,7 +68,11 @@ export class ApiService {
     return this.http.post<any>(`${this.baseUrl}/customers/${customerId}/activities`, activity);
   }
 
-  // 3. Leads
+  getCustomerTimeline(customerId: string): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/customers/${customerId}/timeline`);
+  }
+
+  // 3. Leads & Pipeline Stages
   getLeads(): Observable<any> {
     return this.http.get<any>(`${this.baseUrl}/leads`);
   }
@@ -77,12 +85,45 @@ export class ApiService {
     return this.http.put<any>(`${this.baseUrl}/leads/${id}`, data);
   }
 
+  transitionLead(id: string, payload: { targetStageKey?: string; targetStageName?: string; lostReason?: string }): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/leads/${id}/transition`, payload);
+  }
+
   deleteLead(id: string): Observable<any> {
     return this.http.delete<any>(`${this.baseUrl}/leads/${id}`);
   }
 
   addLeadNote(leadId: string, content: string): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/leads/${leadId}/notes`, { content });
+  }
+
+  getLeadTimeline(leadId: string): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/leads/${leadId}/timeline`);
+  }
+
+  getLeadScore(leadId: string): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/leads/${leadId}/score`);
+  }
+
+  refreshLeadScore(leadId: string): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/leads/${leadId}/score/refresh`, {});
+  }
+
+  // Pipeline Stage Management API
+  getPipelineStages(): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/pipeline/stages`);
+  }
+
+  createPipelineStage(data: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/pipeline/stages`, data);
+  }
+
+  updatePipelineStage(id: string, data: any): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/pipeline/stages/${id}`, data);
+  }
+
+  deletePipelineStage(id: string): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/pipeline/stages/${id}`);
   }
 
   // 4. Tickets
@@ -419,6 +460,12 @@ export class ApiService {
   }
   getDocumentPdfDownloadUrl(id: string): string {
     return `${this.baseUrl}/documents/${id}/pdf`;
+  }
+  transitionDocument(id: string, targetStatus: string): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/documents/${id}/transition`, { targetStatus });
+  }
+  recordInvoicePayment(id: string, payload: { amount: number; paymentMethod?: string; transactionRef?: string; notes?: string }): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/documents/${id}/payments`, payload);
   }
 
   // 20. Task Management

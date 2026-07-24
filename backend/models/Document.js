@@ -1,5 +1,33 @@
 const mongoose = require('mongoose');
 
+const PaymentRecordSchema = new mongoose.Schema({
+  amount: {
+    type: Number,
+    required: true,
+  },
+  paymentMethod: {
+    type: String,
+    enum: ['Bank Transfer', 'Credit Card', 'Stripe', 'Check', 'Cash', 'Other'],
+    default: 'Bank Transfer',
+  },
+  transactionRef: {
+    type: String,
+    default: '',
+  },
+  notes: {
+    type: String,
+    default: '',
+  },
+  recordedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  },
+  date: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
 const DocumentSchema = new mongoose.Schema(
   {
     name: {
@@ -14,8 +42,12 @@ const DocumentSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['Draft', 'Sent', 'Paid', 'Overdue', 'Approved', 'Declined'],
+      enum: ['Draft', 'Sent', 'Viewed', 'Accepted', 'Rejected', 'Approved', 'Declined', 'Partially_Paid', 'Paid', 'Overdue', 'Expired', 'Void', 'Cancelled'],
       default: 'Draft',
+    },
+    documentNumber: {
+      type: String,
+      trim: true,
     },
     metadata: {
       lineItems: [
@@ -32,11 +64,22 @@ const DocumentSchema = new mongoose.Schema(
       discountAmount: { type: Number, default: 0 },
       subtotalAmount: { type: Number, default: 0 },
       netAmount: { type: Number, default: 0 },
-      signaturePng: String, // Base64 signature
+      amountPaid: { type: Number, default: 0 },
+      amountDue: { type: Number, default: 0 },
+      paymentHistory: [PaymentRecordSchema],
+      signaturePng: String,
       notes: String,
       validUntil: Date,
       dueDate: Date,
-      aiSummary: String, // Proposals can have AI summaries or notes
+      aiSummary: String,
+      linkedProposal: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Document',
+      },
+      linkedInvoice: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Document',
+      },
     },
     pdfUrl: {
       type: String,
@@ -61,11 +104,15 @@ const DocumentSchema = new mongoose.Schema(
     tenant: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Tenant',
+      required: true,
     }
   },
   {
     timestamps: true,
   }
 );
+
+DocumentSchema.index({ tenant: 1, type: 1, status: 1 });
+DocumentSchema.index({ tenant: 1, customer: 1 });
 
 module.exports = mongoose.model('Document', DocumentSchema);

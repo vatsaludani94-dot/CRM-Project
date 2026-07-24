@@ -239,18 +239,130 @@ const getCustomer360 = async (req, res) => {
     // Sort timeline chronologically (newest first)
     timeline.sort((a, b) => new Date(b.date) - new Date(a.date));
 
+    // Calculate Commercial Summary Metrics
+    let totalInvoices = 0;
+    let paidAmount = 0;
+    let outstandingAmount = 0;
+    let proposalsCount = 0;
+    let acceptedProposalsCount = 0;
+
+    documentsList.forEach(doc => {
+      if (doc.type === 'Proposal') {
+        proposalsCount += 1;
+        if (['Accepted', 'Approved'].includes(doc.status)) {
+          acceptedProposalsCount += 1;
+        }
+      } else if (doc.type === 'Invoice') {
+        totalInvoices += 1;
+        paidAmount += (doc.metadata?.amountPaid || 0);
+        outstandingAmount += (doc.metadata?.amountDue || 0);
+      }
+    });
+
+    const commercialSummary = {
+      totalRevenueGenerated: customer.revenueGenerated || paidAmount,
+      totalInvoices,
+      paidAmount,
+      outstandingAmount,
+      proposalsCount,
+      acceptedProposalsCount,
+      lastInteractionDate: timeline.length > 0 ? timeline[0].date : customer.updatedAt,
+    };
+
     res.json({
       success: true,
       data: {
         customer,
         tickets,
         revenueGenerated: customer.revenueGenerated,
+        commercialSummary,
+        proposals: documentsList.filter(d => d.type === 'Proposal'),
+        invoices: documentsList.filter(d => d.type === 'Invoice'),
         timeline
       }
     });
   } catch (error) {
     console.error('Customer 360 error:', error.message);
     res.status(error.statusCode || 500).json({ success: false, error: error.message });
+  }
+};
+
+/**
+ * @desc    Get chronological Customer timeline only
+ * @route   GET /api/customers/:id/timeline
+ * @access  Private
+ */
+const getCustomerTimeline = async (req, res) => {
+  try {
+    const tenantFilter = getTenantFilter(req);
+    const customer = await Customer.findOne({ _id: req.params.id, ...tenantFilter })
+      .populate('notes.createdBy', 'name email')
+      .populate('activities.performedBy', 'name email');
+
+    if (!customer) {
+      return res.status(404).json({ success: false, error: 'Customer not found' });
+    }
+
+    const tickets = await Ticket.find({ customer: customer._id, ...tenantFilter });
+    const emailsList = await EmailMessage.find({ customer: customer._id, ...tenantFilter });
+    const documentsList = await Document.find({ customer: customer._id, ...tenantFilter });
+    const tasksList = await Task.find({ customer: customer._id, ...tenantFilter });
+
+    let timeline = [];
+
+    timeline.push({
+      event: 'Customer Account Created',
+      description: `Account initialized for ${customer.companyName} (${customer.customerCode})`,
+      date: customer.createdAt,
+      type: 'system',
+      icon: 'how_to_reg'
+    });
+
+    tickets.forEach(t => {
+      timeline.push({
+        event: `Ticket ${t.ticketCode}`,
+        description: `${t.title} [Status: ${t.status}]`,
+        date: t.createdAt,
+        type: 'ticket',
+        icon: 'bug_report'
+      });
+    });
+
+    documentsList.forEach(doc => {
+      timeline.push({
+        event: `${doc.type} (${doc.name})`,
+        description: `Status: ${doc.status} - Amount: $${doc.metadata?.netAmount}`,
+        date: doc.createdAt,
+        type: 'document',
+        icon: doc.type === 'Invoice' ? 'receipt' : 'description'
+      });
+    });
+
+    customer.activities.forEach(act => {
+      timeline.push({
+        event: `${act.type} Activity`,
+        description: act.description,
+        date: act.date,
+        type: 'activity',
+        icon: 'history'
+      });
+    });
+
+    customer.notes.forEach(n => {
+      timeline.push({
+        event: 'Note Added',
+        description: n.content,
+        date: n.createdAt,
+        type: 'note',
+        icon: 'chat'
+      });
+    });
+
+    timeline.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    res.json({ success: true, count: timeline.length, data: timeline });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
@@ -468,6 +580,7 @@ module.exports = {
   getCustomers,
   getCustomerById,
   getCustomer360,
+  getCustomerTimeline,
   createCustomer,
   updateCustomer,
   deleteCustomer,

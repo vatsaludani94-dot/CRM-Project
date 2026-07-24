@@ -3,8 +3,9 @@ const mongoose = require('mongoose');
 const FormFieldSchema = new mongoose.Schema({
   type: {
     type: String,
-    enum: ['Text', 'Email', 'Phone', 'Number', 'File Upload', 'Dropdown', 'Radio', 'Checkbox', 'Signature'],
+    enum: ['Text', 'Email', 'Phone', 'Number', 'File Upload', 'Dropdown', 'Radio', 'Checkbox', 'Signature', 'text', 'email', 'phone', 'number'],
     required: true,
+    set: (v) => v ? v.charAt(0).toUpperCase() + v.slice(1) : v,
   },
   label: { type: String, required: true },
   placeholder: String,

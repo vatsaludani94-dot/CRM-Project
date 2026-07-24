@@ -86,9 +86,10 @@ const submitForm = async (req, res) => {
 
     const entityName = formData[nameKey] || 'Web Form Contact';
     const entityEmail = formData[emailKey] || `contact_${Date.now()}@test.com`;
-    const entityPhone = formData[phoneKey] || '';
+    const entityPhone = formData[phoneKey] || '555-0199';
 
     if (form.submissionAction === 'Create Lead') {
+      const notesArr = req.user ? [{ content: `Submitted form: ${form.name}. Raw data: ${JSON.stringify(formData)}`, createdBy: req.user._id }] : [];
       const lead = await Lead.create({
         company: entityName,
         contactName: entityName,
@@ -96,7 +97,7 @@ const submitForm = async (req, res) => {
         phone: entityPhone,
         leadSource: 'Web Form',
         stage: 'New',
-        notes: [{ content: `Submitted form: ${form.name}. Raw data: ${JSON.stringify(formData)}`, createdBy: req.user ? req.user._id : undefined }],
+        notes: notesArr,
         tenant: formTenantId,
       });
       createdEntityId = lead._id;
@@ -130,6 +131,7 @@ const submitForm = async (req, res) => {
 
     res.status(201).json({ success: true, data: submission });
   } catch (err) {
+    console.error('submitForm Error:', err.message);
     res.status(500).json({ success: false, error: err.message });
   }
 };

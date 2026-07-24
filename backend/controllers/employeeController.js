@@ -151,8 +151,13 @@ const updateEmployee = async (req, res) => {
 
     if (department) employee.department = department;
     if (status) employee.status = status;
-    if (role && (req.user.role === 'super_admin' || req.user.role === 'workspace_owner')) {
-      employee.role = role;
+    if (role) {
+      if (role === 'super_admin' && req.user.role !== 'super_admin') {
+        return res.status(403).json({ success: false, error: 'Only platform super admins can assign the super_admin role' });
+      }
+      if (req.user.role === 'super_admin' || req.user.role === 'workspace_owner') {
+        employee.role = role;
+      }
     }
 
     await employee.save();

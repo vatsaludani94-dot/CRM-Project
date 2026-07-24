@@ -211,10 +211,204 @@ const exportDocumentPdf = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Controlled document status transition (Proposals, Invoices)
+ * @route   POST /api/documents/:id/transition
+ * @access  Private (Admin, Manager, Employee)
+ */
+const transitionDocument = async (req, res) => {
+  try {
+    const tenantFilter = getTenantFilter(req);
+    const tenantId = getTenantId(req);
+    const doc = await Document.findOne({ _id: req.params.id, ...tenantFilter });
+    if (!doc) {
+      return res.status(404).json({ success: false, error: 'Document not found' });
+    }
+
+    const { targetStatus } = req.body;
+    const validStatuses = ['Draft', 'Sent', 'Viewed', 'Accepted', 'Rejected', 'Approved', 'Declined', 'Partially_Paid', 'Paid', 'Overdue', 'Expired', 'Void', 'Cancelled'];
+    
+    if (!targetStatus || !validStatuses.includes(targetStatus)) {
+      return res.status(400).json({ success: false, error: `Invalid target status. Valid values: ${validStatuses.join(', ')}` });
+    }
+
+    // Protection: Cannot move Accepted/Paid back to Draft
+    if (['Accepted', 'Paid', 'Approved'].includes(doc.status) && targetStatus === 'Draft') {
+      return res.status(400).json({ success: false, error: `Cannot return document from ${doc.status} back to Draft` });
+    }
+
+    const previousStatus = doc.status;
+    doc.status = targetStatus;
+
+    // Proposal acceptance handling -> Auto-generate Invoice if missing
+    let generatedInvoice = null;
+    if (doc.type === 'Proposal' && ['Accepted', 'Approved'].includes(targetStatus)) {
+      if (!doc.metadata?.linkedInvoice) {
+        const invoiceDoc = await Document.create({
+          name: `Invoice for ${doc.name}`,
+          type: 'Invoice',
+          status: 'Draft',
+          documentNumber: `INV-${Math.floor(1000 + Math.random() * 9000)}`,
+          metadata: {
+            lineItems: doc.metadata?.lineItems || [],
+            taxRate: doc.metadata?.taxRate || 0,
+            taxAmount: doc.metadata?.taxAmount || 0,
+            discountRate: doc.metadata?.discountRate || 0,
+            discountAmount: doc.metadata?.discountAmount || 0,
+            subtotalAmount: doc.metadata?.subtotalAmount || 0,
+            netAmount: doc.metadata?.netAmount || 0,
+            amountPaid: 0,
+            amountDue: doc.metadata?.netAmount || 0,
+            linkedProposal: doc._id,
+            notes: doc.metadata?.notes || ''
+          },
+          customer: doc.customer,
+          lead: doc.lead,
+          tenant: tenantId
+        });
+
+        doc.metadata = {
+          ...doc.metadata.toObject(),
+          linkedInvoice: invoiceDoc._id
+        };
+        generatedInvoice = invoiceDoc;
+      }
+
+      try {
+        const { triggerWorkflowEvents } = require('./workflowController');
+        await triggerWorkflowEvents('Deal Won', 'Document', doc._id, tenantId);
+      } catch (wfErr) {}
+    }
+
+    await doc.save();
+
+    // Log Activity on Customer if linked
+    if (doc.customer) {
+      const customer = await Customer.findOne({ _id: doc.customer, ...tenantFilter });
+      if (customer) {
+        customer.activities.push({
+          type: 'Note',
+          description: `${doc.type} "${doc.name}" status changed: ${previousStatus} → ${targetStatus}`,
+          performedBy: req.user._id
+        });
+        await customer.save();
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Document status updated to ${targetStatus}`,
+      data: doc,
+      generatedInvoice
+    });
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
+  }
+};
+
+/**
+ * @desc    Record payment against an invoice
+ * @route   POST /api/documents/:id/payments
+ * @access  Private (Admin, Manager, Employee)
+ */
+const recordInvoicePayment = async (req, res) => {
+  try {
+    const tenantFilter = getTenantFilter(req);
+    const tenantId = getTenantId(req);
+    const doc = await Document.findOne({ _id: req.params.id, ...tenantFilter });
+    if (!doc) {
+      return res.status(404).json({ success: false, error: 'Document not found' });
+    }
+
+    if (doc.type !== 'Invoice' && doc.type !== 'Contract') {
+      return res.status(400).json({ success: false, error: 'Payments can only be recorded against Invoice or Contract documents' });
+    }
+
+    const { amount, paymentMethod, transactionRef, notes } = req.body;
+    const paymentAmount = Number(amount);
+
+    if (isNaN(paymentAmount) || paymentAmount <= 0) {
+      return res.status(400).json({ success: false, error: 'Payment amount must be a positive number' });
+    }
+
+    const currentAmountPaid = doc.metadata?.amountPaid || 0;
+    const netAmount = doc.metadata?.netAmount || 0;
+    const currentAmountDue = doc.metadata?.amountDue !== undefined ? doc.metadata.amountDue : Math.max(0, netAmount - currentAmountPaid);
+
+    // Overpayment protection
+    if (paymentAmount > currentAmountDue && currentAmountDue > 0) {
+      return res.status(400).json({
+        success: false,
+        error: `Payment amount ($${paymentAmount}) exceeds current outstanding balance ($${currentAmountDue})`
+      });
+    }
+
+    const newAmountPaid = parseFloat((currentAmountPaid + paymentAmount).toFixed(2));
+    const newAmountDue = Math.max(0, parseFloat((netAmount - newAmountPaid).toFixed(2)));
+
+    doc.metadata = {
+      ...doc.metadata.toObject(),
+      amountPaid: newAmountPaid,
+      amountDue: newAmountDue,
+    };
+
+    if (newAmountDue === 0) {
+      doc.status = 'Paid';
+    } else if (newAmountPaid > 0) {
+      doc.status = 'Partially_Paid';
+    }
+
+    if (!doc.metadata.paymentHistory) {
+      doc.metadata.paymentHistory = [];
+    }
+
+    doc.metadata.paymentHistory.push({
+      amount: paymentAmount,
+      paymentMethod: paymentMethod || 'Bank Transfer',
+      transactionRef: transactionRef || '',
+      notes: notes || '',
+      recordedBy: req.user._id,
+      date: new Date()
+    });
+
+    await doc.save();
+
+    // Update Customer revenue & activity if customer linked
+    if (doc.customer) {
+      const customer = await Customer.findOne({ _id: doc.customer, ...tenantFilter });
+      if (customer) {
+        customer.revenueGenerated = (customer.revenueGenerated || 0) + paymentAmount;
+        customer.activities.push({
+          type: 'Note',
+          description: `Payment of $${paymentAmount.toLocaleString()} recorded for Invoice "${doc.name}". Status: ${doc.status} (Remaining: $${newAmountDue.toLocaleString()})`,
+          performedBy: req.user._id
+        });
+        await customer.save();
+      }
+    }
+
+    // Trigger workflow event
+    try {
+      const { triggerWorkflowEvents } = require('./workflowController');
+      await triggerWorkflowEvents('Customer Converted', 'Document', doc._id, tenantId);
+    } catch (wfErr) {}
+
+    res.status(201).json({
+      success: true,
+      message: `Payment of $${paymentAmount} recorded successfully`,
+      data: doc
+    });
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
+  }
+};
+
 module.exports = {
   getDocuments,
   getDocumentById,
   createDocument,
   updateDocument,
   exportDocumentPdf,
+  transitionDocument,
+  recordInvoicePayment,
 };

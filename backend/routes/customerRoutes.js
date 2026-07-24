@@ -4,6 +4,7 @@ const {
   getCustomers,
   getCustomerById,
   getCustomer360,
+  getCustomerTimeline,
   createCustomer,
   updateCustomer,
   deleteCustomer,
@@ -28,6 +29,7 @@ router.route('/:id')
 
 // Customer 360 & timelines
 router.get('/:id/360', getCustomer360);
+router.get('/:id/timeline', getCustomerTimeline);
 
 // Customer Profile actions
 router.post('/:id/notes', authorize('super_admin', 'manager', 'employee'), addCustomerNote);
