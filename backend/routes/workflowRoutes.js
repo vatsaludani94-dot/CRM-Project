@@ -6,11 +6,16 @@ const {
   updateWorkflow,
   deleteWorkflow,
   getWorkflowLogs,
+  getCapabilityRegistry,
+  parseWorkflowIntent,
 } = require('../controllers/workflowController');
 const { protect } = require('../middleware/authMiddleware');
 const { authorize } = require('../middleware/roleMiddleware');
 
 router.use(protect);
+
+router.get('/capabilities', authorize('super_admin', 'manager', 'employee', 'workspace_owner'), getCapabilityRegistry);
+router.post('/parse-intent', authorize('super_admin', 'manager', 'workspace_owner'), parseWorkflowIntent);
 
 router.route('/')
   .get(authorize('super_admin', 'manager', 'employee'), getWorkflows)

@@ -33,10 +33,17 @@ const checkAndExecuteScheduledCampaigns = async () => {
   }
 };
 
+let isSchedulerStarted = false;
+
 /**
  * Start background timer for marketing campaign scheduler (runs every 60 seconds)
  */
 const startMarketingScheduler = () => {
+  if (isSchedulerStarted) {
+    console.log('[MARKETING SCHEDULER] Scheduler is already active. Skipping duplicate initialization.');
+    return;
+  }
+  isSchedulerStarted = true;
   console.log('[MARKETING SCHEDULER] Marketing automation scheduler initialized.');
   // Initial check on boot
   setTimeout(checkAndExecuteScheduledCampaigns, 5000);

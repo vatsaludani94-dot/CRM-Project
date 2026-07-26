@@ -205,16 +205,39 @@ export interface AudiencePreviewResult {
                 </td>
                 <td class="p-4 text-right space-x-1">
                   <button 
-                    *ngIf="camp.status === 'Draft' || camp.status === 'Scheduled'"
+                    *ngIf="camp.status === 'Draft'"
                     (click)="executeSendNow(camp._id)"
                     class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-bold shadow-sm transition-all">
                     Send Now
                   </button>
+
+                  <button 
+                    *ngIf="camp.status === 'Scheduled'"
+                    (click)="pauseCampaign(camp._id)"
+                    class="px-2.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[10px] font-bold transition-all">
+                    Pause
+                  </button>
+
+                  <button 
+                    *ngIf="camp.status === 'Paused'"
+                    (click)="resumeCampaign(camp._id)"
+                    class="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-bold transition-all">
+                    Resume
+                  </button>
+
+                  <button 
+                    *ngIf="camp.status === 'Scheduled' || camp.status === 'Paused'"
+                    (click)="cancelCampaign(camp._id)"
+                    class="px-2.5 py-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-[10px] font-bold transition-all">
+                    Cancel
+                  </button>
+
                   <button 
                     (click)="openTestModal(camp)"
                     class="px-2.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-lg text-[10px] font-bold transition-all">
                     Send Test
                   </button>
+
                   <button 
                     (click)="deleteCampaign(camp._id)"
                     class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg text-[10px] font-bold transition-all">
@@ -425,7 +448,7 @@ export interface AudiencePreviewResult {
             </div>
 
             <!-- STEP 5: Schedule / Confirm -->
-            <div *ngIf="wizardStep() === 5" class="space-y-4">
+            <div *ngIf="wizardStep() === 5" class="space-y-5">
               <div class="bg-stone-50 p-4 rounded-xl border border-stone-200 space-y-3">
                 <h4 class="font-extrabold text-xs text-stone-900 uppercase tracking-wider">Final Campaign Confirmation</h4>
                 <div class="text-xs space-y-1 text-stone-700">
@@ -435,6 +458,71 @@ export interface AudiencePreviewResult {
                   <div><strong>Subject:</strong> {{ newCampaign.emailContent.subject }}</div>
                 </div>
               </div>
+
+              <!-- Scheduling Mode Selector -->
+              <div class="space-y-3">
+                <label class="block text-xs font-extrabold text-stone-800">Choose Execution Strategy</label>
+                <div class="grid grid-cols-2 gap-3">
+                  <button 
+                    type="button" 
+                    (click)="executionStrategy = 'Draft'" 
+                    [class.bg-amber-600]="executionStrategy === 'Draft'"
+                    [class.text-white]="executionStrategy === 'Draft'"
+                    class="p-4 border border-stone-200 rounded-xl text-left hover:bg-amber-50/50 transition-all">
+                    <div class="font-bold text-xs">Save as Draft</div>
+                    <div class="text-[10px] opacity-80 mt-1">Store campaign as draft to review or send manually later.</div>
+                  </button>
+
+                  <button 
+                    type="button" 
+                    (click)="executionStrategy = 'Scheduled'" 
+                    [class.bg-amber-600]="executionStrategy === 'Scheduled'"
+                    [class.text-white]="executionStrategy === 'Scheduled'"
+                    class="p-4 border border-stone-200 rounded-xl text-left hover:bg-amber-50/50 transition-all">
+                    <div class="font-bold text-xs">Schedule Campaign</div>
+                    <div class="text-[10px] opacity-80 mt-1">Set automatic execution date, time, and timezone.</div>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Date / Time / Timezone Pickers -->
+              <div *ngIf="executionStrategy === 'Scheduled'" class="bg-stone-50 p-4 rounded-xl border border-stone-200 space-y-3">
+                <h4 class="font-extrabold text-xs text-stone-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <span class="material-icons text-amber-600 text-sm">schedule</span>
+                  Schedule Parameters
+                </h4>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label class="block text-[11px] font-bold text-stone-600 mb-1">Execution Date *</label>
+                    <input 
+                      type="date" 
+                      [(ngModel)]="scheduleDate" 
+                      class="w-full px-3 py-2 border border-stone-300 rounded-xl text-xs font-medium focus:ring-2 focus:ring-amber-500 outline-none bg-white">
+                  </div>
+
+                  <div>
+                    <label class="block text-[11px] font-bold text-stone-600 mb-1">Execution Time *</label>
+                    <input 
+                      type="time" 
+                      [(ngModel)]="scheduleTime" 
+                      class="w-full px-3 py-2 border border-stone-300 rounded-xl text-xs font-medium focus:ring-2 focus:ring-amber-500 outline-none bg-white">
+                  </div>
+
+                  <div>
+                    <label class="block text-[11px] font-bold text-stone-600 mb-1">Workspace Timezone</label>
+                    <select 
+                      [(ngModel)]="scheduleTimezone" 
+                      class="w-full px-3 py-2 border border-stone-300 rounded-xl text-xs font-medium focus:ring-2 focus:ring-amber-500 outline-none bg-white">
+                      <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+                      <option value="UTC">UTC</option>
+                      <option value="America/New_York">America/New_York (EST)</option>
+                      <option value="Europe/London">Europe/London (GMT)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
             </div>
 
           </div>
@@ -456,12 +544,21 @@ export interface AudiencePreviewResult {
               Next Step
             </button>
 
-            <button 
-              *ngIf="wizardStep() === 5" 
-              (click)="saveCampaign()" 
-              class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold shadow-lg shadow-emerald-600/20">
-              Save Campaign
-            </button>
+            <div *ngIf="wizardStep() === 5" class="flex gap-2">
+              <button 
+                *ngIf="executionStrategy === 'Draft'"
+                (click)="saveCampaign('Draft')" 
+                class="px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-extrabold shadow-lg shadow-amber-600/20">
+                Save as Draft
+              </button>
+
+              <button 
+                *ngIf="executionStrategy === 'Scheduled'"
+                (click)="saveCampaign('Scheduled')" 
+                class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold shadow-lg shadow-emerald-600/20">
+                Schedule Campaign
+              </button>
+            </div>
           </div>
 
         </div>
@@ -575,7 +672,21 @@ export class MarketingComponent implements OnInit {
     });
   }
 
-  saveCampaign() {
+  executionStrategy: 'Draft' | 'Scheduled' = 'Draft';
+  scheduleDate = '';
+  scheduleTime = '';
+  scheduleTimezone = 'Asia/Kolkata';
+
+  saveCampaign(sendType: 'Draft' | 'Scheduled' = 'Draft') {
+    this.newCampaign.schedule.sendType = sendType;
+    if (sendType === 'Scheduled' && this.scheduleDate && this.scheduleTime) {
+      this.newCampaign.schedule.scheduledAt = new Date(`${this.scheduleDate}T${this.scheduleTime}`).toISOString();
+      this.newCampaign.schedule.timezone = this.scheduleTimezone;
+      this.newCampaign.status = 'Scheduled';
+    } else {
+      this.newCampaign.status = 'Draft';
+    }
+
     this.api.post('/marketing/campaigns', this.newCampaign).subscribe({
       next: (res: any) => {
         if (res.success) {
@@ -596,6 +707,31 @@ export class MarketingComponent implements OnInit {
       },
       error: (err: any) => {
         alert(err.error?.error || 'Execution failed');
+      }
+    });
+  }
+
+  pauseCampaign(id: string) {
+    this.api.post(`/marketing/campaigns/${id}/pause`, {}).subscribe({
+      next: () => {
+        this.loadCampaigns();
+      }
+    });
+  }
+
+  resumeCampaign(id: string) {
+    this.api.post(`/marketing/campaigns/${id}/resume`, {}).subscribe({
+      next: () => {
+        this.loadCampaigns();
+      }
+    });
+  }
+
+  cancelCampaign(id: string) {
+    if (!confirm('Are you sure you want to cancel this campaign?')) return;
+    this.api.post(`/marketing/campaigns/${id}/cancel`, {}).subscribe({
+      next: () => {
+        this.loadCampaigns();
       }
     });
   }

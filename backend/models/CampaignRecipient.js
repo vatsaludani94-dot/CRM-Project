@@ -43,7 +43,7 @@ const campaignRecipientSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['Queued', 'Sent', 'Failed', 'Skipped', 'Unsubscribed', 'Duplicate', 'Invalid'],
+      enum: ['Queued', 'Sent', 'Failed', 'Skipped', 'Unsubscribed', 'Suppressed', 'Duplicate', 'Invalid'],
       default: 'Queued',
     },
     personalizedSubject: {
@@ -62,6 +62,9 @@ const campaignRecipientSchema = new mongoose.Schema(
       type: Date,
     },
     error: {
+      type: String,
+    },
+    suppressionReason: {
       type: String,
     },
     unsubscribeSkipped: {

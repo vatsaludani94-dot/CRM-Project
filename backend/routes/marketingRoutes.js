@@ -9,6 +9,7 @@ const {
   deleteCampaign,
   sendTestEmail,
   sendCampaignNow,
+  scheduleCampaign,
   pauseCampaign,
   resumeCampaign,
   cancelCampaign,
@@ -39,6 +40,7 @@ router.route('/campaigns/:id')
 
 router.post('/campaigns/:id/test', authorize('super_admin', 'manager', 'employee', 'workspace_owner'), sendTestEmail);
 router.post('/campaigns/:id/send', authorize('super_admin', 'manager', 'workspace_owner'), sendCampaignNow);
+router.post('/campaigns/:id/schedule', authorize('super_admin', 'manager', 'workspace_owner'), scheduleCampaign);
 router.post('/campaigns/:id/pause', authorize('super_admin', 'manager', 'workspace_owner'), pauseCampaign);
 router.post('/campaigns/:id/resume', authorize('super_admin', 'manager', 'workspace_owner'), resumeCampaign);
 router.post('/campaigns/:id/cancel', authorize('super_admin', 'manager', 'workspace_owner'), cancelCampaign);

@@ -514,10 +514,6 @@ const executeCampaignDelivery = async (campaignId, tenantId, userId = null) => {
         invalidEmailCount++;
         continue;
       }
-      if (unsubscribedSet.has(email)) {
-        unsubscribedCount++;
-        continue;
-      }
       if (seenEmails.has(email)) {
         duplicateCount++;
         continue;
@@ -538,10 +534,6 @@ const executeCampaignDelivery = async (campaignId, tenantId, userId = null) => {
       const email = (cust.email || '').trim().toLowerCase();
       if (!email || !emailRegex.test(email)) {
         invalidEmailCount++;
-        continue;
-      }
-      if (unsubscribedSet.has(email)) {
-        unsubscribedCount++;
         continue;
       }
       if (seenEmails.has(email)) {
@@ -565,10 +557,11 @@ const executeCampaignDelivery = async (campaignId, tenantId, userId = null) => {
     const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
 
     for (const item of recipientQueue) {
+      const normalizedEmail = item.email.trim().toLowerCase();
       const personalizedSubject = renderPersonalizedText(campaign.emailContent.subject, item, workspaceIdentity);
       const rawBody = renderPersonalizedText(campaign.emailContent.body, item, workspaceIdentity);
 
-      const unsubscribeToken = generateUnsubscribeToken(tenantId, item.email);
+      const unsubscribeToken = generateUnsubscribeToken(tenantId, normalizedEmail);
       const unsubscribeUrl = `${baseUrl}/api/marketing/unsubscribe/${unsubscribeToken}`;
 
       const finalHtml = `
@@ -579,6 +572,34 @@ const executeCampaignDelivery = async (campaignId, tenantId, userId = null) => {
           <a href="${unsubscribeUrl}" style="color: #d97706; text-decoration: underline;">Unsubscribe from marketing emails</a>
         </div>
       `;
+
+      // FINAL REAL-TIME SUPPRESSION CHECK
+      const isStillUnsubscribed = await MarketingSubscription.findOne({
+        tenant: tenantId,
+        email: normalizedEmail,
+        status: 'unsubscribed',
+      });
+
+      if (isStillUnsubscribed) {
+        await CampaignRecipient.create({
+          campaign: campaign._id,
+          tenant: tenantId,
+          recipientEmail: normalizedEmail,
+          recipientType: item.recipientType,
+          lead: item.lead,
+          customer: item.customer,
+          contactName: item.contactName,
+          companyName: item.companyName,
+          status: 'Suppressed',
+          suppressionReason: 'marketing_unsubscribed',
+          error: 'Recipient is unsubscribed from marketing communications for this workspace.',
+          unsubscribeSkipped: true,
+          personalizedSubject,
+          personalizedContent: finalHtml,
+        });
+        unsubscribedCount++;
+        continue;
+      }
 
       const recipientDoc = await CampaignRecipient.create({
         campaign: campaign._id,
@@ -851,6 +872,49 @@ const getMarketingAnalytics = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Schedule or Reschedule a marketing campaign
+ * @route   POST /api/marketing/campaigns/:id/schedule
+ * @access  Private (Admin, Manager, Employee)
+ */
+const scheduleCampaign = async (req, res) => {
+  try {
+    const tenantFilter = getTenantFilter(req);
+    const campaign = await MarketingCampaign.findOne({ _id: req.params.id, ...tenantFilter });
+    if (!campaign) {
+      return res.status(404).json({ success: false, error: 'Campaign not found' });
+    }
+
+    const { scheduledAt, timezone } = req.body;
+    if (!scheduledAt) {
+      return res.status(400).json({ success: false, error: 'Scheduled date and time (scheduledAt) is required.' });
+    }
+
+    const scheduleDate = new Date(scheduledAt);
+    if (isNaN(scheduleDate.getTime())) {
+      return res.status(400).json({ success: false, error: 'Invalid scheduled date format.' });
+    }
+
+    campaign.schedule = {
+      sendType: 'Scheduled',
+      scheduledAt: scheduleDate,
+      timezone: timezone || 'Asia/Kolkata',
+    };
+    campaign.status = 'Scheduled';
+    campaign.updatedBy = req.user._id;
+
+    await campaign.save();
+
+    res.json({
+      success: true,
+      message: `Campaign scheduled successfully for ${scheduleDate.toISOString()}`,
+      data: campaign,
+    });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
+  }
+};
+
 module.exports = {
   previewAudience,
   getCampaigns,
@@ -860,6 +924,7 @@ module.exports = {
   deleteCampaign,
   sendTestEmail,
   sendCampaignNow,
+  scheduleCampaign,
   executeCampaignDelivery,
   pauseCampaign,
   resumeCampaign,

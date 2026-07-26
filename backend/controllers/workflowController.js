@@ -81,8 +81,9 @@ const executeWorkflowStep = async (step, entityType, entityId, tenantId) => {
 
             if (isUnsubscribed) {
               console.log(`[Workflow Marketing] Recipient ${recipientEmail} is unsubscribed. Skipping marketing action.`);
-              execution.error = `Recipient ${recipientEmail} is unsubscribed from marketing communications.`;
-              execution.success = false;
+              execution.details = `Marketing email skipped for ${recipientEmail}: Recipient is unsubscribed (suppression_reason: marketing_unsubscribed).`;
+              execution.suppressed = true;
+              execution.suppressionReason = 'marketing_unsubscribed';
             } else {
               const { getWorkspaceIdentity } = require('../utils/tenantScope');
               const { sendOutboundEmail } = require('../services/invoice-email.service');
@@ -258,6 +259,161 @@ const getWorkflowLogs = async (req, res) => {
   }
 };
 
+const CAPABILITY_REGISTRY = {
+  triggers: [
+    { key: 'Lead Created', label: 'Lead Created', entityType: 'Lead', category: 'Leads' },
+    { key: 'Lead Stage Changed', label: 'Lead Stage Changed', entityType: 'Lead', category: 'Leads' },
+    { key: 'Lead Converted', label: 'Lead Converted to Customer', entityType: 'Lead', category: 'Leads' },
+    { key: 'Lead Score Changed', label: 'Lead Score Changed', entityType: 'Lead', category: 'Leads' },
+    { key: 'Customer Becomes At Risk', label: 'Customer Becomes At Risk', entityType: 'Customer', category: 'Retention' },
+    { key: 'Customer Becomes Critical', label: 'Customer Health Critical', entityType: 'Customer', category: 'Retention' },
+    { key: 'Ticket Created', label: 'Ticket Created', entityType: 'Ticket', category: 'Support' },
+    { key: 'Ticket Resolved', label: 'Ticket Resolved', entityType: 'Ticket', category: 'Support' },
+    { key: 'Proposal Sent', label: 'Proposal Sent', entityType: 'Document', category: 'Sales' },
+    { key: 'Customer Payment Received', label: 'Customer Payment Received', entityType: 'Document', category: 'Finance' },
+  ],
+  actions: [
+    { key: 'Send Direct Marketing Email', label: 'Send Marketing Email', category: 'Marketing', available: true },
+    { key: 'Enroll in Marketing Campaign', label: 'Enroll in Marketing Campaign', category: 'Marketing', available: true },
+    { key: 'Create Task', label: 'Create Follow-Up Task', category: 'Tasks', available: true },
+    { key: 'Create Retention Task', label: 'Create Retention Task', category: 'Tasks', available: true },
+    { key: 'Create Ticket', label: 'Create Support Ticket', category: 'Support', available: true },
+    { key: 'Notify Account Owner', label: 'Notify Account Owner', category: 'Notifications', available: true },
+    { key: 'Notify Manager', label: 'Notify Manager', category: 'Notifications', available: true },
+  ],
+  integrations: [
+    { name: 'Email Engine', status: 'Available', details: 'Workspace identity configured' },
+    { name: 'Google Drive', status: 'Available', details: 'Connected & active' },
+    { name: 'Marketing Engine', status: 'Available', details: 'Active campaign engine' },
+    { name: 'WhatsApp', status: 'Unavailable', details: 'WhatsApp API integration is not connected to this workspace.' },
+    { name: 'SMS Gateway', status: 'Unavailable', details: 'No SMS provider gateway configured for this workspace.' },
+  ],
+};
+
+const getCapabilityRegistry = async (req, res) => {
+  res.json({ success: true, data: CAPABILITY_REGISTRY });
+};
+
+const parseWorkflowIntent = async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    if (!prompt || typeof prompt !== 'string') {
+      return res.status(400).json({ success: false, error: 'Please provide a natural language prompt.' });
+    }
+
+    const text = prompt.toLowerCase();
+    const result = {
+      rawPrompt: prompt,
+      trigger: {
+        key: 'Lead Stage Changed',
+        label: 'Lead Stage Changed',
+        stage: 'Interested',
+      },
+      steps: [],
+      unsupportedActions: [],
+      canActivate: true,
+      suggestedName: '',
+    };
+
+    // 1. Identify Trigger
+    if (text.includes('customer becomes at risk') || text.includes('at risk')) {
+      result.trigger = { key: 'Customer Becomes At Risk', label: 'Customer Becomes At Risk', stage: 'At Risk' };
+      result.suggestedName = 'Automated Customer Retention Protocol';
+    } else if (text.includes('lead created') || text.includes('new lead')) {
+      result.trigger = { key: 'Lead Created', label: 'Lead Created', stage: 'New' };
+      result.suggestedName = 'New Lead Onboarding Flow';
+    } else if (text.includes('proposal sent') || text.includes('quote sent')) {
+      result.trigger = { key: 'Proposal Sent', label: 'Proposal Sent', stage: 'Proposal' };
+      result.suggestedName = 'Proposal Follow-Up Automation';
+    } else if (text.includes('ticket created') || text.includes('support ticket')) {
+      result.trigger = { key: 'Ticket Created', label: 'Ticket Created', stage: 'Open' };
+      result.suggestedName = 'Support Escalation Protocol';
+    } else {
+      let detectedStage = 'Interested';
+      if (text.includes('qualified')) detectedStage = 'Qualified';
+      else if (text.includes('closed won') || text.includes('won')) detectedStage = 'Closed Won';
+      else if (text.includes('contacted')) detectedStage = 'Contacted';
+
+      result.trigger = { key: 'Lead Stage Changed', label: `Lead Stage Changed -> ${detectedStage}`, stage: detectedStage };
+      result.suggestedName = `Lead ${detectedStage} Follow-Up Protocol`;
+    }
+
+    // 2. Identify Actions
+    if (text.includes('email') || text.includes('send them an email') || text.includes('mail')) {
+      result.steps.push({
+        type: 'Action',
+        config: {
+          actionType: 'Send Direct Marketing Email',
+          emailSubject: `Special Follow-up regarding ${result.trigger.stage}`,
+          emailBody: `<p>Hi there,</p><p>Thank you for connecting with us! We wanted to share an update regarding your account.</p>`,
+        },
+        label: 'Send Marketing Email',
+      });
+    }
+
+    // Check for unsupported channels (WhatsApp, SMS, etc.)
+    if (text.includes('whatsapp') || text.includes('whats app')) {
+      result.unsupportedActions.push({
+        requested: 'WhatsApp Message',
+        reason: 'WhatsApp API integration is not currently connected to this workspace.',
+        alternatives: ['Send Marketing Email', 'Create Task', 'Notify Account Owner'],
+      });
+      result.canActivate = false;
+    }
+    if (text.includes('sms') || text.includes('text message')) {
+      result.unsupportedActions.push({
+        requested: 'SMS Message',
+        reason: 'No SMS provider gateway configured for this workspace.',
+        alternatives: ['Send Marketing Email', 'Create Task', 'Notify Account Owner'],
+      });
+      result.canActivate = false;
+    }
+
+    // Task creation action
+    if (text.includes('task') || text.includes('follow-up') || text.includes('reminder')) {
+      let delayDays = 2;
+      const dayMatch = text.match(/(\d+)\s*day/);
+      if (dayMatch && dayMatch[1]) delayDays = parseInt(dayMatch[1], 10);
+
+      result.steps.push({
+        type: 'Delay',
+        config: {
+          delayDuration: delayDays,
+          delayUnit: 'Days',
+        },
+        label: `Wait ${delayDays} Days`,
+      });
+
+      result.steps.push({
+        type: 'Action',
+        config: {
+          actionType: 'Create Task',
+          taskTitle: `Follow-up with contact regarding ${result.trigger.stage} status`,
+          taskPriority: 'High',
+        },
+        label: 'Create Follow-Up Task',
+      });
+    }
+
+    // Fallback if no actions specified
+    if (result.steps.length === 0 && result.unsupportedActions.length === 0) {
+      result.steps.push({
+        type: 'Action',
+        config: {
+          actionType: 'Send Direct Marketing Email',
+          emailSubject: `Update regarding ${result.trigger.stage}`,
+          emailBody: `<p>Hi there,</p><p>We wanted to follow up with key information regarding your account.</p>`,
+        },
+        label: 'Send Marketing Email',
+      });
+    }
+
+    res.json({ success: true, data: result });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 module.exports = {
   getWorkflows,
   createWorkflow,
@@ -265,4 +421,6 @@ module.exports = {
   deleteWorkflow,
   getWorkflowLogs,
   triggerWorkflowEvents,
+  getCapabilityRegistry,
+  parseWorkflowIntent,
 };
