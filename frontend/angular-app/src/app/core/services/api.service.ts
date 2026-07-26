@@ -558,5 +558,19 @@ export class ApiService {
   createCustomerFollowUp(customerId: string, data: any): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/retention/customers/${customerId}/followup`, data);
   }
+
+  // 22. Generic HTTP Methods & Marketing Services
+  get(endpoint: string, options?: any): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`, options);
+  }
+  post(endpoint: string, body: any, options?: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`, body, options);
+  }
+  put(endpoint: string, body: any, options?: any): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`, body, options);
+  }
+  delete(endpoint: string, options?: any): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`, options);
+  }
 }
 

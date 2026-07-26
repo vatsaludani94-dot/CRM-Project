@@ -106,6 +106,10 @@ export const routes: Routes = [
         path: 'growth/storage',
         loadComponent: () => import('./features/drive-center/drive-center.component').then(m => m.DriveCenterComponent)
       },
+      {
+        path: 'growth/marketing',
+        loadComponent: () => import('./features/marketing/marketing.component').then(m => m.MarketingComponent)
+      },
 
       // INSIGHTS
       {
@@ -210,7 +214,11 @@ export const routes: Routes = [
       },
       {
         path: 'sms-marketing',
-        loadComponent: () => import('./features/sms-marketing/sms-marketing.component').then(m => m.SmsMarketingComponent)
+        loadComponent: () => import('./features/marketing/marketing.component').then(m => m.MarketingComponent)
+      },
+      {
+        path: 'marketing',
+        loadComponent: () => import('./features/marketing/marketing.component').then(m => m.MarketingComponent)
       },
       {
         path: 'tasks',

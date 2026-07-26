@@ -17,7 +17,7 @@ const ActivitySchema = new mongoose.Schema({
   },
   module: {
     type: String,
-    enum: ['Authentication', 'Customer', 'Lead', 'Ticket', 'Employee', 'Payroll', 'AI', 'System', 'Security'],
+    enum: ['Authentication', 'Customer', 'Lead', 'Ticket', 'Employee', 'Payroll', 'AI', 'System', 'Security', 'Marketing'],
     required: true,
   },
   ipAddress: String,

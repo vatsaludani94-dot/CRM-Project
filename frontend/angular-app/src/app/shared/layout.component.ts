@@ -164,6 +164,10 @@ export interface SearchResultItem {
               <span class="material-icons">cloud_upload</span>
               <span>Cloud Storage</span>
             </a>
+            <a routerLink="/growth/marketing" routerLinkActive="active-link" class="nav-item">
+              <span class="material-icons">campaign</span>
+              <span>Marketing Automation</span>
+            </a>
           </div>
 
           <!-- Group 6: INSIGHTS -->

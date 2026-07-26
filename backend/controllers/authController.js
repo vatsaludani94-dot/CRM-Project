@@ -35,12 +35,9 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ success: false, error: 'User already exists with this email' });
     }
 
-    let targetRole = role || 'super_admin';
-    if (role && ['super_admin', 'manager'].includes(role)) {
-      if (!req.user || req.user.role !== 'super_admin') {
-        // If an unauthenticated user registers a new workspace, grant super_admin to workspace creator
-        targetRole = 'super_admin';
-      }
+    let targetRole = 'workspace_owner';
+    if (req.user && req.user.role === 'super_admin' && role) {
+      targetRole = role;
     }
 
     const user = await User.create({

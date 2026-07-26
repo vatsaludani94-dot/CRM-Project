@@ -66,6 +66,58 @@ const executeWorkflowStep = async (step, entityType, entityId, tenantId) => {
           break;
 
         case 'Send Email':
+        case 'Send Direct Marketing Email':
+        case 'Enroll in Marketing Campaign': {
+          let recipientObj;
+          if (entityType === 'Lead') recipientObj = await Lead.findOne({ _id: entityId, tenant: tenantId });
+          else if (entityType === 'Customer') recipientObj = await Customer.findOne({ _id: entityId, tenant: tenantId });
+
+          if (recipientObj && recipientObj.email) {
+            const recipientEmail = recipientObj.email.trim().toLowerCase();
+
+            // Check unsubscribe status before sending
+            const MarketingSubscription = require('../models/MarketingSubscription');
+            const isUnsubscribed = await MarketingSubscription.findOne({ tenant: tenantId, email: recipientEmail, status: 'unsubscribed' });
+
+            if (isUnsubscribed) {
+              console.log(`[Workflow Marketing] Recipient ${recipientEmail} is unsubscribed. Skipping marketing action.`);
+              execution.error = `Recipient ${recipientEmail} is unsubscribed from marketing communications.`;
+              execution.success = false;
+            } else {
+              const { getWorkspaceIdentity } = require('../utils/tenantScope');
+              const { sendOutboundEmail } = require('../services/invoice-email.service');
+              const identity = await getWorkspaceIdentity(tenantId);
+
+              const subject = config.emailSubject || `Special Update for ${recipientObj.contactName || recipientObj.contactPerson || 'you'}`;
+              const body = config.emailBody || `<p>Hi ${recipientObj.contactName || recipientObj.contactPerson || 'there'},</p><p>We wanted to share an update regarding your relationship with ${identity.communicationEmailName || 'our team'}.</p>`;
+
+              await sendOutboundEmail({
+                to: recipientEmail,
+                subject,
+                html: body,
+                fromName: identity.communicationEmailName,
+                fromEmail: identity.communicationEmail,
+              });
+
+              if (entityType === 'Lead') {
+                recipientObj.activityLog.push({
+                  type: 'System',
+                  description: `Workflow Triggered Email Sent: "${subject}"`,
+                });
+                await recipientObj.save();
+              } else if (entityType === 'Customer') {
+                recipientObj.activities.push({
+                  type: 'Email',
+                  description: `Workflow Triggered Email Sent: "${subject}"`,
+                });
+                await recipientObj.save();
+              }
+              console.log(`[Workflow Marketing] Successfully delivered automated email to ${recipientEmail}`);
+            }
+          }
+          break;
+        }
+
         case 'Send SMS':
         case 'Send WhatsApp Message':
           console.log(`[Workflow Outbound] Sending ${config.actionType} to entity: ${entityId}`);

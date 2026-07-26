@@ -31,6 +31,29 @@ const getLeads = async (req, res) => {
 };
 
 /**
+ * @desc    Get lead by ID
+ * @route   GET /api/leads/:id
+ * @access  Private (Admin, Manager, Employee)
+ */
+const getLeadById = async (req, res) => {
+  try {
+    const tenantFilter = getTenantFilter(req);
+    const lead = await Lead.findOne({ _id: req.params.id, ...tenantFilter })
+      .populate('assignedEmployee', 'name email role department')
+      .populate('notes.createdBy', 'name email')
+      .populate('activityLog.performedBy', 'name email');
+
+    if (!lead) {
+      return res.status(404).json({ success: false, error: 'Lead not found' });
+    }
+
+    res.json({ success: true, data: lead });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
+  }
+};
+
+/**
  * @desc    Create new lead
  * @route   POST /api/leads
  * @access  Private (Admin, Manager, Employee)
@@ -61,12 +84,16 @@ const createLead = async (req, res) => {
     });
 
     // Predict AI conversion score
-    lead.aiScore = await AIService.scoreLead({
-      leadSource: lead.leadSource,
-      expectedRevenue: lead.expectedRevenue,
-      stage: lead.stage,
-      notesCount: 0
-    });
+    try {
+      lead.aiScore = await AIService.scoreLead({
+        leadSource: lead.leadSource,
+        expectedRevenue: lead.expectedRevenue,
+        stage: lead.stage,
+        notesCount: 0
+      });
+    } catch (aiErr) {
+      lead.aiScore = 50;
+    }
 
     await lead.save();
 
@@ -656,6 +683,7 @@ const refreshLeadScore = async (req, res) => {
 
 module.exports = {
   getLeads,
+  getLeadById,
   createLead,
   updateLead,
   transitionLead,

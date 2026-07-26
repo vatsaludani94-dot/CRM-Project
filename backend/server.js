@@ -141,6 +141,11 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/updates', updateRoutes);
 app.use('/api/pipeline', pipelineRoutes);
 app.use('/api/retention', retentionRoutes);
+app.use('/api/marketing', require('./routes/marketingRoutes'));
+
+// Initialize Background Marketing Scheduler
+const { startMarketingScheduler } = require('./services/marketingScheduler');
+startMarketingScheduler();
 
 // Simple test root route
 app.get('/', (req, res) => {

@@ -13,8 +13,8 @@ const getTenantFilter = (req) => {
     throw error;
   }
 
-  // Platform super_admin has global access unless a specific tenant scope is passed
-  if (req.user.role === 'super_admin') {
+  // Platform global super_admin (unassociated or with explicit query) has global access
+  if (req.user.role === 'super_admin' && !req.user.tenant) {
     return req.query && req.query.tenantId ? { tenant: req.query.tenantId } : {};
   }
 
@@ -73,7 +73,7 @@ const getWorkspaceIdentity = async (tenantId, userReq) => {
     const ownerEmail = tenant.owner ? tenant.owner.email : userReq?.email;
     const communicationEmail = tenant.communicationEmail || ownerEmail || 'contact@grownxcrm.com';
     const communicationEmailName = tenant.communicationEmailName || workspaceName;
-    const communicationEmailStatus = tenant.communicationEmailStatus || (tenant.communicationEmail ? 'verified' : 'unconfigured');
+    const communicationEmailStatus = (tenant.communicationEmailStatus && tenant.communicationEmailStatus !== 'unconfigured') ? tenant.communicationEmailStatus : (communicationEmail ? 'verified' : 'unconfigured');
 
     return {
       tenantId: tenant._id,

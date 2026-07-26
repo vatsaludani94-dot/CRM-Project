@@ -22,6 +22,7 @@ router.route('/')
   .post(createLead);
 
 router.route('/:id')
+  .get(require('../controllers/leadController').getLeadById)
   .put(updateLead)
   .delete(deleteLead);
 
