@@ -55,6 +55,7 @@ const paymentRoutes = require('./routes/paymentRoutes');
 const updateRoutes = require('./routes/updateRoutes');
 const onboardingRoutes = require('./routes/onboardingRoutes');
 const pipelineRoutes = require('./routes/pipelineRoutes');
+const retentionRoutes = require('./routes/retentionRoutes');
 
 // Load Rate Limiters
 const { apiLimiter } = require('./middleware/rateLimitMiddleware');
@@ -139,6 +140,7 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/updates', updateRoutes);
 app.use('/api/pipeline', pipelineRoutes);
+app.use('/api/retention', retentionRoutes);
 
 // Simple test root route
 app.get('/', (req, res) => {

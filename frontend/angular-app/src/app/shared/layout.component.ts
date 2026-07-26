@@ -113,6 +113,10 @@ export interface SearchResultItem {
               <span class="material-icons">receipt_long</span>
               <span>Proposals & Quotes</span>
             </a>
+            <a routerLink="/sales/retention" routerLinkActive="active-link" class="nav-item">
+              <span class="material-icons">favorite</span>
+              <span>Retention & Health</span>
+            </a>
           </div>
 
           <!-- Group 3: COMMUNICATIONS -->
@@ -121,6 +125,10 @@ export interface SearchResultItem {
             <a routerLink="/communications/inbox" routerLinkActive="active-link" class="nav-item">
               <span class="material-icons">forum</span>
               <span>Unified Inbox</span>
+            </a>
+            <a routerLink="/tickets" routerLinkActive="active-link" class="nav-item">
+              <span class="material-icons">confirmation_number</span>
+              <span>Support Desk</span>
             </a>
           </div>
 

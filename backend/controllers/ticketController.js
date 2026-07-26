@@ -173,6 +173,14 @@ const createTicket = async (req, res) => {
       }
     }
 
+    // Recalculate Customer Health
+    try {
+      const { calculateCustomerHealth } = require('../services/customerHealthService');
+      await calculateCustomerHealth(targetCustomerId, tenantId);
+      const { triggerWorkflowEvents } = require('./workflowController');
+      await triggerWorkflowEvents('ticket.created', 'Ticket', ticket._id, tenantId);
+    } catch (hErr) {}
+
     res.status(201).json({ success: true, data: ticket });
   } catch (error) {
     console.error('Ticket creation error:', error.message);
@@ -181,7 +189,7 @@ const createTicket = async (req, res) => {
 };
 
 /**
- * @desc    Update ticket status/priority
+ * @desc    Update ticket status/priority with controlled transitions
  * @route   PUT /api/tickets/:id
  * @access  Private (Admin, Manager, Employee)
  */
@@ -196,6 +204,7 @@ const updateTicket = async (req, res) => {
     const { status, priority, assignedEmployee, category } = req.body;
     let statusChanged = false;
     let assignmentChanged = false;
+    const oldStatus = ticket.status;
 
     if (assignedEmployee) {
       const emp = await User.findOne({ _id: assignedEmployee, ...tenantFilter });
@@ -208,6 +217,23 @@ const updateTicket = async (req, res) => {
     if (priority) ticket.priority = priority;
 
     if (status && ticket.status !== status) {
+      const validTransitions = {
+        'Open': ['Assigned', 'In Progress', 'Closed'],
+        'Assigned': ['Open', 'In Progress', 'Closed'],
+        'In Progress': ['Waiting for Customer', 'Resolved', 'Open'],
+        'Waiting for Customer': ['In Progress', 'Resolved', 'Closed'],
+        'Resolved': ['Closed', 'In Progress'],
+        'Closed': ['In Progress', 'Open']
+      };
+
+      const allowed = validTransitions[ticket.status] || [];
+      if (!allowed.includes(status)) {
+        return res.status(400).json({
+          success: false,
+          error: `Invalid ticket status transition from "${ticket.status}" to "${status}"`
+        });
+      }
+
       ticket.status = status;
       statusChanged = true;
     }
@@ -236,11 +262,29 @@ const updateTicket = async (req, res) => {
     await Activity.create({
       user: req.user._id,
       action: 'Ticket Updated',
-      details: `Ticket ${ticket.ticketCode} status updated to ${ticket.status} by ${req.user.name}.`,
+      details: `Ticket ${ticket.ticketCode} status updated from ${oldStatus} to ${ticket.status} by ${req.user.name}.`,
       module: 'Ticket',
       ipAddress: req.ip,
       tenant: ticket.tenant,
     });
+
+    // Recalculate customer health & trigger workflows
+    try {
+      const customerId = ticket.customer?._id || ticket.customer;
+      if (customerId) {
+        const { calculateCustomerHealth } = require('../services/customerHealthService');
+        await calculateCustomerHealth(customerId, ticket.tenant);
+      }
+      const { triggerWorkflowEvents } = require('./workflowController');
+      if (statusChanged) {
+        await triggerWorkflowEvents('ticket.status_changed', 'Ticket', ticket._id, ticket.tenant);
+        if (ticket.status === 'Resolved') {
+          await triggerWorkflowEvents('ticket.resolved', 'Ticket', ticket._id, ticket.tenant);
+        } else if (ticket.status === 'Closed') {
+          await triggerWorkflowEvents('ticket.closed', 'Ticket', ticket._id, ticket.tenant);
+        }
+      }
+    } catch (hErr) {}
 
     if (assignmentChanged && assignedEmployee) {
       const notification = await Notification.create({

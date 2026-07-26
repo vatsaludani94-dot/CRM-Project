@@ -66,6 +66,10 @@ export const routes: Routes = [
         path: 'sales/proposals',
         loadComponent: () => import('./features/documents-invoices/documents-invoices.component').then(m => m.DocumentsInvoicesComponent)
       },
+      {
+        path: 'sales/retention',
+        loadComponent: () => import('./features/retention/retention.component').then(m => m.RetentionComponent)
+      },
 
       // COMMUNICATIONS
       {
@@ -223,6 +227,10 @@ export const routes: Routes = [
       {
         path: 'settings',
         loadComponent: () => import('./features/settings/settings.component').then(m => m.SettingsComponent)
+      },
+      {
+        path: 'retention',
+        loadComponent: () => import('./features/retention/retention.component').then(m => m.RetentionComponent)
       }
     ]
   },

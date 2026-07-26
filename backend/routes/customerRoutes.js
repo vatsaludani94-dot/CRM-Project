@@ -34,5 +34,7 @@ router.get('/:id/timeline', getCustomerTimeline);
 // Customer Profile actions
 router.post('/:id/notes', authorize('super_admin', 'manager', 'employee'), addCustomerNote);
 router.post('/:id/activities', authorize('super_admin', 'manager', 'employee'), logCustomerActivity);
+router.post('/:id/health/recalculate', authorize('super_admin', 'manager', 'employee'), require('../controllers/retentionController').recalculateHealth);
+router.post('/:id/followup', authorize('super_admin', 'manager', 'employee'), require('../controllers/retentionController').createCustomerFollowUp);
 
 module.exports = router;

@@ -87,6 +87,73 @@ export interface TimelineEvent {
         </div>
       </div>
 
+      <!-- Customer Health & Retention Header Card -->
+      <div *ngIf="customer360().health" class="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+          <div class="flex items-center gap-3">
+            <div [ngClass]="{
+              'bg-emerald-50 text-emerald-600 border-emerald-200': customer360().health.healthStatus === 'Healthy',
+              'bg-sky-50 text-sky-600 border-sky-200': customer360().health.healthStatus === 'Stable',
+              'bg-amber-50 text-amber-700 border-amber-200': customer360().health.healthStatus === 'At Risk',
+              'bg-rose-50 text-rose-600 border-rose-200': customer360().health.healthStatus === 'Critical'
+            }" class="p-3 border rounded-2xl flex items-center justify-center">
+              <span class="material-icons text-3xl">favorite</span>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-black text-slate-400 uppercase tracking-wider">Customer Health Index</span>
+                <span [ngClass]="{
+                  'bg-emerald-100 text-emerald-800': customer360().health.healthStatus === 'Healthy',
+                  'bg-sky-100 text-sky-800': customer360().health.healthStatus === 'Stable',
+                  'bg-amber-100 text-amber-800': customer360().health.healthStatus === 'At Risk',
+                  'bg-rose-100 text-rose-800': customer360().health.healthStatus === 'Critical'
+                }" class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase">
+                  {{ customer360().health.healthStatus }}
+                </span>
+              </div>
+              <h2 class="text-2xl font-black text-slate-900 mt-0.5">{{ customer360().health.healthScore }}/100</h2>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button (click)="recalculateHealth()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs flex items-center gap-1 transition-all cursor-pointer">
+              <span class="material-icons text-sm">sync</span> Recalculate Health Score
+            </button>
+          </div>
+        </div>
+
+        <!-- Explainable Factors Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <!-- Positive Factors -->
+          <div class="bg-emerald-50/50 border border-emerald-100 rounded-xl p-3.5 space-y-2">
+            <h4 class="font-extrabold text-emerald-800 text-[11px] uppercase tracking-wider flex items-center gap-1">
+              <span class="material-icons text-sm">add_circle</span> Positive Health Drivers
+            </h4>
+            <div *ngIf="(customer360().health.positiveFactors || []).length === 0" class="text-slate-400 text-[11px]">No positive drivers detected.</div>
+            <ul class="space-y-1">
+              <li *ngFor="let pos of customer360().health.positiveFactors" class="flex items-center justify-between text-emerald-900 font-semibold">
+                <span>{{ pos.factor }}</span>
+                <span class="font-black text-emerald-700">+{{ pos.impact }}</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Risk Factors -->
+          <div class="bg-rose-50/50 border border-rose-100 rounded-xl p-3.5 space-y-2">
+            <h4 class="font-extrabold text-rose-800 text-[11px] uppercase tracking-wider flex items-center gap-1">
+              <span class="material-icons text-sm">warning</span> Risk & Churn Factors
+            </h4>
+            <div *ngIf="(customer360().health.riskFactors || []).length === 0" class="text-emerald-600 text-[11px] font-bold">Zero risk factors identified! Account in good standing.</div>
+            <ul class="space-y-1">
+              <li *ngFor="let risk of customer360().health.riskFactors" class="flex items-center justify-between text-rose-900 font-semibold">
+                <span>{{ risk.factor }}</span>
+                <span class="font-black text-rose-700">{{ risk.impact }}</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
       <!-- Main Layout Grid -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
@@ -639,6 +706,18 @@ export class Customer360Component implements OnInit {
       },
       error: (err) => {
         alert(`Failed to delete document: ${err.error?.error || err.message}`);
+      }
+    });
+  }
+
+  recalculateHealth() {
+    const customerId = this.customer360()?.customer?._id;
+    if (!customerId) return;
+    this.apiService.recalculateCustomerHealth(customerId).subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.load360(customerId);
+        }
       }
     });
   }

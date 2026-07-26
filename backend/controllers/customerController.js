@@ -236,6 +236,21 @@ const getCustomer360 = async (req, res) => {
       });
     });
 
+    const { calculateCustomerHealth } = require('../services/customerHealthService');
+    const health = await calculateCustomerHealth(customer._id, getTenantId(req));
+
+    if (health && health.history) {
+      health.history.forEach(h => {
+        timeline.push({
+          event: 'Health Score Evaluated',
+          description: `Customer health calculated as ${h.score}/100 (${h.status}). ${h.reason || ''}`,
+          date: h.changedAt,
+          type: 'health',
+          icon: h.status === 'Healthy' ? 'favorite' : (h.status === 'Stable' ? 'thumb_up' : (h.status === 'At Risk' ? 'warning' : 'dangerous'))
+        });
+      });
+    }
+
     // Sort timeline chronologically (newest first)
     timeline.sort((a, b) => new Date(b.date) - new Date(a.date));
 
@@ -273,12 +288,15 @@ const getCustomer360 = async (req, res) => {
       success: true,
       data: {
         customer,
+        health,
         tickets,
         revenueGenerated: customer.revenueGenerated,
         commercialSummary,
         proposals: documentsList.filter(d => d.type === 'Proposal'),
         invoices: documentsList.filter(d => d.type === 'Invoice'),
-        timeline
+        timeline,
+        tasks: tasksList,
+        emails: emailsList
       }
     });
   } catch (error) {

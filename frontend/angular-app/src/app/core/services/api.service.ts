@@ -538,5 +538,25 @@ export class ApiService {
   askWebsiteAssistant(question: string): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/ai/website-assistant`, { question });
   }
+
+  // Retention & Customer Health Services
+  getRetentionDashboard(): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/retention/dashboard`);
+  }
+  getSegmentedCustomers(params?: any): Observable<any> {
+    let httpParams = new HttpParams();
+    if (params) {
+      Object.keys(params).forEach(k => {
+        if (params[k]) httpParams = httpParams.set(k, params[k]);
+      });
+    }
+    return this.http.get<any>(`${this.baseUrl}/retention/customers`, { params: httpParams });
+  }
+  recalculateCustomerHealth(customerId: string): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/retention/customers/${customerId}/health/recalculate`, {});
+  }
+  createCustomerFollowUp(customerId: string, data: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/retention/customers/${customerId}/followup`, data);
+  }
 }
 
