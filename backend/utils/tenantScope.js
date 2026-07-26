@@ -82,7 +82,11 @@ const getWorkspaceIdentity = async (tenantId, userReq) => {
       communicationEmailName,
       communicationEmailStatus,
       theme: tenant.theme || 'light',
+      logo: tenant.whiteLabelSettings?.logo || '',
+      primaryColor: tenant.whiteLabelSettings?.primaryColor || '#6366f1',
+      secondaryColor: tenant.whiteLabelSettings?.secondaryColor || '#0f172a',
       whiteLabelSettings: tenant.whiteLabelSettings || {},
+      smtpConfigured: !!(tenant.smtpSettings && tenant.smtpSettings.host),
     };
   } catch (err) {
     return {
@@ -91,6 +95,10 @@ const getWorkspaceIdentity = async (tenantId, userReq) => {
       communicationEmailName: userReq?.name || 'GrownX Support',
       communicationEmailStatus: 'unconfigured',
       theme: 'light',
+      logo: '',
+      primaryColor: '#6366f1',
+      secondaryColor: '#0f172a',
+      smtpConfigured: false,
     };
   }
 };

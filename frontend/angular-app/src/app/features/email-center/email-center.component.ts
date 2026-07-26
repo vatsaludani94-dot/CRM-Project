@@ -2,6 +2,7 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
+import { AuthService } from '../../core/services/auth.service';
 
 interface EmailTemplate {
   name: string;
@@ -245,6 +246,7 @@ interface EmailSequence {
 })
 export class EmailCenterComponent implements OnInit {
   private apiService = inject(ApiService);
+  private authService = inject(AuthService);
 
   gmailConnected = signal<boolean>(false);
   connectedEmail = signal<string>('');
@@ -312,14 +314,16 @@ export class EmailCenterComponent implements OnInit {
   }
 
   connectGoogleOAuth() {
+    const currentUser = this.authService.currentUserValue;
+    const connectEmail = currentUser?.email || 'user.connected@domain.com';
     this.apiService.getOAuthUrl().subscribe({
       next: (res) => {
         if (res.success && res.url) {
-          this.apiService.connectGmail('owner.workspace@apextech.com', 'mock_code').subscribe({
+          this.apiService.connectGmail(connectEmail, 'oauth_code_live').subscribe({
             next: (authRes) => {
               if (authRes.success) {
                 this.gmailConnected.set(true);
-                this.connectedEmail.set('owner.workspace@apextech.com');
+                this.connectedEmail.set(connectEmail);
                 this.loadHistory();
               }
             }

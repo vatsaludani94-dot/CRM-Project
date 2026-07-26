@@ -8,9 +8,13 @@ const protect = async (req, res, next) => {
     req.headers.authorization &&
     req.headers.authorization.startsWith('Bearer')
   ) {
-    try {
-      token = req.headers.authorization.split(' ')[1];
+    token = req.headers.authorization.split(' ')[1];
+  } else if (req.query && req.query.token) {
+    token = req.query.token;
+  }
 
+  if (token) {
+    try {
       if (!process.env.JWT_SECRET) {
         throw new Error('JWT_SECRET environment variable is missing');
       }
@@ -47,16 +51,14 @@ const protect = async (req, res, next) => {
         });
       }
 
-      next();
+      return next();
     } catch (error) {
       console.error('JWT Verification Error:', error.message);
       return res.status(401).json({ success: false, error: 'Not authorized, token failed' });
     }
   }
 
-  if (!token) {
-    return res.status(401).json({ success: false, error: 'Not authorized, no token provided' });
-  }
+  return res.status(401).json({ success: false, error: 'Not authorized, no token provided' });
 };
 
 const requireTenant = (req, res, next) => {

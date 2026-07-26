@@ -238,6 +238,7 @@ const updateWorkspaceSettings = async (req, res) => {
         primaryColor: primaryColor || tenant.whiteLabelSettings?.primaryColor || '#6366f1',
         secondaryColor: secondaryColor || tenant.whiteLabelSettings?.secondaryColor || '#0f172a',
       };
+      tenant.markModified('whiteLabelSettings');
     }
 
     await tenant.save();

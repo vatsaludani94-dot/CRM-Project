@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { ApiService } from '../../core/services/api.service';
+import { WorkspaceContextService } from '../../core/services/workspace-context.service';
 
 @Component({
   selector: 'app-settings',
@@ -354,14 +355,19 @@ export class SettingsComponent implements OnInit {
     });
   }
 
+  private workspaceContext = inject(WorkspaceContextService);
+
   saveWorkspaceSettings() {
     this.message.set(null);
     this.errorMessage.set(null);
 
     this.apiService.updateWorkspaceSettings(this.workspaceForm).subscribe({
       next: (res: any) => {
-        if (res.success) {
+        if (res.success && res.data) {
+          const updatedIdentity = res.data;
           this.message.set('Workspace Identity & Outbound Communication Email updated successfully!');
+          this.authService.updateStoredUserTenant(updatedIdentity, updatedIdentity);
+          this.workspaceContext.setCustomBranding(updatedIdentity);
           this.loadWorkspaceSettings();
         }
       },

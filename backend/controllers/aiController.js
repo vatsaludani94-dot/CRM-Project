@@ -254,7 +254,7 @@ const getWebsiteAssistantResponse = async (req, res) => {
     }
 
     if (!userGuide) {
-      userGuide = "GrownX CRM is a multi-tenant CRM SaaS platform developed by GrownX Technologies. It features visual workflow builders, Gmail sync, Google Drive sync, website builders, funnel trackers, forms, surveys, SMS marketing, team chat channels, documents, proposals, AI meeting summary, and pipeline forecasting.";
+      userGuide = "GrownX CRM is a multi-tenant CRM SaaS platform developed by GrownX Technologies. It features visual workflow builders, Gmail sync, Google Drive sync, website builders, configurable sales pipelines, forms, surveys, SMS marketing, team chat channels, documents, proposals, AI meeting summary, and pipeline forecasting.";
     }
 
     if (AIService.hasApiKey()) {

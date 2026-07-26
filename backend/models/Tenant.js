@@ -61,6 +61,14 @@ const TenantSchema = new mongoose.Schema(
       primaryColor: { type: String, default: '#6366f1' },
       secondaryColor: { type: String, default: '#0f172a' },
     },
+    smtpSettings: {
+      host: { type: String, default: '' },
+      port: { type: Number, default: 587 },
+      user: { type: String, default: '' },
+      pass: { type: String, default: '' },
+      secure: { type: Boolean, default: false },
+      verified: { type: Boolean, default: false },
+    },
   },
   {
     timestamps: true,

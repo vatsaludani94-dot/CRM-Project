@@ -459,7 +459,16 @@ export class ApiService {
     return this.http.put<any>(`${this.baseUrl}/documents/${id}`, data);
   }
   getDocumentPdfDownloadUrl(id: string): string {
-    return `${this.baseUrl}/documents/${id}/pdf`;
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('nexus_user') : null;
+    let token = '';
+    if (saved) {
+      try { token = JSON.parse(saved).token || ''; } catch (e) {}
+    }
+    return `${this.baseUrl}/documents/${id}/pdf${token ? '?token=' + token : ''}`;
+  }
+
+  viewDocumentPdfBlob(id: string): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/documents/${id}/pdf`, { responseType: 'blob' });
   }
   transitionDocument(id: string, targetStatus: string): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/documents/${id}/transition`, { targetStatus });

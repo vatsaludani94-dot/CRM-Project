@@ -26,7 +26,7 @@ const handleOAuthCallback = async (req, res) => {
       accessToken: 'mock_access_token_' + Date.now(),
       refreshToken: 'mock_refresh_token_' + Date.now(),
       emailSyncActive: true,
-      connectedEmail: email || 'user@grownox.com',
+      connectedEmail: email || req.user.email,
     };
     await user.save();
 
@@ -43,7 +43,7 @@ const sendEmail = async (req, res) => {
     const { sendOutboundEmail } = require('../services/invoice-email.service');
     const tenantFilter = getTenantFilter(req);
     const tenantId = getTenantId(req);
-    const { subject, body, to, cc, bcc, customerId, leadId } = req.body;
+    const { subject, body, to, cc, bcc, customerId, leadId, attachments } = req.body;
 
     if (!to || !to.trim() || !/^\S+@\S+\.\S+$/.test(to.trim())) {
       return res.status(400).json({ success: false, error: 'Valid recipient email address is required' });
@@ -78,6 +78,7 @@ const sendEmail = async (req, res) => {
         to: to.trim(),
         subject: subject.trim(),
         html: body,
+        attachments: attachments || [],
         fromName,
         fromEmail: fromAddress,
       });

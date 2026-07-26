@@ -383,9 +383,9 @@ interface ChatMessage {
           </div>
           
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div class="bg-white border border-[#e7e5e4] shadow-sm border border-[#e7e5e4] p-6 rounded-2xl hover:border-slate-800 hover:-translate-y-0.5 transition-all duration-300" *ngFor="let feat of featuresList">
+            <div class="bg-white border border-[#e7e5e4] shadow-sm p-6 rounded-2xl hover:border-slate-800 hover:-translate-y-0.5 transition-all duration-300" *ngFor="let feat of featuresList">
               <span class="material-icons text-[#1c1917] text-3xl mb-4 bg-amber-500/10 animate-floating-orb p-3 rounded-xl inline-block">{{ feat.icon }}</span>
-              <h4 class="font-extrabold text-white mb-2">{{ feat.title }}</h4>
+              <h4 class="font-extrabold text-[#1c1917] mb-2 text-base">{{ feat.title }}</h4>
               <p class="text-xs text-[#44403c] leading-relaxed">{{ feat.desc }}</p>
             </div>
           </div>
@@ -857,7 +857,7 @@ export class PublicWebsiteComponent implements OnInit {
     { icon: 'mail', title: 'Gmail Integration', desc: 'Secure Google OAuth inbox connector syncing logs directly into Customer 360 timelines.' },
     { icon: 'cloud', title: 'Google Drive Sync', desc: 'Automatic provisions root company folder maps per customer (Contracts, Invoices, Proposals subfolders).' },
     { icon: 'web', title: 'Website Builder', desc: 'Drag-and-drop builder components, custom domain maps, and 100+ professional templates.' },
-    { icon: 'filter_alt', title: 'Funnel Tracker', desc: 'Chain pages into webinar, lead capture, and product checkout funnels with statistics counters.' },
+    { icon: 'bar_chart', title: 'Sales Pipeline & Kanban', desc: 'Visual Kanban pipeline stages, stage probability weighting, and lead conversion workflows.' },
     { icon: 'assignment', title: 'Forms & Surveys', desc: 'HTML5 Signature options, conditional routing logic, and quiz scoring sheets.' },
     { icon: 'sms', title: 'SMS campaigns', desc: 'SMS templates broadcaster, scheduled deliveries, and audience segments manager.' },
     { icon: 'chat', title: 'Slack-style Chat', desc: 'Direct DMs, mentions, file sharing, and company announcement channels.' },

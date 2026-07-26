@@ -248,7 +248,7 @@ const sendOwnerSalesAlertEmail = async ({ buyerName, buyerEmail, planName, amoun
 const sendOutboundEmail = async ({ to, subject, html, text, attachments, fromName, fromEmail }) => {
   const transporter = createTransporter();
   
-  const senderEmail = fromEmail || process.env.SMTP_FROM || process.env.SMTP_USER || 'grownxcrm@gmail.com';
+  const senderEmail = fromEmail || process.env.SMTP_FROM || process.env.SMTP_USER || 'contact@grownxcrm.com';
   const senderName = fromName || 'GrownX CRM';
   const fromFormatted = `"${senderName}" <${senderEmail}>`;
 

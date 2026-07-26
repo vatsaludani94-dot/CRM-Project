@@ -13,6 +13,7 @@ export interface UserProfile {
   token?: string;
   profilePicture?: string;
   tenant?: any;
+  workspaceIdentity?: any;
 }
 
 @Injectable({
@@ -244,7 +245,43 @@ export class AuthService {
     );
   }
 
+  updateStoredUserTenant(updatedTenant: any, workspaceIdentity: any) {
+    const cur = this.currentUserValue;
+    if (cur) {
+      const updatedUser = {
+        ...cur,
+        tenant: {
+          ...(typeof cur.tenant === 'object' ? cur.tenant : {}),
+          ...updatedTenant,
+        },
+        workspaceIdentity: {
+          ...(cur.workspaceIdentity || {}),
+          ...workspaceIdentity,
+        },
+      };
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('nexus_user', JSON.stringify(updatedUser));
+      }
+      this.currentUserSubject.next(updatedUser);
+      this.userSignal.set(updatedUser);
+    }
+  }
+
   getMe(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/me`);
+    return this.http.get<any>(`${this.apiUrl}/me`).pipe(
+      map((res: any) => {
+        if (res && res.success && res.data) {
+          const freshUser = res.data;
+          const currentToken = this.token;
+          const updatedUser = { ...freshUser, token: freshUser.token || currentToken };
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('nexus_user', JSON.stringify(updatedUser));
+          }
+          this.currentUserSubject.next(updatedUser);
+          this.userSignal.set(updatedUser);
+        }
+        return res;
+      })
+    );
   }
 }

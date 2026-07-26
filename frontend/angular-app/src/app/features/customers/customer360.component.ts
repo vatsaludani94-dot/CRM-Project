@@ -279,7 +279,8 @@ export interface TimelineEvent {
                         </span>
                       </td>
                       <td class="py-3 text-right space-x-2">
-                        <button *ngIf="prop.status === 'Draft'" (click)="openSendProposalModal(prop)" class="text-sky-600 hover:text-sky-500 font-bold text-[11px] bg-sky-50 px-2.5 py-1 rounded-lg">Send via Email</button>
+                        <a [href]="apiService.getDocumentPdfDownloadUrl(prop._id)" target="_blank" class="text-indigo-600 hover:text-indigo-500 font-bold text-[11px] bg-indigo-50 px-2 py-1 rounded-lg">View PDF</a>
+                        <button (click)="openSendProposalModal(prop)" class="text-sky-600 hover:text-sky-500 font-bold text-[11px] bg-sky-50 px-2 py-1 rounded-lg">Send PDF</button>
                         <button *ngIf="prop.status !== 'Accepted'" (click)="transitionDoc(prop._id, 'Accepted')" class="text-emerald-600 hover:text-emerald-500 font-bold text-[11px]">Accept & Invoice</button>
                         <button *ngIf="prop.status !== 'Rejected' && prop.status !== 'Accepted'" (click)="transitionDoc(prop._id, 'Rejected')" class="text-rose-500 hover:text-rose-400 font-bold text-[11px]">Reject</button>
                       </td>
@@ -306,9 +307,9 @@ export interface TimelineEvent {
                       <th class="pb-2">Invoice</th>
                       <th class="pb-2">Net Total</th>
                       <th class="pb-2">Paid</th>
-                      <th class="pb-2">Balance Due</th>
+                      <th class="pb-2">Balance / Credit</th>
                       <th class="pb-2">Status</th>
-                      <th class="pb-2 text-right">Payment Action</th>
+                      <th class="pb-2 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-slate-100">
@@ -319,27 +320,33 @@ export interface TimelineEvent {
                       </td>
                       <td class="py-3 font-bold text-slate-900">\${{ (inv.metadata?.netAmount || 0).toLocaleString() }}</td>
                       <td class="py-3 font-semibold text-emerald-600">\${{ (inv.metadata?.amountPaid || 0).toLocaleString() }}</td>
-                      <td class="py-3 font-bold text-rose-600">\${{ (inv.metadata?.amountDue !== undefined ? inv.metadata.amountDue : inv.metadata?.netAmount || 0).toLocaleString() }}</td>
+                      <td class="py-3 font-bold">
+                        <span *ngIf="(inv.metadata?.creditBalance || 0) > 0" class="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded font-bold">
+                          Paid in Advance: +{{ (inv.metadata?.creditBalance || 0).toLocaleString() }}
+                        </span>
+                        <span *ngIf="!(inv.metadata?.creditBalance > 0)" class="text-rose-600">
+                          \${{ (inv.metadata?.amountDue !== undefined ? inv.metadata.amountDue : inv.metadata?.netAmount || 0).toLocaleString() }}
+                        </span>
+                      </td>
                       <td class="py-3">
                         <span [ngClass]="{
-                          'bg-emerald-100 text-emerald-700': inv.status === 'Paid',
-                          'bg-amber-100 text-amber-700': inv.status === 'Partially_Paid',
+                          'bg-emerald-100 text-emerald-700': inv.status === 'Paid' || (inv.metadata?.creditBalance || 0) > 0,
+                          'bg-amber-100 text-amber-700': inv.status === 'Partially_Paid' && !(inv.metadata?.creditBalance > 0),
                           'bg-sky-100 text-sky-700': inv.status === 'Sent',
                           'bg-slate-100 text-slate-600': inv.status === 'Draft'
                         }" class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase">
-                          {{ inv.status }}
+                          {{ (inv.metadata?.creditBalance || 0) > 0 ? 'Paid in Advance' : inv.status }}
                         </span>
                       </td>
-                      <td class="py-3 text-right">
+                      <td class="py-3 text-right space-x-2">
+                        <a [href]="apiService.getDocumentPdfDownloadUrl(inv._id)" target="_blank" class="text-indigo-600 hover:text-indigo-500 font-bold text-[11px] bg-indigo-50 px-2 py-1 rounded-lg">View PDF</a>
+                        <button (click)="openSendProposalModal(inv)" class="text-sky-600 hover:text-sky-500 font-bold text-[11px] bg-sky-50 px-2 py-1 rounded-lg">Send PDF</button>
                         <button 
-                          *ngIf="inv.status !== 'Paid'" 
+                          *ngIf="inv.status !== 'Paid' && !(inv.metadata?.creditBalance > 0)" 
                           (click)="openPaymentModal(inv)" 
-                          class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-[10px] shadow-sm transition-all">
+                          class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-[10px] shadow-sm transition-all">
                           Record Payment
                         </button>
-                        <span *ngIf="inv.status === 'Paid'" class="text-emerald-600 font-bold text-[10px] flex items-center justify-end gap-1">
-                          <span class="material-icons text-xs">check_circle</span> Paid in Full
-                        </span>
                       </td>
                     </tr>
                   </tbody>
@@ -462,7 +469,7 @@ export interface TimelineEvent {
   `]
 })
 export class Customer360Component implements OnInit {
-  private apiService = inject(ApiService);
+  public apiService = inject(ApiService);
   private route = inject(ActivatedRoute);
 
   customer360 = signal<any | null>(null);
