@@ -77,10 +77,13 @@ interface LineItem {
                     <span class="material-icons text-xs">cloud_off</span> Offline
                   </span>
                 </td>
-                <td class="py-4">
-                  <a [href]="getPdfDownloadUrl(doc._id)" download class="bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors uppercase">
+                <td class="py-4 flex items-center gap-2">
+                  <a [href]="getPdfDownloadUrl(doc._id)" target="_blank" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors uppercase">
                     PDF Slips
                   </a>
+                  <button (click)="deleteDoc(doc._id, doc.name)" class="bg-rose-50 hover:bg-rose-100 text-rose-600 text-[10px] font-bold px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer" title="Delete Proposal">
+                    <span class="material-icons text-xs">delete</span>
+                  </button>
                 </td>
               </tr>
               <tr *ngIf="documents().length === 0">
@@ -433,6 +436,20 @@ export class DocumentsInvoicesComponent implements OnInit {
       next: (res) => {
         if (res.success) {
           this.selectedDoc.set(res.data);
+          this.loadDocuments();
+        }
+      }
+    });
+  }
+
+  deleteDoc(id: string, name: string) {
+    if (!confirm(`Are you sure you want to permanently delete proposal "${name}"?`)) return;
+    this.apiService.deleteDocument(id).subscribe({
+      next: (res) => {
+        if (res.success) {
+          if (this.selectedDoc() && this.selectedDoc()._id === id) {
+            this.selectedDoc.set(null);
+          }
           this.loadDocuments();
         }
       }

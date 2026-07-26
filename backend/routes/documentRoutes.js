@@ -5,6 +5,7 @@ const {
   getDocumentById,
   createDocument,
   updateDocument,
+  deleteDocument,
   exportDocumentPdf,
   transitionDocument,
   recordInvoicePayment,
@@ -22,7 +23,8 @@ router.route('/')
 
 router.route('/:id')
   .get(getDocumentById)
-  .put(updateDocument);
+  .put(updateDocument)
+  .delete(deleteDocument);
 
 router.get('/:id/pdf', exportDocumentPdf);
 router.post('/:id/transition', transitionDocument);

@@ -283,6 +283,7 @@ export interface TimelineEvent {
                         <button (click)="openSendProposalModal(prop)" class="text-sky-600 hover:text-sky-500 font-bold text-[11px] bg-sky-50 px-2 py-1 rounded-lg">Send PDF</button>
                         <button *ngIf="prop.status !== 'Accepted'" (click)="transitionDoc(prop._id, 'Accepted')" class="text-emerald-600 hover:text-emerald-500 font-bold text-[11px]">Accept & Invoice</button>
                         <button *ngIf="prop.status !== 'Rejected' && prop.status !== 'Accepted'" (click)="transitionDoc(prop._id, 'Rejected')" class="text-rose-500 hover:text-rose-400 font-bold text-[11px]">Reject</button>
+                        <button (click)="deleteDocument(prop._id, prop.name)" class="text-rose-600 hover:text-rose-500 font-bold text-[11px] bg-rose-50 px-2 py-1 rounded-lg">Delete</button>
                       </td>
                     </tr>
                   </tbody>
@@ -347,6 +348,7 @@ export interface TimelineEvent {
                           class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-[10px] shadow-sm transition-all">
                           Record Payment
                         </button>
+                        <button (click)="deleteDocument(inv._id, inv.name)" class="text-rose-600 hover:text-rose-500 font-bold text-[11px] bg-rose-50 px-2 py-1 rounded-lg">Delete</button>
                       </td>
                     </tr>
                   </tbody>
@@ -622,5 +624,22 @@ export class Customer360Component implements OnInit {
       e.event.toLowerCase().includes(search) || 
       e.description.toLowerCase().includes(search)
     );
+  }
+
+  deleteDocument(id: string, name: string) {
+    if (!confirm(`Are you sure you want to permanently delete document "${name}"?`)) return;
+    this.apiService.deleteDocument(id).subscribe({
+      next: (res) => {
+        if (res.success) {
+          const customerId = this.customer360()?.customer?._id;
+          if (customerId) {
+            this.load360(customerId);
+          }
+        }
+      },
+      error: (err) => {
+        alert(`Failed to delete document: ${err.error?.error || err.message}`);
+      }
+    });
   }
 }

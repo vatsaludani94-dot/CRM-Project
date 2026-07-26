@@ -44,7 +44,7 @@ async function runTests() {
     const companyName = `BCME Operations ${timestamp}`;
 
     const regRes = await axios.post(`${API_URL}/auth/register`, {
-      companyName,
+      workspaceName: companyName,
       name: 'Vatsal Udani',
       email: testEmail,
       password: 'Password123!',
@@ -171,8 +171,23 @@ async function runTests() {
     assert(!websiteFile.includes("title: 'Funnel Tracker'"), 'Funnel Tracker removed from Features Matrix');
     assert(websiteFile.includes("title: 'Sales Pipeline & Kanban'"), 'Replaced with Sales Pipeline & Kanban');
 
+    // TEST 12: Re-login Workspace Identity Persistence
+    console.log('\n🔄 Test 12: Verifying Workspace Identity Persistence Across Sign-out & Re-login...');
+    const reloginRes = await axios.post(`${API_URL}/auth/login`, {
+      email: testEmail,
+      password: 'Password123!'
+    });
+    assert(reloginRes.data.success, 'Re-login successful');
+    assert(reloginRes.data.data.workspaceIdentity, 'workspaceIdentity included in login response');
+    assert(reloginRes.data.data.workspaceIdentity.workspaceName === updatedName, `Workspace name "${updatedName}" preserved across re-login`);
+
+    // TEST 13: Proposal Deletion API (DELETE /api/documents/:id)
+    console.log('\n🗑️ Test 13: Testing Proposal Deletion (DELETE /api/documents/:id)...');
+    const delDocRes = await axios.delete(`${API_URL}/documents/${documentId}`, authHeaders);
+    assert(delDocRes.data.success, 'Proposal document deleted successfully');
+
   } catch (err) {
-    console.error(' ❌ CRITICAL TEST ERROR:', err.response ? JSON.stringify(err.response.data) : err.message);
+    console.error(' ❌ CRITICAL TEST ERROR:', err.response ? JSON.stringify(err.response.data) : err.stack || err.message);
     failed++;
   }
 

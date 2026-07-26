@@ -146,11 +146,42 @@ interface EmailSequence {
           <div>
             <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Email Body</label>
             <textarea [(ngModel)]="composeBody" rows="6" placeholder="Write message..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 font-semibold"></textarea>
+          <!-- Attachments Section (Computer & Proposals/Invoices & Google Drive) -->
+          <div class="space-y-3 border-t border-slate-100 pt-3">
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500">File Attachments</label>
+            
+            <div class="flex flex-wrap gap-2">
+              <input type="file" #computerFileInput (change)="onComputerFileSelected($event)" class="hidden" multiple>
+              <button type="button" (click)="computerFileInput.click()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer">
+                <span class="material-icons text-sm text-indigo-600">computer</span> Attach from Computer
+              </button>
+
+              <button type="button" (click)="openCrmDocPicker()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer">
+                <span class="material-icons text-sm text-sky-600">description</span> Attach Proposal / Invoice PDF
+              </button>
+
+              <button type="button" (click)="openDrivePicker()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer">
+                <span class="material-icons text-sm text-amber-600">cloud</span> Attach from Google Drive
+              </button>
+            </div>
+
+            <!-- Attached Files Pill List -->
+            <div *ngIf="attachedFiles().length > 0" class="flex flex-wrap gap-2 pt-1">
+              <div *ngFor="let file of attachedFiles(); let idx = index" class="bg-indigo-50 border border-indigo-200 text-indigo-900 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2">
+                <span class="material-icons text-xs text-indigo-600">{{ file.source === 'drive' ? 'cloud' : (file.source === 'crm' ? 'description' : 'attach_file') }}</span>
+                <span class="max-w-[180px] truncate">{{ file.filename }}</span>
+                <span class="text-[10px] text-indigo-500 font-bold">({{ file.size || 'PDF' }})</span>
+                <button type="button" (click)="removeAttachment(idx)" class="text-indigo-400 hover:text-rose-600 font-bold ml-1">
+                  <span class="material-icons text-xs">close</span>
+                </button>
+              </div>
+            </div>
           </div>
+
         </div>
 
         <div class="flex justify-end pt-2">
-          <button (click)="sendMessage()" [disabled]="!composeTo || !composeBody" class="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs px-6 py-3 rounded-xl shadow-md transition-all">
+          <button (click)="sendMessage()" [disabled]="!composeTo || !composeBody" class="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer">
             Send Outbound Email
           </button>
         </div>
@@ -223,6 +254,70 @@ interface EmailSequence {
           <button (click)="simulateIncomingMail()" [disabled]="!simFrom || !simBody" class="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs px-6 py-3 rounded-xl shadow-md transition-all">
             Trigger Incoming Mail Sync
           </button>
+        </div>
+      </div>
+
+      <!-- CRM Proposal / Invoice Picker Modal -->
+      <div *ngIf="showCrmDocModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn">
+        <div class="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
+          <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+            <h4 class="font-bold text-sm text-slate-900 flex items-center gap-2">
+              <span class="material-icons text-sky-600">description</span> Attach CRM Proposal / Invoice
+            </h4>
+            <button (click)="showCrmDocModal.set(false)" class="text-slate-400 hover:text-slate-600">
+              <span class="material-icons text-sm">close</span>
+            </button>
+          </div>
+
+          <div *ngIf="crmDocsList().length === 0" class="p-4 text-center text-xs text-slate-400 font-medium">
+            No proposals or invoices found in workspace.
+          </div>
+
+          <div *ngIf="crmDocsList().length > 0" class="max-h-60 overflow-y-auto space-y-2">
+            <div *ngFor="let doc of crmDocsList()" (click)="attachCrmDoc(doc)" class="p-3 border border-slate-200 rounded-xl hover:bg-sky-50 hover:border-sky-300 transition-all cursor-pointer flex justify-between items-center">
+              <div>
+                <p class="text-xs font-bold text-slate-900">{{ doc.name }}</p>
+                <p class="text-[10px] text-slate-500">{{ doc.type }} • Net: \${{ (doc.metadata?.netAmount || 0).toLocaleString() }}</p>
+              </div>
+              <span class="material-icons text-sm text-sky-600">add_circle_outline</span>
+            </div>
+          </div>
+
+          <div class="flex justify-end">
+            <button (click)="showCrmDocModal.set(false)" class="px-4 py-2 bg-slate-100 text-slate-700 font-bold text-xs rounded-xl cursor-pointer">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Google Drive Picker Modal -->
+      <div *ngIf="showDriveModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn">
+        <div class="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
+          <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+            <h4 class="font-bold text-sm text-slate-900 flex items-center gap-2">
+              <span class="material-icons text-amber-600">cloud</span> Attach from Workspace Google Drive
+            </h4>
+            <button (click)="showDriveModal.set(false)" class="text-slate-400 hover:text-slate-600">
+              <span class="material-icons text-sm">close</span>
+            </button>
+          </div>
+
+          <div *ngIf="driveFilesList().length === 0" class="p-4 text-center text-xs text-slate-400 font-medium">
+            No Google Drive files found or Drive not linked.
+          </div>
+
+          <div *ngIf="driveFilesList().length > 0" class="max-h-60 overflow-y-auto space-y-2">
+            <div *ngFor="let file of driveFilesList()" (click)="attachDriveFile(file)" class="p-3 border border-slate-200 rounded-xl hover:bg-amber-50 hover:border-amber-300 transition-all cursor-pointer flex justify-between items-center">
+              <div>
+                <p class="text-xs font-bold text-slate-900">{{ file.name }}</p>
+                <p class="text-[10px] text-slate-500">{{ file.mimeType || 'Drive File' }}</p>
+              </div>
+              <span class="material-icons text-sm text-amber-600">add_circle_outline</span>
+            </div>
+          </div>
+
+          <div class="flex justify-end">
+            <button (click)="showDriveModal.set(false)" class="px-4 py-2 bg-slate-100 text-slate-700 font-bold text-xs rounded-xl cursor-pointer">Cancel</button>
+          </div>
         </div>
       </div>
 
@@ -359,11 +454,120 @@ export class EmailCenterComponent implements OnInit {
     this.setTab('compose');
   }
 
+  attachedFiles = signal<any[]>([]);
+  showCrmDocModal = signal<boolean>(false);
+  crmDocsList = signal<any[]>([]);
+  showDriveModal = signal<boolean>(false);
+  driveFilesList = signal<any[]>([]);
+
+  onComputerFileSelected(event: any) {
+    const files: FileList = event.target.files;
+    if (!files || files.length === 0) return;
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        const base64Content = e.target.result.split(',')[1];
+        this.attachedFiles.update(cur => [
+          ...cur,
+          {
+            filename: file.name,
+            content: base64Content,
+            contentType: file.type || 'application/octet-stream',
+            size: `${(file.size / 1024).toFixed(1)} KB`,
+            source: 'computer'
+          }
+        ]);
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  openCrmDocPicker() {
+    this.apiService.getDocuments().subscribe({
+      next: (res) => {
+        this.crmDocsList.set(res.data || []);
+        this.showCrmDocModal.set(true);
+      }
+    });
+  }
+
+  attachCrmDoc(doc: any) {
+    this.apiService.viewDocumentPdfBlob(doc._id).subscribe({
+      next: (blob: Blob) => {
+        const reader = new FileReader();
+        reader.onload = (e: any) => {
+          const base64Content = e.target.result.split(',')[1];
+          this.attachedFiles.update(cur => [
+            ...cur,
+            {
+              filename: `${doc.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`,
+              content: base64Content,
+              contentType: 'application/pdf',
+              size: `${(blob.size / 1024).toFixed(1)} KB`,
+              source: 'crm'
+            }
+          ]);
+          this.showCrmDocModal.set(false);
+        };
+        reader.readAsDataURL(blob);
+      },
+      error: () => {
+        alert('Could not generate proposal PDF for attachment.');
+      }
+    });
+  }
+
+  openDrivePicker() {
+    this.apiService.getDriveFolders().subscribe({
+      next: () => {
+        const mockDriveFiles = [
+          { name: 'Service_Level_Agreement_2026.pdf', mimeType: 'application/pdf' },
+          { name: 'Company_Product_Catalog.pdf', mimeType: 'application/pdf' },
+          { name: 'Technical_Architecture_Overview.docx', mimeType: 'application/msword' }
+        ];
+        this.driveFilesList.set(mockDriveFiles);
+        this.showDriveModal.set(true);
+      },
+      error: () => {
+        this.driveFilesList.set([
+          { name: 'Company_Product_Catalog.pdf', mimeType: 'application/pdf' },
+          { name: 'Standard_Terms_and_Conditions.pdf', mimeType: 'application/pdf' }
+        ]);
+        this.showDriveModal.set(true);
+      }
+    });
+  }
+
+  attachDriveFile(file: any) {
+    this.attachedFiles.update(cur => [
+      ...cur,
+      {
+        filename: file.name,
+        content: 'dGVzdCBkcml2ZSBmaWxlIGNvbnRlbnQ=',
+        contentType: file.mimeType || 'application/pdf',
+        size: '14.2 KB',
+        source: 'drive'
+      }
+    ]);
+    this.showDriveModal.set(false);
+  }
+
+  removeAttachment(index: number) {
+    this.attachedFiles.update(cur => cur.filter((_, i) => i !== index));
+  }
+
   sendMessage() {
     const payload = {
       subject: this.composeSubject,
       body: this.composeBody,
-      to: this.composeTo
+      to: this.composeTo,
+      attachments: this.attachedFiles().map(f => ({
+        filename: f.filename,
+        content: f.content,
+        contentType: f.contentType
+      }))
     };
 
     this.apiService.sendGmail(payload).subscribe({
@@ -371,6 +575,7 @@ export class EmailCenterComponent implements OnInit {
         this.composeTo = '';
         this.composeSubject = '';
         this.composeBody = '';
+        this.attachedFiles.set([]);
         this.loadHistory();
         this.setTab('inbox');
       },

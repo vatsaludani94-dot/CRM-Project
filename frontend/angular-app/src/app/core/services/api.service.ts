@@ -458,6 +458,9 @@ export class ApiService {
   updateDocument(id: string, data: any): Observable<any> {
     return this.http.put<any>(`${this.baseUrl}/documents/${id}`, data);
   }
+  deleteDocument(id: string): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/documents/${id}`);
+  }
   getDocumentPdfDownloadUrl(id: string): string {
     const saved = typeof window !== 'undefined' ? localStorage.getItem('nexus_user') : null;
     let token = '';

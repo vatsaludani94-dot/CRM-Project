@@ -41,11 +41,11 @@ interface ChatMessage {
             </a>
             
             <nav class="hidden md:flex items-center gap-8 text-sm font-semibold text-[#44403c]">
-              <a href="javascript:void(0)" (click)="setTab('home')" [class.text-[#1c1917]]="activeTab() === 'home'" [class.font-extrabold] class="hover:text-[#1c1917] transition-colors">Platform</a>
-              <a href="javascript:void(0)" (click)="setTab('features')" [class.text-[#1c1917]]="activeTab() === 'features'" [class.font-extrabold] class="hover:text-[#1c1917] transition-colors">Features Matrix</a>
-              <a href="javascript:void(0)" (click)="setTab('templates')" [class.text-[#1c1917]]="activeTab() === 'templates'" [class.font-extrabold] class="hover:text-[#1c1917] transition-colors">Marketplace</a>
-              <a href="javascript:void(0)" (click)="setTab('pricing')" [class.text-[#1c1917]]="activeTab() === 'pricing'" [class.font-extrabold] class="hover:text-[#1c1917] transition-colors">Tiers Pricing</a>
-              <a href="javascript:void(0)" (click)="setTab('about')" [class.text-[#1c1917]]="activeTab() === 'about'" [class.font-extrabold] class="hover:text-[#1c1917] transition-colors">About Us</a>
+              <a href="javascript:void(0)" (click)="setTab('home')" [class.text-[#1c1917]]="activeTab() === 'home'" [class.scale-110]="activeTab() === 'home'" [class.font-extrabold]="activeTab() === 'home'" class="hover:text-[#1c1917] hover:scale-110 transform transition-all duration-200 cursor-pointer inline-block">Platform</a>
+              <a href="javascript:void(0)" (click)="setTab('features')" [class.text-[#1c1917]]="activeTab() === 'features'" [class.scale-110]="activeTab() === 'features'" [class.font-extrabold]="activeTab() === 'features'" class="hover:text-[#1c1917] hover:scale-110 transform transition-all duration-200 cursor-pointer inline-block">Features Matrix</a>
+              <a href="javascript:void(0)" (click)="setTab('templates')" [class.text-[#1c1917]]="activeTab() === 'templates'" [class.scale-110]="activeTab() === 'templates'" [class.font-extrabold]="activeTab() === 'templates'" class="hover:text-[#1c1917] hover:scale-110 transform transition-all duration-200 cursor-pointer inline-block">Marketplace</a>
+              <a href="javascript:void(0)" (click)="setTab('pricing')" [class.text-[#1c1917]]="activeTab() === 'pricing'" [class.scale-110]="activeTab() === 'pricing'" [class.font-extrabold]="activeTab() === 'pricing'" class="hover:text-[#1c1917] hover:scale-110 transform transition-all duration-200 cursor-pointer inline-block">Tiers Pricing</a>
+              <a href="javascript:void(0)" (click)="setTab('about')" [class.text-[#1c1917]]="activeTab() === 'about'" [class.scale-110]="activeTab() === 'about'" [class.font-extrabold]="activeTab() === 'about'" class="hover:text-[#1c1917] hover:scale-110 transform transition-all duration-200 cursor-pointer inline-block">About Us</a>
             </nav>
           </div>
 
@@ -383,7 +383,7 @@ interface ChatMessage {
           </div>
           
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div class="bg-white border border-[#e7e5e4] shadow-sm p-6 rounded-2xl hover:border-slate-800 hover:-translate-y-0.5 transition-all duration-300" *ngFor="let feat of featuresList">
+            <div class="bg-white border border-[#e7e5e4] shadow-sm p-6 rounded-2xl hover:scale-105 hover:shadow-2xl hover:border-slate-800 transform transition-all duration-300" *ngFor="let feat of featuresList">
               <span class="material-icons text-[#1c1917] text-3xl mb-4 bg-amber-500/10 animate-floating-orb p-3 rounded-xl inline-block">{{ feat.icon }}</span>
               <h4 class="font-extrabold text-[#1c1917] mb-2 text-base">{{ feat.title }}</h4>
               <p class="text-xs text-[#44403c] leading-relaxed">{{ feat.desc }}</p>

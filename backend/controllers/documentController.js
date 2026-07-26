@@ -679,11 +679,50 @@ const sendProposalEmail = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Delete a document (Proposal, Invoice, Contract)
+ * @route   DELETE /api/documents/:id
+ * @access  Private (Admin, Manager)
+ */
+const deleteDocument = async (req, res) => {
+  try {
+    const tenantFilter = getTenantFilter(req);
+    const doc = await Document.findOne({ _id: req.params.id, ...tenantFilter });
+    if (!doc) {
+      return res.status(404).json({ success: false, error: 'Document not found' });
+    }
+
+    const docName = doc.name;
+    const docType = doc.type;
+    await Document.deleteOne({ _id: doc._id });
+
+    if (doc.customer) {
+      const customer = await Customer.findOne({ _id: doc.customer, ...tenantFilter });
+      if (customer) {
+        customer.activities.push({
+          type: 'Note',
+          description: `Deleted ${docType} "${docName}"`,
+          performedBy: req.user._id
+        });
+        await customer.save();
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `${docType} "${docName}" deleted successfully`
+    });
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
+  }
+};
+
 module.exports = {
   getDocuments,
   getDocumentById,
   createDocument,
   updateDocument,
+  deleteDocument,
   exportDocumentPdf,
   transitionDocument,
   recordInvoicePayment,

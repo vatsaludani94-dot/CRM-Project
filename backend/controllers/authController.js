@@ -103,7 +103,7 @@ const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email }).select('+password').populate('tenant');
 
     if (user && (await user.matchPassword(password))) {
       if (user.status === 'inactive') {
@@ -127,6 +127,10 @@ const loginUser = async (req, res) => {
         });
       }
 
+      const { getWorkspaceIdentity } = require('../utils/tenantScope');
+      const tenantId = user.tenant ? user.tenant._id : null;
+      const workspaceIdentity = await getWorkspaceIdentity(tenantId, user);
+
       res.json({
         success: true,
         data: {
@@ -136,6 +140,7 @@ const loginUser = async (req, res) => {
           role: user.role,
           department: user.department,
           tenant: user.tenant,
+          workspaceIdentity,
           token: generateToken(user),
         },
       });
