@@ -78,6 +78,22 @@ const getWorkspaceIdentity = async (tenantId, userReq) => {
     const communicationEmailName = tenant.communicationEmailName || workspaceName;
     const communicationEmailStatus = (tenant.communicationEmailStatus && tenant.communicationEmailStatus !== 'unconfigured') ? tenant.communicationEmailStatus : (communicationEmail ? 'verified' : 'unconfigured');
 
+    let currentSubStatus = tenant.subscriptionStatus || 'active';
+    let trialDaysRemaining = 0;
+    const trialExpires = tenant.trialEndDate || tenant.trialExpiresAt;
+
+    if (currentSubStatus === 'trial_active' && trialExpires) {
+      const now = Date.now();
+      const expiresMs = new Date(trialExpires).getTime();
+      if (now > expiresMs) {
+        currentSubStatus = 'trial_expired';
+        tenant.subscriptionStatus = 'trial_expired';
+        await tenant.save();
+      } else {
+        trialDaysRemaining = Math.max(0, Math.ceil((expiresMs - now) / (1000 * 60 * 60 * 24)));
+      }
+    }
+
     return {
       tenantId: tenant._id,
       workspaceName,
@@ -90,10 +106,13 @@ const getWorkspaceIdentity = async (tenantId, userReq) => {
       secondaryColor: tenant.whiteLabelSettings?.secondaryColor || '#0f172a',
       whiteLabelSettings: tenant.whiteLabelSettings || {},
       smtpConfigured: !!(tenant.smtpSettings && tenant.smtpSettings.host),
-      subscriptionStatus: tenant.subscriptionStatus || 'active',
+      subscriptionStatus: currentSubStatus,
       subscriptionPlan: tenant.subscriptionPlan || '₹9,999 / Month',
       subscriptionAmount: tenant.subscriptionAmount || 9999,
       paidAt: tenant.paidAt,
+      trialStartDate: tenant.trialStartDate,
+      trialEndDate: trialExpires,
+      trialDaysRemaining,
     };
   } catch (err) {
     return {

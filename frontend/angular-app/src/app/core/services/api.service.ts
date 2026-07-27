@@ -651,5 +651,8 @@ export class ApiService {
   registerWorkspaceAfterPayment(payload: { paymentToken: string; onboardingId: string; workspaceName: string; password: string }): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/onboarding/register-workspace`, payload);
   }
+  startFreeTrial(payload: { companyName: string; ownerName: string; email: string; phone: string; niche: string; website?: string; cityState: string; password: string }): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/onboarding/start-free-trial`, payload);
+  }
 }
 

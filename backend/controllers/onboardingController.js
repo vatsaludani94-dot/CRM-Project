@@ -49,7 +49,7 @@ const submitPrePayment = async (req, res) => {
     // Check if user account already exists
     const existingUser = await User.findOne({ email: email.toLowerCase() }).populate('tenant');
     if (existingUser) {
-      const isPending = existingUser.tenant && existingUser.tenant.subscriptionStatus === 'pending_payment';
+      const isPending = existingUser.tenant && (existingUser.tenant.subscriptionStatus === 'pending_payment' || existingUser.tenant.subscriptionStatus === 'trial_expired');
       if (!isPending) {
         return res.status(400).json({
           success: false,
@@ -307,8 +307,159 @@ const registerWorkspaceAfterPayment = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Start 14-Day Free Trial Onboarding
+ * @route   POST /api/onboarding/start-free-trial
+ * @access  Public
+ */
+const startFreeTrial = async (req, res) => {
+  const { companyName, ownerName, email, phone, niche, website, cityState, password } = req.body;
+
+  if (!companyName || !ownerName || !email || !phone || !niche || !cityState || !password) {
+    return res.status(400).json({
+      success: false,
+      error: 'Please fill all required fields: Company Name, Owner Name, Email, Phone, Niche, City/State, and Password.',
+    });
+  }
+
+  if (password.length < 6) {
+    return res.status(400).json({
+      success: false,
+      error: 'Password must be at least 6 characters long.',
+    });
+  }
+
+  try {
+    const cleanEmail = email.toLowerCase().trim();
+    const trialStartDate = new Date();
+    const trialEndDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 days
+
+    let user = await User.findOne({ email: cleanEmail }).populate('tenant');
+    let tenant;
+    const reqWorkspaceName = companyName.trim();
+
+    if (user) {
+      if (user.tenant) {
+        tenant = user.tenant;
+        if (tenant.subscriptionStatus === 'active') {
+          return res.status(400).json({
+            success: false,
+            error: 'An active paid account already exists with this email address. Please log in directly.',
+          });
+        }
+        if (tenant.subscriptionStatus === 'trial_active' && (tenant.trialEndDate || tenant.trialExpiresAt) > new Date()) {
+          return res.status(400).json({
+            success: false,
+            error: 'An active 14-day free trial already exists for this account. Please log in directly.',
+          });
+        }
+
+        tenant.subscriptionStatus = 'trial_active';
+        tenant.subscriptionPlan = '14-Day Free Trial';
+        tenant.subscriptionAmount = 0;
+        tenant.trialStartDate = trialStartDate;
+        tenant.trialEndDate = trialEndDate;
+        tenant.trialExpiresAt = trialEndDate;
+        tenant.name = reqWorkspaceName;
+        tenant.workspaceName = reqWorkspaceName;
+        await tenant.save();
+
+        user.password = password;
+      } else {
+        tenant = await Tenant.create({
+          name: reqWorkspaceName,
+          workspaceName: reqWorkspaceName,
+          owner: user._id,
+          subdomain: reqWorkspaceName.toLowerCase().replace(/[^a-z0-9]/g, '') + '-' + Math.floor(1000 + Math.random() * 9000),
+          communicationEmail: user.email,
+          communicationEmailName: reqWorkspaceName,
+          subscriptionStatus: 'trial_active',
+          subscriptionPlan: '14-Day Free Trial',
+          subscriptionAmount: 0,
+          trialStartDate,
+          trialEndDate,
+          trialExpiresAt: trialEndDate,
+        });
+        user.tenant = tenant._id;
+        user.password = password;
+      }
+      await user.save();
+    } else {
+      user = await User.create({
+        name: ownerName.trim(),
+        email: cleanEmail,
+        password,
+        role: 'workspace_owner',
+        department: 'Management',
+      });
+
+      tenant = await Tenant.create({
+        name: reqWorkspaceName,
+        workspaceName: reqWorkspaceName,
+        owner: user._id,
+        subdomain: reqWorkspaceName.toLowerCase().replace(/[^a-z0-9]/g, '') + '-' + Math.floor(1000 + Math.random() * 9000),
+        communicationEmail: user.email,
+        communicationEmailName: reqWorkspaceName,
+        communicationEmailStatus: 'unconfigured',
+        subscriptionStatus: 'trial_active',
+        subscriptionPlan: '14-Day Free Trial',
+        subscriptionAmount: 0,
+        trialStartDate,
+        trialEndDate,
+        trialExpiresAt: trialEndDate,
+      });
+
+      user.tenant = tenant._id;
+      await user.save();
+    }
+
+    await PrePaymentOnboarding.create({
+      companyName: reqWorkspaceName,
+      ownerName: ownerName.trim(),
+      email: cleanEmail,
+      phone: phone.trim(),
+      niche: niche.trim(),
+      website: website || '',
+      cityState: cityState.trim(),
+      status: 'trial_registered',
+      createdUserId: user._id,
+      createdTenantId: tenant._id,
+    });
+
+    await Activity.create({
+      user: user._id,
+      action: '14-Day Free Trial Activated',
+      details: `User ${user.name} activated 14-day free trial for workspace "${tenant.name}".`,
+      module: 'Authentication',
+      ipAddress: req.ip,
+    });
+
+    const token = generateToken(user);
+    const workspaceIdentity = await getWorkspaceIdentity(tenant._id, user);
+
+    res.status(201).json({
+      success: true,
+      message: '14-Day Free Trial activated successfully! Welcome to GrownX CRM.',
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        department: user.department,
+        tenant: tenant._id,
+      },
+      workspaceIdentity,
+    });
+  } catch (error) {
+    console.error('Start Free Trial Error:', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 module.exports = {
   submitPrePayment,
   verifyPayment,
   registerWorkspaceAfterPayment,
+  startFreeTrial,
 };

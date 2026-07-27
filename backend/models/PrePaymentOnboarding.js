@@ -42,6 +42,7 @@ const PrePaymentOnboardingSchema = new mongoose.Schema(
       type: String,
       enum: [
         'pre_payment_registered',
+        'trial_registered',
         'payment_pending',
         'payment_successful',
         'workspace_registration_pending',

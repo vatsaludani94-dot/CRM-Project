@@ -49,7 +49,7 @@ const TenantSchema = new mongoose.Schema(
     },
     subscriptionStatus: {
       type: String,
-      enum: ['active', 'pending_payment', 'cancelled'],
+      enum: ['active', 'pending_payment', 'trial_active', 'trial_expired', 'cancelled'],
       default: 'active',
     },
     subscriptionPlan: {
@@ -59,6 +59,12 @@ const TenantSchema = new mongoose.Schema(
     subscriptionAmount: {
       type: Number,
       default: 9999,
+    },
+    trialStartDate: {
+      type: Date,
+    },
+    trialEndDate: {
+      type: Date,
     },
     paidAt: {
       type: Date,

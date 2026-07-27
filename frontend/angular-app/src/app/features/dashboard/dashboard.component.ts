@@ -1,6 +1,7 @@
 import { Component, OnInit, AfterViewInit, ElementRef, ViewChild, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../core/services/api.service';
+import { AuthService } from '../../core/services/auth.service';
 import { Chart, registerables } from 'chart.js';
 import { Router } from '@angular/router';
 
@@ -23,6 +24,26 @@ Chart.register(...registerables);
           <span class="h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span>
           <span>Live sync active</span>
         </div>
+      </div>
+
+      <!-- 14-Day Free Trial Banner -->
+      <div *ngIf="isTrialActive()" class="bg-gradient-to-r from-amber-600 via-amber-700 to-stone-900 text-white p-4.5 rounded-2xl shadow-lg flex flex-col md:flex-row items-center justify-between gap-4 border border-amber-500/30 animate-fadeIn">
+        <div class="flex items-center gap-3">
+          <div class="h-10 w-10 bg-white/10 rounded-xl flex items-center justify-center font-black">
+            <span class="material-icons text-amber-300 text-2xl">bolt</span>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-black uppercase tracking-wider bg-amber-400/20 text-amber-200 px-2.5 py-0.5 rounded-full border border-amber-300/30">14-Day Free Trial Active</span>
+              <span class="text-xs font-bold text-amber-100">({{ trialDaysRemaining() }} Days Remaining)</span>
+            </div>
+            <p class="text-xs text-amber-100/90 mt-0.5 font-medium">You are currently enjoying full enterprise CRM access on a 14-day free trial. Upgrade anytime to preserve your workspace data.</p>
+          </div>
+        </div>
+        <button (click)="triggerAction('/pricing')" class="w-full md:w-auto bg-amber-500 hover:bg-amber-400 text-stone-950 font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer">
+          <span>Upgrade to ₹9,999/mo</span>
+          <span class="material-icons text-sm">arrow_forward</span>
+        </button>
       </div>
 
       <!-- Universal Clickable Actions System -->
@@ -249,7 +270,11 @@ Chart.register(...registerables);
 })
 export class DashboardComponent implements OnInit, AfterViewInit {
   private apiService = inject(ApiService);
+  private authService = inject(AuthService);
   private router = inject(Router);
+
+  isTrialActive = signal<boolean>(false);
+  trialDaysRemaining = signal<number>(14);
 
   triggerAction(routePath: string) {
     this.router.navigate([routePath]);
@@ -277,6 +302,12 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   chartData = signal<any>(null);
 
   ngOnInit() {
+    const user = this.authService.currentUserValue;
+    const workspace = user?.workspaceIdentity || user?.tenant;
+    if (workspace?.subscriptionStatus === 'trial_active') {
+      this.isTrialActive.set(true);
+      this.trialDaysRemaining.set(workspace.trialDaysRemaining ?? 14);
+    }
     this.loadData();
   }
 

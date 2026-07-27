@@ -477,8 +477,32 @@ interface ChatMessage {
             <p class="text-[#44403c] text-sm">Unlock the full GrownX CRM Enterprise Operating System for your entire team. Pay securely via Razorpay to activate instant CRM access.</p>
           </div>
 
-          <div class="max-w-md mx-auto">
-            <!-- Single ₹9,999 / Month Plan Card -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <!-- Option A: 14-Day Free Trial Card -->
+            <div class="border-2 border-stone-300 hover:border-amber-600 bg-white p-8 rounded-3xl space-y-6 flex flex-col justify-between relative shadow-xl transition-all">
+              <div class="space-y-4">
+                <span class="text-xs font-bold text-amber-900 bg-amber-100 border border-amber-300 px-3 py-1 rounded-full uppercase">14-Day Free Trial</span>
+                <h3 class="text-4xl font-black text-[#1c1917]">₹0 <span class="text-xs font-semibold text-[#44403c]">/ 14 Days</span></h3>
+                <p class="text-xs text-[#44403c]">Full access to all GrownX CRM Enterprise tools for 14 days with zero credit card required.</p>
+                <ul class="space-y-3 text-xs text-[#292524] pt-4">
+                  <li class="flex items-center gap-2.5"><span class="material-icons text-amber-700 text-sm">check_circle</span> <strong>Full 14-Day Unrestricted Access</strong></li>
+                  <li class="flex items-center gap-2.5"><span class="material-icons text-amber-700 text-sm">check_circle</span> <strong>Visual Workflow Engine & Pipelines</strong></li>
+                  <li class="flex items-center gap-2.5"><span class="material-icons text-amber-700 text-sm">check_circle</span> <strong>Omnichannel Support & Unified Inbox</strong></li>
+                  <li class="flex items-center gap-2.5"><span class="material-icons text-amber-700 text-sm">check_circle</span> <strong>No Credit Card Required to Start</strong></li>
+                  <li class="flex items-center gap-2.5"><span class="material-icons text-amber-700 text-sm">check_circle</span> <strong>Seamless Upgrade to Paid Monthly Plan</strong></li>
+                </ul>
+              </div>
+
+              <div class="pt-4">
+                <button 
+                  (click)="openTrialOnboardingModal()" 
+                  class="w-full bg-stone-900 hover:bg-black py-4 rounded-xl font-bold text-sm text-white shadow-xl transition-all cursor-pointer flex items-center justify-center gap-2">
+                  <span>Start 14-Day Free Trial</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Option B: ₹9,999 / Month Buy Now Card -->
             <div class="border-2 border-amber-600 bg-white p-8 rounded-3xl space-y-6 flex flex-col justify-between relative shadow-2xl">
               <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-amber-600 text-white text-[9px] font-black tracking-wider px-4 py-1 rounded-full uppercase shadow-md">Complete SaaS Suite</div>
               <div class="space-y-4">
@@ -490,9 +514,7 @@ interface ChatMessage {
                   <li class="flex items-center gap-2.5"><span class="material-icons text-amber-700 text-sm">check_circle</span> <strong>Visual Workflow Automation Engine</strong></li>
                   <li class="flex items-center gap-2.5"><span class="material-icons text-amber-700 text-sm">check_circle</span> <strong>Email-First Support & Unified Inbox</strong></li>
                   <li class="flex items-center gap-2.5"><span class="material-icons text-amber-700 text-sm">check_circle</span> <strong>Visual Kanban Pipelines & Customer 360</strong></li>
-                  <li class="flex items-center gap-2.5"><span class="material-icons text-amber-700 text-sm">check_circle</span> <strong>Marketing Campaigns & Automated Scheduler</strong></li>
-                  <li class="flex items-center gap-2.5"><span class="material-icons text-amber-700 text-sm">check_circle</span> <strong>Google Drive Sync & Dedicated Support Care Mailbox</strong></li>
-                  <li class="flex items-center gap-2.5"><span class="material-icons text-amber-700 text-sm">check_circle</span> <strong>High-Security Multi-Tenant SaaS Architecture</strong></li>
+                  <li class="flex items-center gap-2.5"><span class="material-icons text-amber-700 text-sm">check_circle</span> <strong>Secure Razorpay Subscription Payment</strong></li>
                 </ul>
               </div>
 
@@ -522,26 +544,26 @@ interface ChatMessage {
               <span class="material-icons">close</span>
             </button>
 
-            <!-- Multi-Step Progress Header -->
+            <!-- Multi-Step / Trial Progress Header -->
             <div class="space-y-3 border-b border-stone-100 pb-4">
               <div class="flex items-center justify-between text-xs font-bold">
-                <span class="text-amber-800 uppercase tracking-wider">Payment-First Onboarding</span>
-                <span class="text-stone-500">Step {{ paymentOnboardingStep() }} of 3</span>
+                <span class="text-amber-800 uppercase tracking-wider">{{ isOnboardingTrialMode() ? '14-Day Free Trial Onboarding' : 'Payment-First Onboarding' }}</span>
+                <span class="text-stone-500">{{ isOnboardingTrialMode() ? 'Instant Setup' : 'Step ' + paymentOnboardingStep() + ' of 3' }}</span>
               </div>
 
-              <!-- Progress Bar Indicators -->
-              <div class="grid grid-cols-3 gap-2">
+              <!-- Progress Bar Indicators (Paid Mode Only) -->
+              <div *ngIf="!isOnboardingTrialMode()" class="grid grid-cols-3 gap-2">
                 <div class="h-1.5 rounded-full transition-all" [class.bg-amber-600]="paymentOnboardingStep() >= 1" [class.bg-stone-200]="paymentOnboardingStep() < 1"></div>
                 <div class="h-1.5 rounded-full transition-all" [class.bg-amber-600]="paymentOnboardingStep() >= 2" [class.bg-stone-200]="paymentOnboardingStep() < 2"></div>
                 <div class="h-1.5 rounded-full transition-all" [class.bg-amber-600]="paymentOnboardingStep() >= 3" [class.bg-stone-200]="paymentOnboardingStep() < 3"></div>
               </div>
             </div>
 
-            <!-- STEP 1: Pre-Payment Registration Form (Tell Us About Your Business) -->
+            <!-- STEP 1 / TRIAL FORM: Business Details -->
             <div *ngIf="paymentOnboardingStep() === 1" class="space-y-4">
               <div class="space-y-1">
-                <h3 class="text-xl font-extrabold text-[#1c1917]">1. Tell Us About Your Business</h3>
-                <p class="text-xs text-[#44403c]">Fill in your company details to prepare your subscription invoice prior to Razorpay payment.</p>
+                <h3 class="text-xl font-extrabold text-[#1c1917]">{{ isOnboardingTrialMode() ? 'Start Your 14-Day Free Trial' : '1. Tell Us About Your Business' }}</h3>
+                <p class="text-xs text-[#44403c]">{{ isOnboardingTrialMode() ? 'Fill in your business details to activate instant 14-day free trial CRM access.' : 'Fill in your company details to prepare your subscription invoice prior to Razorpay payment.' }}</p>
               </div>
 
               <div *ngIf="onboardingError()" class="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-bold">
@@ -591,9 +613,26 @@ interface ChatMessage {
                   <label class="font-bold text-[#1c1917]">Business Website (Optional)</label>
                   <input type="url" [(ngModel)]="onboardingForm.website" placeholder="https://www.acme.com" class="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl font-medium focus:outline-none focus:border-amber-600" />
                 </div>
+
+                <div *ngIf="isOnboardingTrialMode()" class="space-y-1 md:col-span-2">
+                  <label class="font-bold text-[#1c1917]">Create Password *</label>
+                  <input type="password" [(ngModel)]="trialForm.password" placeholder="Minimum 6 characters" class="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl font-medium focus:outline-none focus:border-amber-600" />
+                </div>
               </div>
 
+              <!-- Trial Action Button -->
               <button 
+                *ngIf="isOnboardingTrialMode()"
+                (click)="submitTrialSignupForm()" 
+                [disabled]="isProcessingPayment()"
+                class="w-full bg-stone-900 hover:bg-black disabled:opacity-50 py-3.5 rounded-xl font-bold text-sm text-white shadow-xl transition-all cursor-pointer flex items-center justify-center gap-2 mt-4">
+                <span *ngIf="isProcessingPayment()" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                <span>Activate 14-Day Free Trial <span class="material-icons text-sm">bolt</span></span>
+              </button>
+
+              <!-- Paid Mode Action Button -->
+              <button 
+                *ngIf="!isOnboardingTrialMode()"
                 (click)="submitPrePaymentForm()" 
                 [disabled]="isProcessingPayment()"
                 class="w-full bg-amber-700 hover:bg-amber-800 disabled:opacity-50 py-3.5 rounded-xl font-bold text-sm text-white shadow-xl transition-all cursor-pointer flex items-center justify-center gap-2 mt-4">
@@ -1024,6 +1063,7 @@ export class PublicWebsiteComponent implements OnInit {
 
   // Payment-First Onboarding State Signals & Data
   showPaymentOnboardingModal = signal<boolean>(false);
+  isOnboardingTrialMode = signal<boolean>(false);
   paymentOnboardingStep = signal<number>(1);
   onboardingId = signal<string>('');
   paymentToken = signal<string>('');
@@ -1044,7 +1084,20 @@ export class PublicWebsiteComponent implements OnInit {
     password: ''
   };
 
+  trialForm = {
+    password: ''
+  };
+
+  openTrialOnboardingModal() {
+    this.isOnboardingTrialMode.set(true);
+    this.showPaymentOnboardingModal.set(true);
+    this.paymentOnboardingStep.set(1);
+    this.onboardingError.set(null);
+    this.isProcessingPayment.set(false);
+  }
+
   openPaymentOnboardingModal() {
+    this.isOnboardingTrialMode.set(false);
     this.showPaymentOnboardingModal.set(true);
     this.paymentOnboardingStep.set(1);
     this.onboardingError.set(null);
@@ -1054,6 +1107,44 @@ export class PublicWebsiteComponent implements OnInit {
   closePaymentOnboardingModal() {
     this.showPaymentOnboardingModal.set(false);
     this.isProcessingPayment.set(false);
+  }
+
+  submitTrialSignupForm() {
+    const { companyName, ownerName, email, phone, niche, cityState } = this.onboardingForm;
+    const password = this.trialForm.password;
+
+    if (!companyName || !ownerName || !email || !phone || !niche || !cityState || !password) {
+      this.onboardingError.set('Please fill all required fields: Company Name, Owner Name, Email, Phone, Niche, City/State, and Password.');
+      return;
+    }
+
+    if (password.length < 6) {
+      this.onboardingError.set('Password must be at least 6 characters long.');
+      return;
+    }
+
+    this.isProcessingPayment.set(true);
+    this.onboardingError.set(null);
+
+    this.apiService.startFreeTrial({
+      ...this.onboardingForm,
+      password
+    }).subscribe({
+      next: (res) => {
+        this.isProcessingPayment.set(false);
+        if (res && res.success) {
+          this.authService.setSession(res.user, res.token);
+          this.closePaymentOnboardingModal();
+          this.router.navigate(['/dashboard']);
+        } else {
+          this.onboardingError.set(res.error || 'Failed to activate 14-day free trial.');
+        }
+      },
+      error: (err) => {
+        this.isProcessingPayment.set(false);
+        this.onboardingError.set(err.error?.error || 'Failed to activate 14-day free trial. Please try again.');
+      }
+    });
   }
 
   submitPrePaymentForm() {

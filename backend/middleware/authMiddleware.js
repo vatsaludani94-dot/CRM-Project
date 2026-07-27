@@ -90,12 +90,40 @@ const requireActiveSubscription = async (req, res, next) => {
     const Tenant = require('../models/Tenant');
     const tenantId = req.user.tenant._id || req.user.tenant;
     const tenant = await Tenant.findById(tenantId);
-    if (tenant && tenant.subscriptionStatus === 'pending_payment') {
-      return res.status(402).json({
-        success: false,
-        requireSubscriptionPayment: true,
-        error: 'Workspace subscription payment required. Please complete ₹9,999/month subscription to access CRM.',
-      });
+    if (tenant) {
+      if (tenant.subscriptionStatus === 'pending_payment') {
+        return res.status(402).json({
+          success: false,
+          requireSubscriptionPayment: true,
+          nextStep: 'payment_registration',
+          error: 'Workspace subscription payment required. Please complete ₹9,999/month subscription to access CRM.',
+        });
+      }
+
+      if (tenant.subscriptionStatus === 'trial_expired') {
+        return res.status(402).json({
+          success: false,
+          requireSubscriptionPayment: true,
+          trialExpired: true,
+          nextStep: 'payment_registration',
+          error: 'Your 14-day free trial has expired. Please upgrade to the ₹9,999/month plan to continue accessing CRM.',
+        });
+      }
+
+      if (tenant.subscriptionStatus === 'trial_active') {
+        const trialExpires = tenant.trialEndDate || tenant.trialExpiresAt;
+        if (trialExpires && Date.now() > new Date(trialExpires).getTime()) {
+          tenant.subscriptionStatus = 'trial_expired';
+          await tenant.save();
+          return res.status(402).json({
+            success: false,
+            requireSubscriptionPayment: true,
+            trialExpired: true,
+            nextStep: 'payment_registration',
+            error: 'Your 14-day free trial has expired. Please upgrade to the ₹9,999/month plan to continue accessing CRM.',
+          });
+        }
+      }
     }
   } catch (err) {
     console.error('Subscription Check Error:', err.message);
