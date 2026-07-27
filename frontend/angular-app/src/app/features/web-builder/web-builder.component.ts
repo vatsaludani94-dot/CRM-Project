@@ -57,10 +57,10 @@ interface WebsiteSection {
           </div>
           
           <div class="flex gap-2 pt-2">
-            <button (click)="openEditor(site)" class="flex-1 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-[#1c1917] text-xs font-bold py-2 rounded-xl transition-colors">
+            <button (click)="openEditor(site)" class="flex-1 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold py-2.5 rounded-xl transition-colors border border-stone-200">
               Edit Layout
             </button>
-            <button (click)="deleteSite(site._id)" class="bg-rose-100 hover:bg-rose-200 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 px-3 py-2 rounded-xl transition-colors">
+            <button (click)="deleteSite(site._id)" class="bg-rose-50 hover:bg-rose-100 text-rose-600 px-3 py-2.5 rounded-xl transition-colors border border-rose-200">
               <span class="material-icons text-sm">delete</span>
             </button>
           </div>
@@ -89,9 +89,9 @@ interface WebsiteSection {
 
               <!-- Device View Toggles -->
               <div class="flex items-center gap-1.5 bg-slate-800 p-1 rounded-xl">
-                <button (click)="setDevice('desktop')" [class.bg-slate-700]="deviceMode() === 'desktop'" class="p-1.5 rounded-lg text-[#1c1917] hover:text-white"><span class="material-icons text-sm">desktop_windows</span></button>
-                <button (click)="setDevice('tablet')" [class.bg-slate-700]="deviceMode() === 'tablet'" class="p-1.5 rounded-lg text-[#1c1917] hover:text-white"><span class="material-icons text-sm">tablet_mac</span></button>
-                <button (click)="setDevice('mobile')" [class.bg-slate-700]="deviceMode() === 'mobile'" class="p-1.5 rounded-lg text-[#1c1917] hover:text-white"><span class="material-icons text-sm">phone_iphone</span></button>
+                <button (click)="setDevice('desktop')" [class.bg-slate-700]="deviceMode() === 'desktop'" [class.text-white]="deviceMode() === 'desktop'" class="p-1.5 rounded-lg text-stone-300 hover:text-white hover:bg-slate-700 transition-colors"><span class="material-icons text-sm">desktop_windows</span></button>
+                <button (click)="setDevice('tablet')" [class.bg-slate-700]="deviceMode() === 'tablet'" [class.text-white]="deviceMode() === 'tablet'" class="p-1.5 rounded-lg text-stone-300 hover:text-white hover:bg-slate-700 transition-colors"><span class="material-icons text-sm">tablet_mac</span></button>
+                <button (click)="setDevice('mobile')" [class.bg-slate-700]="deviceMode() === 'mobile'" [class.text-white]="deviceMode() === 'mobile'" class="p-1.5 rounded-lg text-stone-300 hover:text-white hover:bg-slate-700 transition-colors"><span class="material-icons text-sm">phone_iphone</span></button>
               </div>
             </div>
 
@@ -157,10 +157,31 @@ interface WebsiteSection {
         <div class="lg:col-span-4 space-y-6">
           
           <!-- Tab selector for config panels -->
-          <div class="bg-white bg-white border border-slate-200 border-[#e7e5e4]/60 p-4 rounded-2xl flex gap-2 text-xs font-bold">
-            <button (click)="setEditorTab('section')" [class.bg-indigo-500]="activeEditorTab() === 'section'" [class.text-white]="activeEditorTab() === 'section'" class="flex-1 py-1.5 rounded-xl text-[#292524] dark:text-[#1c1917]">Section Editor</button>
-            <button (click)="setEditorTab('presets')" [class.bg-indigo-500]="activeEditorTab() === 'presets'" [class.text-white]="activeEditorTab() === 'presets'" class="flex-1 py-1.5 rounded-xl text-[#292524] dark:text-[#1c1917]">Add Preset</button>
-            <button (click)="setEditorTab('settings')" [class.bg-indigo-500]="activeEditorTab() === 'settings'" [class.text-white]="activeEditorTab() === 'settings'" class="flex-1 py-1.5 rounded-xl text-[#292524] dark:text-[#1c1917]">SEO & Domain</button>
+          <div class="bg-white border border-stone-200 p-3 rounded-2xl flex gap-2 text-xs font-bold shadow-sm">
+            <button (click)="setEditorTab('section')" 
+                    [class.bg-amber-600]="activeEditorTab() === 'section'" 
+                    [class.text-white]="activeEditorTab() === 'section'" 
+                    [class.bg-stone-100]="activeEditorTab() !== 'section'"
+                    [class.text-stone-800]="activeEditorTab() !== 'section'"
+                    class="flex-1 py-2 rounded-xl transition-all border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500">
+              Section Editor
+            </button>
+            <button (click)="setEditorTab('presets')" 
+                    [class.bg-amber-600]="activeEditorTab() === 'presets'" 
+                    [class.text-white]="activeEditorTab() === 'presets'" 
+                    [class.bg-stone-100]="activeEditorTab() !== 'presets'"
+                    [class.text-stone-800]="activeEditorTab() !== 'presets'"
+                    class="flex-1 py-2 rounded-xl transition-all border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500">
+              Add Preset
+            </button>
+            <button (click)="setEditorTab('settings')" 
+                    [class.bg-amber-600]="activeEditorTab() === 'settings'" 
+                    [class.text-white]="activeEditorTab() === 'settings'" 
+                    [class.bg-stone-100]="activeEditorTab() !== 'settings'"
+                    [class.text-stone-800]="activeEditorTab() !== 'settings'"
+                    class="flex-1 py-2 rounded-xl transition-all border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500">
+              SEO & Domain
+            </button>
           </div>
 
           <!-- Editor Panel: Section Content Form -->
@@ -224,8 +245,13 @@ interface WebsiteSection {
             <p class="text-[#44403c] text-[10px]">Select any preset component to append it directly to your page canvas.</p>
             
             <!-- Category Selector -->
-            <div class="flex flex-wrap gap-1 border-b border-slate-105 border-[#e7e5e4] pb-3">
-              <button *ngFor="let cat of componentCategories" (click)="selectedComponentCategory.set(cat)" [class.bg-indigo-600]="selectedComponentCategory() === cat" [class.text-white]="selectedComponentCategory() === cat" class="px-2 py-1 rounded text-[9px] font-bold text-[#292524] dark:text-[#1c1917] hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors">
+            <div class="flex flex-wrap gap-1 border-b border-stone-200 pb-3">
+              <button *ngFor="let cat of componentCategories" (click)="selectedComponentCategory.set(cat)" 
+                      [class.bg-amber-600]="selectedComponentCategory() === cat" 
+                      [class.text-white]="selectedComponentCategory() === cat" 
+                      [class.bg-stone-100]="selectedComponentCategory() !== cat"
+                      [class.text-stone-800]="selectedComponentCategory() !== cat"
+                      class="px-2 py-1 rounded-lg text-[9px] font-bold border border-stone-200 hover:bg-stone-200 transition-colors">
                 {{ cat }}
               </button>
             </div>
@@ -288,8 +314,13 @@ interface WebsiteSection {
               <label class="block text-[10px] font-bold text-[#44403c] uppercase mb-1.5">Select Template Layout (108 Available)</label>
               
               <!-- Category Selector Pills -->
-              <div class="flex flex-wrap gap-1 border-b border-slate-200 border-[#e7e5e4] pb-3 mb-3">
-                <button *ngFor="let cat of templateCategories" (click)="selectedCategoryFilter.set(cat)" [class.bg-indigo-600]="selectedCategoryFilter() === cat" [class.text-white]="selectedCategoryFilter() === cat" class="px-2 py-1 rounded-lg text-[9px] font-bold text-[#44403c] hover:bg-slate-105 dark:hover:bg-slate-700/50 transition-colors">
+              <div class="flex flex-wrap gap-1 border-b border-stone-200 pb-3 mb-3">
+                <button *ngFor="let cat of templateCategories" (click)="selectedCategoryFilter.set(cat)" 
+                        [class.bg-amber-600]="selectedCategoryFilter() === cat" 
+                        [class.text-white]="selectedCategoryFilter() === cat" 
+                        [class.bg-stone-100]="selectedCategoryFilter() !== cat"
+                        [class.text-stone-800]="selectedCategoryFilter() !== cat"
+                        class="px-2 py-1 rounded-lg text-[9px] font-bold border border-stone-200 hover:bg-stone-200 transition-colors">
                   {{ cat }}
                 </button>
               </div>

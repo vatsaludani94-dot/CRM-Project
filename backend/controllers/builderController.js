@@ -6,7 +6,33 @@ const { getTenantFilter, getTenantId } = require('../utils/tenantScope');
 const getWebsites = async (req, res) => {
   try {
     const tenantFilter = getTenantFilter(req);
-    const websites = await Website.find(tenantFilter).sort({ createdAt: -1 });
+    const tenantId = getTenantId(req);
+    let websites = await Website.find(tenantFilter).sort({ createdAt: -1 });
+
+    if (websites.length === 0) {
+      const defaultSections = [
+        { type: 'Hero', title: 'Welcome to Enterprise Platform', subtitle: 'Modern Cloud SaaS Operating System & Lead Pipeline Automation.', content: { buttonText: 'Get Started' }, style: { backgroundColor: '#ffffff', textColor: '#0f172a' } },
+        { type: 'Features', title: 'Enterprise Core Features', content: { list: ['Workflow Automation', 'Omnichannel Support', 'Customer 360'] }, style: { backgroundColor: '#f8fafc', textColor: '#0f172a' } },
+        { type: 'Pricing', title: 'Simple, Flexible Pricing', content: { tiers: [{ name: 'Free', price: '$0' }, { name: 'Growth', price: '$49/mo' }, { name: 'Enterprise', price: '$199/mo' }] }, style: { backgroundColor: '#ffffff', textColor: '#0f172a' } },
+        { type: 'Testimonials', title: 'Loved by Teams Worldwide', content: { list: [{ quote: 'GrownX changed how we track leads.', author: 'John Doe, CEO' }] }, style: { backgroundColor: '#f8fafc', textColor: '#0f172a' } },
+        { type: 'FAQ', title: 'Frequently Asked Questions', content: { items: [{ q: 'How does trial billing work?', a: 'You can trial any tier for 14 days without inputting cards.' }] }, style: { backgroundColor: '#ffffff', textColor: '#0f172a' } },
+        { type: 'Contact', title: 'Get in Touch', content: { formLabel: 'Contact Sales' }, style: { backgroundColor: '#f8fafc', textColor: '#0f172a' } },
+        { type: 'Footer', title: `© ${new Date().getFullYear()} GrownX Technologies. All rights reserved.`, style: { backgroundColor: '#0f172a', textColor: '#ffffff' } }
+      ];
+
+      const defaultSite = await Website.create({
+        name: 'Default Workspace Website',
+        template: 'SaaS',
+        subdomain: `site-${tenantId.toString().slice(-6)}-${Date.now().toString().slice(-4)}`,
+        seo: { title: 'Workspace Platform', description: 'Built with GrownX Web Builder' },
+        sections: defaultSections,
+        published: true,
+        tenant: tenantId,
+      });
+
+      websites = [defaultSite];
+    }
+
     res.json({ success: true, count: websites.length, data: websites });
   } catch (err) {
     res.status(err.statusCode || 500).json({ success: false, error: err.message });

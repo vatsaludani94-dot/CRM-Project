@@ -244,7 +244,48 @@ const triggerWorkflowEvents = async (triggerName, entityType, entityId, tenantId
 const getWorkflows = async (req, res) => {
   try {
     const tenantFilter = getTenantFilter(req);
-    const workflows = await Workflow.find(tenantFilter).sort({ createdAt: -1 });
+    const tenantId = getTenantId(req);
+    let workflows = await Workflow.find(tenantFilter).sort({ createdAt: -1 });
+
+    // Seed default workspace workflows if none exist for this tenant
+    if (workflows.length === 0) {
+      const defaultWorkflows = [
+        {
+          name: 'New Lead Onboarding Protocol',
+          trigger: 'Lead Created',
+          steps: [
+            { type: 'Action', config: { actionType: 'Send Direct Marketing Email', emailSubject: 'Welcome to our platform!', emailBody: '<p>Hi there, thank you for reaching out.</p>' } },
+            { type: 'Delay', config: { delayDuration: 2, delayUnit: 'days' } },
+            { type: 'Action', config: { actionType: 'Create Task', taskTitle: 'Follow up on new lead onboarding', taskPriority: 'High' } },
+          ],
+          isActive: true,
+          tenant: tenantId,
+        },
+        {
+          name: 'Automated Customer Retention Protocol',
+          trigger: 'Customer Becomes At Risk',
+          steps: [
+            { type: 'Action', config: { actionType: 'Create Retention Task', taskTitle: 'Review customer health drop', taskPriority: 'High' } },
+            { type: 'Action', config: { actionType: 'Notify Account Owner' } },
+          ],
+          isActive: true,
+          tenant: tenantId,
+        },
+        {
+          name: 'Support Escalation Protocol',
+          trigger: 'Ticket Created',
+          steps: [
+            { type: 'Action', config: { actionType: 'Assign Ticket' } },
+            { type: 'Action', config: { actionType: 'Notify Manager' } },
+          ],
+          isActive: true,
+          tenant: tenantId,
+        },
+      ];
+
+      workflows = await Workflow.insertMany(defaultWorkflows);
+    }
+
     res.json({ success: true, count: workflows.length, data: workflows });
   } catch (error) {
     res.status(error.statusCode || 500).json({ success: false, error: error.message });

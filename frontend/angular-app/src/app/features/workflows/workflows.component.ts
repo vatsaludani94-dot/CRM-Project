@@ -37,13 +37,28 @@ interface WorkflowStep {
           <p class="text-xs text-stone-500 mt-0.5">Design natural-language workflows or build visual triggers & delays.</p>
         </div>
         <div class="flex gap-2">
-          <button (click)="setView('list')" [class.bg-amber-600]="activeView() === 'list'" [class.text-white]="activeView() === 'list'" class="bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm">
+          <button (click)="setView('list')" 
+                  [class.bg-amber-600]="activeView() === 'list'" 
+                  [class.text-white]="activeView() === 'list'"
+                  [class.bg-stone-100]="activeView() !== 'list'"
+                  [class.text-stone-800]="activeView() !== 'list'"
+                  class="hover:bg-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500 font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm border border-stone-200">
             Workflows List
           </button>
-          <button (click)="startNewWorkflow()" [class.bg-amber-600]="activeView() === 'builder'" class="bg-amber-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl hover:bg-amber-700 transition-all shadow-sm flex items-center gap-1.5">
+          <button (click)="startNewWorkflow()" 
+                  [class.bg-amber-600]="activeView() === 'builder'" 
+                  [class.text-white]="activeView() === 'builder'"
+                  [class.bg-stone-100]="activeView() !== 'builder'"
+                  [class.text-stone-800]="activeView() !== 'builder'"
+                  class="hover:bg-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500 font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm flex items-center gap-1.5 border border-stone-200">
             <span class="material-icons text-sm">add</span> Create Workflow
           </button>
-          <button (click)="setView('logs')" [class.bg-amber-600]="activeView() === 'logs'" [class.text-white]="activeView() === 'logs'" class="bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm">
+          <button (click)="setView('logs')" 
+                  [class.bg-amber-600]="activeView() === 'logs'" 
+                  [class.text-white]="activeView() === 'logs'"
+                  [class.bg-stone-100]="activeView() !== 'logs'"
+                  [class.text-stone-800]="activeView() !== 'logs'"
+                  class="hover:bg-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500 font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm border border-stone-200">
             Execution Logs
           </button>
         </div>
