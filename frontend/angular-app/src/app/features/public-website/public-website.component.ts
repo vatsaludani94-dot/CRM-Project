@@ -49,8 +49,11 @@ interface ChatMessage {
             </nav>
           </div>
 
-          <div class="flex items-center gap-4">
-            <a routerLink="/login" class="text-sm font-bold text-[#44403c] hover:text-[#1c1917] transition-colors px-4 py-2">Sign In</a>
+          <div class="flex items-center gap-3">
+            <a routerLink="/login" class="text-sm font-bold text-[#1c1917] bg-white border border-[#e7e5e4] hover:bg-slate-100 hover:border-slate-300 px-4 py-2 rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer">
+              <span class="material-icons text-base text-amber-700">login</span>
+              <span>Login</span>
+            </a>
             <a (click)="setTab('register')" class="text-sm font-bold bg-[#1c1917] hover:bg-[#292524] text-white px-5 py-2.5 rounded-xl shadow-lg shadow-slate-900/10 transition-all hover:-translate-y-0.5 cursor-pointer">
               Get Started
             </a>
@@ -1138,7 +1141,11 @@ export class PublicWebsiteComponent implements OnInit {
   triggerBuyPlan(planName: string = 'GrownX Enterprise SaaS Plan', amount: number = 9999) {
     const user = this.authService.currentUserValue;
     if (!user) {
-      this.router.navigate(['/register']);
+      this.paymentSuccess.set(false);
+      this.paymentStatusMessage.set('Registration Required: Please register your workspace account first before completing payment.');
+      setTimeout(() => {
+        this.setTab('register');
+      }, 1500);
       return;
     }
 
