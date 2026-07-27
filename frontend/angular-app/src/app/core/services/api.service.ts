@@ -7,11 +7,13 @@ import { Observable } from 'rxjs';
 })
 export class ApiService {
   private getBaseUrl(): string {
-    const hostname = window.location.hostname;
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return 'http://localhost:3000/api';
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return 'http://localhost:3000/api';
+      }
     }
-    return `${window.location.protocol}//${window.location.host}/api`;
+    return 'https://grownx-api.onrender.com/api';
   }
 
   private baseUrl = this.getBaseUrl();

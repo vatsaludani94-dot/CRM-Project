@@ -10,11 +10,13 @@ export class SocketService {
   private socket!: Socket;
 
   private getBackendUrl(): string {
-    const hostname = window.location.hostname;
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return 'http://localhost:3000';
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return 'http://localhost:3000';
+      }
     }
-    return `${window.location.protocol}//${window.location.host}`;
+    return 'https://grownx-api.onrender.com';
   }
 
   private backendUrl = this.getBackendUrl();
@@ -47,7 +49,7 @@ export class SocketService {
   private initSocket() {
     this.socket = io(this.backendUrl, {
       autoConnect: true,
-      transports: ['websocket']
+      transports: ['websocket', 'polling']
     });
 
     this.socket.on('connect', () => {

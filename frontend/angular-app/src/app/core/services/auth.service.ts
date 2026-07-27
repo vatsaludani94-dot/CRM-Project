@@ -23,13 +23,11 @@ export class AuthService {
   public get apiUrl(): string {
     if (typeof window !== 'undefined') {
       const host = window.location.hostname;
-      const protocol = window.location.protocol;
       if (host === 'localhost' || host === '127.0.0.1') {
         return 'http://localhost:3000/api/auth';
       }
-      return `${protocol}//${window.location.host}/api/auth`;
     }
-    return 'http://localhost:3000/api/auth';
+    return 'https://grownx-api.onrender.com/api/auth';
   }
 
   private currentUserSubject = new BehaviorSubject<UserProfile | null>(null);

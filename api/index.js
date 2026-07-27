@@ -1,5 +1,4 @@
-const app = require('../backend/server.js');
-
+// Vercel API forwarding proxy fallback handler
 module.exports = (req, res) => {
-  return app(req, res);
+  res.redirect(307, `https://grownx-api.onrender.com${req.url}`);
 };
