@@ -4,18 +4,21 @@ const {
   getConversations,
   getConversationById,
   postConversationMessage,
+  publicEmailSupportIntake,
   publicWebFormIntake,
   publicChatSession,
   publicChatMessage,
   convertToTicket,
   logCall,
   getSupportAnalytics,
+  getSupportMailboxIdentity,
   getSlaAndPriorityConfig,
 } = require('../controllers/omnichannelController');
 const { protect, requireTenant } = require('../middleware/authMiddleware');
 const { authorize } = require('../middleware/roleMiddleware');
 
 // Public Omnichannel Support Intake Endpoints
+router.post('/public/email-intake', publicEmailSupportIntake);
 router.post('/public/web-form', publicWebFormIntake);
 router.post('/public/chat/session', publicChatSession);
 router.post('/public/chat/message', publicChatMessage);
@@ -30,6 +33,7 @@ router.post('/conversations/:id/messages', authorize('super_admin', 'manager', '
 router.post('/conversations/:id/convert-to-ticket', authorize('super_admin', 'manager', 'employee', 'workspace_owner'), convertToTicket);
 
 router.post('/calls', authorize('super_admin', 'manager', 'employee', 'workspace_owner'), logCall);
+router.get('/mailbox-identity', authorize('super_admin', 'manager', 'employee', 'workspace_owner'), getSupportMailboxIdentity);
 router.get('/analytics', authorize('super_admin', 'manager', 'employee', 'workspace_owner'), getSupportAnalytics);
 router.get('/sla-priority', authorize('super_admin', 'manager', 'employee', 'workspace_owner'), getSlaAndPriorityConfig);
 

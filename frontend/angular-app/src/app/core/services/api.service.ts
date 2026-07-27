@@ -257,6 +257,26 @@ export class ApiService {
     return this.http.post<any>(`${this.baseUrl}/support/calls`, data);
   }
 
+  assignTicket(id: string, assignedEmployee: string): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/tickets/${id}/assign`, { assignedEmployee });
+  }
+
+  resolveTicket(id: string, resolutionSummary: string): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/tickets/${id}/resolve`, { resolutionSummary });
+  }
+
+  reopenTicket(id: string): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/tickets/${id}/reopen`, {});
+  }
+
+  aiClarifyTicket(id: string, payload: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/tickets/${id}/ai-clarify`, payload);
+  }
+
+  getSupportMailboxIdentity(): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/support/mailbox-identity`);
+  }
+
   getSupportAnalytics(): Observable<any> {
     return this.http.get<any>(`${this.baseUrl}/support/analytics`);
   }

@@ -72,6 +72,7 @@ const getTicketById = async (req, res) => {
       .populate('customer', 'companyName contactPerson email phone customerCode status revenueGenerated')
       .populate('lead', 'contactName company email phone stage')
       .populate('assignedEmployee', 'name email role department')
+      .populate('resolvedBy', 'name email role')
       .populate('comments.commentedBy', 'name email role')
       .populate('conversation');
 
@@ -107,7 +108,7 @@ const createTicket = async (req, res) => {
   try {
     const tenantFilter = getTenantFilter(req);
     const tenantId = getTenantId(req);
-    const { title, description, category, priority, customerId, leadId, channel, assignedEmployee } = req.body;
+    const { title, description, category, priority, customerId, leadId, channel, assignedEmployee, attachments } = req.body;
     let targetCustomerId = customerId;
     let targetLeadId = leadId;
 
@@ -149,7 +150,7 @@ const createTicket = async (req, res) => {
       }
     }
 
-    // 1. Evaluate Priority via Priority & Criticality Engine
+    // 1. Evaluate Priority via Priority Engine
     const priorityResult = await evaluateTicketPriority({
       title,
       description,
@@ -161,7 +162,7 @@ const createTicket = async (req, res) => {
     // 2. Calculate SLA Due Dates
     const slaDates = calculateInitialSla(priorityResult.priority);
 
-    // 3. Create or Link Conversation
+    // 3. Create Conversation
     const convKey = `CONV-${Math.floor(100000 + Math.random() * 900000)}`;
     const conversation = await Conversation.create({
       tenant: tenantId,
@@ -190,6 +191,7 @@ const createTicket = async (req, res) => {
       firstResponseDueAt: slaDates.firstResponseDueAt,
       resolutionDueAt: slaDates.resolutionDueAt,
       slaStatus: slaDates.slaStatus,
+      attachments: attachments || [],
       tenant: tenantId,
     });
 
@@ -203,7 +205,6 @@ const createTicket = async (req, res) => {
 
     await ticket.save();
 
-    // Link Ticket back to Conversation
     conversation.ticket = ticket._id;
     await conversation.save();
 
@@ -220,6 +221,7 @@ const createTicket = async (req, res) => {
       direction: req.user.role === 'customer' ? 'inbound' : 'outbound',
       subject: title,
       body: description,
+      attachments: attachments || [],
       isInternal: false,
     });
 
@@ -245,7 +247,6 @@ const createTicket = async (req, res) => {
       tenant: tenantId,
     });
 
-    // Record activity on Customer 360 or Lead timeline
     if (targetCustomer) {
       targetCustomer.activities = targetCustomer.activities || [];
       targetCustomer.activities.push({
@@ -281,7 +282,6 @@ const createTicket = async (req, res) => {
       }
     }
 
-    // Recalculate Customer Health
     try {
       if (targetCustomerId) {
         const { calculateCustomerHealth } = require('../services/customerHealthService');
@@ -314,21 +314,32 @@ const updateTicket = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Ticket not found' });
     }
 
-    const { status, priority, assignedEmployee, category } = req.body;
+    const { status, priority, assignedEmployee, category, resolutionSummary } = req.body;
     let statusChanged = false;
     let priorityChanged = false;
     let assignmentChanged = false;
     const oldStatus = ticket.status;
     const oldPriority = ticket.priority;
 
-    if (assignedEmployee) {
-      const emp = await User.findOne({ _id: assignedEmployee, ...tenantFilter });
-      if (!emp) {
-        return res.status(400).json({ success: false, error: 'Assigned employee does not belong to your workspace' });
+    if (assignedEmployee !== undefined) {
+      if (assignedEmployee) {
+        const emp = await User.findOne({ _id: assignedEmployee, ...tenantFilter });
+        if (!emp) {
+          return res.status(400).json({ success: false, error: 'Assigned employee does not belong to your workspace' });
+        }
+      }
+      if (String(ticket.assignedEmployee) !== String(assignedEmployee)) {
+        ticket.assignedEmployee = assignedEmployee || null;
+        assignmentChanged = true;
+        if (assignedEmployee && ticket.status === 'Open') {
+          ticket.status = 'Assigned';
+          statusChanged = true;
+        }
       }
     }
 
     if (category) ticket.category = category;
+    if (resolutionSummary) ticket.resolutionSummary = resolutionSummary;
 
     // Manual Priority Override
     if (priority && priority !== ticket.priority) {
@@ -344,13 +355,15 @@ const updateTicket = async (req, res) => {
       const normalizedOld = ticket.status === 'In_Progress' ? 'In Progress' : ticket.status;
 
       const validTransitions = {
-        'Open': ['Assigned', 'In Progress', 'In_Progress', 'Waiting for Customer', 'Closed'],
-        'Assigned': ['Open', 'In Progress', 'In_Progress', 'Waiting for Customer', 'Closed'],
-        'In Progress': ['Waiting for Customer', 'Resolved', 'Open', 'Closed'],
-        'In_Progress': ['Waiting for Customer', 'Resolved', 'Open', 'Closed'],
-        'Waiting for Customer': ['In Progress', 'In_Progress', 'Resolved', 'Closed'],
-        'Resolved': ['Closed', 'In Progress', 'In_Progress', 'Open'],
-        'Closed': ['In Progress', 'In_Progress', 'Open'],
+        'Open': ['Assigned', 'In Progress', 'In_Progress', 'Waiting for Customer', 'Waiting for Agent', 'Resolved', 'Closed'],
+        'Assigned': ['Open', 'In Progress', 'In_Progress', 'Waiting for Customer', 'Waiting for Agent', 'Resolved', 'Closed'],
+        'In Progress': ['Waiting for Customer', 'Waiting for Agent', 'Resolved', 'Open', 'Closed'],
+        'In_Progress': ['Waiting for Customer', 'Waiting for Agent', 'Resolved', 'Open', 'Closed'],
+        'Waiting for Customer': ['In Progress', 'In_Progress', 'Waiting for Agent', 'Resolved', 'Closed'],
+        'Waiting for Agent': ['In Progress', 'In_Progress', 'Waiting for Customer', 'Resolved', 'Closed'],
+        'Resolved': ['Closed', 'In Progress', 'In_Progress', 'Open', 'Reopened'],
+        'Closed': ['Reopened', 'In Progress', 'In_Progress', 'Open'],
+        'Reopened': ['In Progress', 'In_Progress', 'Assigned', 'Resolved', 'Closed'],
       };
 
       const allowed = validTransitions[normalizedOld] || [];
@@ -366,15 +379,15 @@ const updateTicket = async (req, res) => {
 
       if (['Resolved', 'Closed'].includes(normalizedStatus)) {
         ticket.resolvedAt = ticket.resolvedAt || new Date();
+        ticket.resolvedBy = req.user._id;
+        if (ticket.createdAt) {
+          ticket.resolutionDurationMinutes = Math.round((Date.now() - new Date(ticket.createdAt).getTime()) / 60000);
+        }
       }
-    }
 
-    if (assignedEmployee !== undefined && String(ticket.assignedEmployee) !== String(assignedEmployee)) {
-      ticket.assignedEmployee = assignedEmployee || null;
-      assignmentChanged = true;
-      if (assignedEmployee && ticket.status === 'Open') {
-        ticket.status = 'Assigned';
-        statusChanged = true;
+      if (normalizedStatus === 'Reopened') {
+        ticket.reopenedAt = new Date();
+        ticket.reopenCount = (ticket.reopenCount || 0) + 1;
       }
     }
 
@@ -385,6 +398,7 @@ const updateTicket = async (req, res) => {
       { path: 'customer', select: 'companyName contactPerson email customerCode' },
       { path: 'lead', select: 'contactName company email phone stage' },
       { path: 'assignedEmployee', select: 'name email role department' },
+      { path: 'resolvedBy', select: 'name email role' },
     ]);
 
     const io = req.app.get('io');
@@ -401,7 +415,6 @@ const updateTicket = async (req, res) => {
       tenant: ticket.tenant,
     });
 
-    // Recalculate customer health & trigger workflows
     try {
       const customerId = ticket.customer?._id || ticket.customer;
       if (customerId) {
@@ -443,7 +456,151 @@ const updateTicket = async (req, res) => {
 };
 
 /**
- * @desc    Add comment / reply to ticket (Supports Customer Reply vs Internal Note)
+ * @desc    Manual Ticket Agent Assignment
+ * @route   PUT /api/tickets/:id/assign
+ * @access  Private (Admin, Manager, Employee)
+ */
+const assignTicket = async (req, res) => {
+  try {
+    const tenantFilter = getTenantFilter(req);
+    const ticket = await Ticket.findOne({ _id: req.params.id, ...tenantFilter });
+    if (!ticket) {
+      return res.status(404).json({ success: false, error: 'Ticket not found' });
+    }
+
+    const { assignedEmployee } = req.body;
+    let targetEmployee = null;
+
+    if (assignedEmployee) {
+      targetEmployee = await User.findOne({ _id: assignedEmployee, ...tenantFilter });
+      if (!targetEmployee) {
+        return res.status(400).json({ success: false, error: 'Target employee does not belong to your workspace' });
+      }
+    }
+
+    ticket.assignedEmployee = targetEmployee ? targetEmployee._id : null;
+    if (targetEmployee && ['Open', 'Waiting for Agent'].includes(ticket.status)) {
+      ticket.status = 'Assigned';
+    }
+
+    ticket.slaStatus = evaluateSlaStatus(ticket);
+    await ticket.save();
+
+    await ticket.populate([
+      { path: 'customer', select: 'companyName contactPerson email customerCode' },
+      { path: 'lead', select: 'contactName company email phone stage' },
+      { path: 'assignedEmployee', select: 'name email role department' },
+    ]);
+
+    await Activity.create({
+      user: req.user._id,
+      action: 'Ticket Assigned',
+      details: `Ticket ${ticket.ticketCode} assigned to ${targetEmployee ? targetEmployee.name : 'Unassigned'} by ${req.user.name}`,
+      module: 'Ticket',
+      ipAddress: req.ip,
+      tenant: ticket.tenant,
+    });
+
+    res.json({ success: true, message: `Ticket successfully assigned to ${targetEmployee ? targetEmployee.name : 'Unassigned'}`, data: ticket });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
+  }
+};
+
+/**
+ * @desc    Resolve Support Ticket with required Resolution Summary
+ * @route   PUT /api/tickets/:id/resolve
+ * @access  Private (Admin, Manager, Employee)
+ */
+const resolveTicket = async (req, res) => {
+  try {
+    const tenantFilter = getTenantFilter(req);
+    const ticket = await Ticket.findOne({ _id: req.params.id, ...tenantFilter });
+    if (!ticket) {
+      return res.status(404).json({ success: false, error: 'Ticket not found' });
+    }
+
+    const { resolutionSummary } = req.body;
+    if (!resolutionSummary || !resolutionSummary.trim()) {
+      return res.status(400).json({ success: false, error: 'Resolution summary is required to resolve a ticket.' });
+    }
+
+    ticket.status = 'Resolved';
+    ticket.resolutionSummary = resolutionSummary.trim();
+    ticket.resolvedAt = new Date();
+    ticket.resolvedBy = req.user._id;
+    if (ticket.createdAt) {
+      ticket.resolutionDurationMinutes = Math.round((Date.now() - new Date(ticket.createdAt).getTime()) / 60000);
+    }
+
+    ticket.slaStatus = evaluateSlaStatus(ticket);
+    await ticket.save();
+
+    await ticket.populate([
+      { path: 'customer', select: 'companyName contactPerson email customerCode' },
+      { path: 'lead', select: 'contactName company email phone stage' },
+      { path: 'assignedEmployee', select: 'name email role department' },
+      { path: 'resolvedBy', select: 'name email role' },
+    ]);
+
+    // Record activity on Customer 360 or Lead timeline
+    if (ticket.customer) {
+      const cust = await Customer.findOne({ _id: ticket.customer, ...tenantFilter });
+      if (cust) {
+        cust.activities = cust.activities || [];
+        cust.activities.push({
+          type: 'Ticket Resolved',
+          description: `Ticket ${ticket.ticketCode} resolved. Summary: ${ticket.resolutionSummary}`,
+          date: new Date(),
+        });
+        await cust.save();
+      }
+    }
+
+    try {
+      const customerId = ticket.customer?._id || ticket.customer;
+      if (customerId) {
+        const { calculateCustomerHealth } = require('../services/customerHealthService');
+        await calculateCustomerHealth(customerId, ticket.tenant);
+      }
+      const { triggerWorkflowEvents } = require('./workflowController');
+      await triggerWorkflowEvents('ticket.resolved', 'Ticket', ticket._id, ticket.tenant);
+    } catch (hErr) {}
+
+    res.json({ success: true, message: 'Ticket resolved successfully.', data: ticket });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
+  }
+};
+
+/**
+ * @desc    Reopen closed or resolved ticket
+ * @route   PUT /api/tickets/:id/reopen
+ * @access  Private
+ */
+const reopenTicket = async (req, res) => {
+  try {
+    const tenantFilter = getTenantFilter(req);
+    const ticket = await Ticket.findOne({ _id: req.params.id, ...tenantFilter });
+    if (!ticket) {
+      return res.status(404).json({ success: false, error: 'Ticket not found' });
+    }
+
+    ticket.status = 'Reopened';
+    ticket.reopenedAt = new Date();
+    ticket.reopenCount = (ticket.reopenCount || 0) + 1;
+
+    ticket.slaStatus = evaluateSlaStatus(ticket);
+    await ticket.save();
+
+    res.json({ success: true, message: 'Ticket reopened successfully.', data: ticket });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
+  }
+};
+
+/**
+ * @desc    Add comment / reply to ticket (Supports Customer Reply vs Internal Note & Attachments)
  * @route   POST /api/tickets/:id/comments
  * @access  Private
  */
@@ -455,21 +612,40 @@ const addTicketComment = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Ticket not found' });
     }
 
-    const { comment, isInternal } = req.body;
-    if (!comment) {
-      return res.status(400).json({ success: false, error: 'Comment content is required' });
+    const { comment, isInternal, attachments } = req.body;
+    if (!comment && (!attachments || attachments.length === 0)) {
+      return res.status(400).json({ success: false, error: 'Comment content or attachment is required' });
+    }
+
+    // Validate attachments if provided
+    if (attachments && Array.isArray(attachments)) {
+      const forbiddenExts = ['.exe', '.bat', '.sh', '.dll', '.cmd', '.ps1', '.vbs', '.msi'];
+      for (const att of attachments) {
+        const ext = (att.fileName || '').slice((att.fileName || '').lastIndexOf('.')).toLowerCase();
+        if (forbiddenExts.includes(ext)) {
+          return res.status(400).json({ success: false, error: `Attachment "${att.fileName}" has a forbidden executable file format.` });
+        }
+      }
     }
 
     const internalFlag = isInternal === true || isInternal === 'true';
 
     const newComment = {
-      comment,
+      comment: comment || 'Attachment file uploaded',
       commentedBy: req.user._id,
       isInternal: internalFlag,
+      attachments: attachments || [],
       createdAt: new Date(),
     };
 
     ticket.comments.push(newComment);
+
+    // If ticket was Closed or Resolved and customer posts new message, auto-reopen!
+    if (req.user.role === 'customer' && ['Closed', 'Resolved'].includes(ticket.status)) {
+      ticket.status = 'Reopened';
+      ticket.reopenedAt = new Date();
+      ticket.reopenCount = (ticket.reopenCount || 0) + 1;
+    }
 
     // If agent posts customer-visible reply for the first time, record firstRespondedAt
     if (!internalFlag && req.user.role !== 'customer' && !ticket.firstRespondedAt) {
@@ -484,7 +660,7 @@ const addTicketComment = async (req, res) => {
       const conv = await Conversation.findOne({ _id: ticket.conversation, ...tenantFilter });
       if (conv) {
         conv.lastMessageAt = new Date();
-        conv.lastMessagePreview = comment.slice(0, 120);
+        conv.lastMessagePreview = (comment || 'Attachment').slice(0, 120);
         await conv.save();
 
         await ConversationMessage.create({
@@ -498,7 +674,8 @@ const addTicketComment = async (req, res) => {
           channel: ticket.channel || 'email',
           direction: internalFlag ? 'internal' : (req.user.role === 'customer' ? 'inbound' : 'outbound'),
           subject: `Re: ${ticket.title}`,
-          body: comment,
+          body: comment || 'Attachment uploaded',
+          attachments: attachments || [],
           isInternal: internalFlag,
         });
       }
@@ -537,6 +714,88 @@ const addTicketComment = async (req, res) => {
 };
 
 /**
+ * @desc    AI Support Clarification Flow (Structured Question Gathering & Evidence Collection)
+ * @route   POST /api/tickets/:id/ai-clarify
+ * @access  Private (or System Inbound)
+ */
+const aiClarifyTicket = async (req, res) => {
+  try {
+    const tenantFilter = getTenantFilter(req);
+    const ticket = await Ticket.findOne({ _id: req.params.id, ...tenantFilter });
+    if (!ticket) {
+      return res.status(404).json({ success: false, error: 'Ticket not found' });
+    }
+
+    const { customerResponse, step } = req.body;
+
+    ticket.aiClarification = ticket.aiClarification || {};
+    ticket.aiClarification.active = true;
+
+    let aiQuestion = '';
+    let isFinalSummary = false;
+
+    // Structured 5-step disclosure-friendly question sequence
+    if (!step || step === 1) {
+      aiQuestion = `Hello! I am the GrownX AI Support Assistant. To help your assigned support agent resolve this quickly, could you briefly describe what specific problem you are facing?`;
+      ticket.aiClarification.questionsGathered.push('Issue area inquiry');
+    } else if (step === 2) {
+      aiQuestion = `Thank you. Did this issue start occurring after a recent software update, password reset, or configuration change?`;
+      ticket.aiClarification.recentChangeDetails = customerResponse || 'No recent change specified';
+      ticket.aiClarification.questionsGathered.push('Recent changes inquiry');
+    } else if (step === 3) {
+      aiQuestion = `Got it. Can you please attach or provide a link to a screenshot, error log, or affected PDF document?`;
+      ticket.aiClarification.questionsGathered.push('Evidence / Screenshot request');
+    } else if (step === 4) {
+      aiQuestion = `Does this issue affect one specific record or multiple items across your account? Is this currently blocking your critical work?`;
+      ticket.aiClarification.affectedItems = customerResponse || 'Single item';
+      ticket.aiClarification.questionsGathered.push('Urgency and scope check');
+    } else {
+      isFinalSummary = true;
+      ticket.aiClarification.issueSummary = `Structured Support Clarification Summary:
+- Customer Problem: ${ticket.title}
+- Scope & Affected Items: ${ticket.aiClarification.affectedItems || 'Single'}
+- Recent Change Context: ${ticket.aiClarification.recentChangeDetails || 'None'}
+- Urgency: ${ticket.priority}`;
+      aiQuestion = `Thank you for providing these details! I have summarized your responses and attached them to your ticket. An assigned customer care agent will review this evidence and get in touch with you shortly.`;
+      ticket.status = 'Waiting for Agent';
+    }
+
+    await ticket.save();
+
+    // Sync AI Question to Conversation Stream
+    if (ticket.conversation) {
+      const conv = await Conversation.findOne({ _id: ticket.conversation, tenant: ticket.tenant });
+      if (conv) {
+        await ConversationMessage.create({
+          tenant: ticket.tenant,
+          conversation: conv._id,
+          ticket: ticket._id,
+          senderType: 'ai_assistant',
+          senderName: 'GrownX AI Support Assistant',
+          channel: ticket.channel || 'email',
+          direction: 'outbound',
+          subject: `Support Clarification Question (Step ${step || 1})`,
+          body: aiQuestion,
+          isInternal: false,
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        aiQuestion,
+        step: step || 1,
+        isFinalSummary,
+        issueSummary: ticket.aiClarification.issueSummary,
+      },
+    });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
+  }
+};
+
+/**
  * @desc    Get AI Reply Suggestions for ticket
  * @route   GET /api/tickets/:id/ai-suggestions
  * @access  Private (Admin, Manager, Employee)
@@ -568,6 +827,10 @@ module.exports = {
   getTicketById,
   createTicket,
   updateTicket,
+  assignTicket,
+  resolveTicket,
+  reopenTicket,
   addTicketComment,
+  aiClarifyTicket,
   getTicketAISuggestions,
 };

@@ -20,7 +20,7 @@ const ConversationMessageSchema = new mongoose.Schema(
     },
     senderType: {
       type: String,
-      enum: ['customer', 'lead', 'agent', 'system', 'visitor'],
+      enum: ['customer', 'lead', 'agent', 'system', 'visitor', 'ai_assistant'],
       default: 'agent',
     },
     senderUser: {
@@ -64,6 +64,8 @@ const ConversationMessageSchema = new mongoose.Schema(
       {
         fileName: String,
         fileUrl: String,
+        fileType: String,
+        fileSize: Number,
       },
     ],
     externalMessageId: {

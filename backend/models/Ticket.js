@@ -8,12 +8,20 @@ const CommentSchema = new mongoose.Schema({
   commentedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
+    required: false,
   },
   isInternal: {
     type: Boolean,
     default: false,
   },
+  attachments: [
+    {
+      fileName: String,
+      fileUrl: String,
+      fileType: String,
+      fileSize: Number,
+    },
+  ],
   createdAt: {
     type: Date,
     default: Date.now,
@@ -61,7 +69,17 @@ const TicketSchema = new mongoose.Schema(
     ],
     status: {
       type: String,
-      enum: ['Open', 'Assigned', 'In Progress', 'In_Progress', 'Waiting for Customer', 'Resolved', 'Closed'],
+      enum: [
+        'Open',
+        'Assigned',
+        'In Progress',
+        'In_Progress',
+        'Waiting for Customer',
+        'Waiting for Agent',
+        'Resolved',
+        'Closed',
+        'Reopened',
+      ],
       default: 'Open',
     },
     customer: {
@@ -84,6 +102,13 @@ const TicketSchema = new mongoose.Schema(
       ref: 'User',
       required: false,
     },
+    assignedTeam: {
+      type: String,
+      default: 'Customer Care Support',
+    },
+    acknowledgmentSentAt: {
+      type: Date,
+    },
     firstResponseDueAt: {
       type: Date,
     },
@@ -96,6 +121,25 @@ const TicketSchema = new mongoose.Schema(
     resolvedAt: {
       type: Date,
     },
+    resolvedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    resolutionSummary: {
+      type: String,
+      default: '',
+    },
+    resolutionDurationMinutes: {
+      type: Number,
+      default: 0,
+    },
+    reopenedAt: {
+      type: Date,
+    },
+    reopenCount: {
+      type: Number,
+      default: 0,
+    },
     slaStatus: {
       type: String,
       enum: ['On Track', 'At Risk', 'Breached', 'Completed'],
@@ -106,8 +150,18 @@ const TicketSchema = new mongoose.Schema(
       {
         fileName: String,
         fileUrl: String,
+        fileType: String,
+        fileSize: Number,
       },
     ],
+    aiClarification: {
+      active: { type: Boolean, default: false },
+      questionsGathered: [{ type: String }],
+      issueSummary: { type: String, default: '' },
+      urgencyRating: { type: String, default: 'Medium' },
+      affectedItems: { type: String, default: 'Single' },
+      recentChangeDetails: { type: String, default: '' },
+    },
     tenant: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Tenant',
