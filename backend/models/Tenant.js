@@ -49,7 +49,7 @@ const TenantSchema = new mongoose.Schema(
     },
     subscriptionStatus: {
       type: String,
-      enum: ['active', 'pending_payment', 'trial_active', 'trial_expired', 'cancelled'],
+      enum: ['active', 'pending_payment', 'trial_active', 'trial_expired', 'cancelled', 'suspended'],
       default: 'active',
     },
     subscriptionPlan: {
@@ -60,6 +60,27 @@ const TenantSchema = new mongoose.Schema(
       type: Number,
       default: 9999,
     },
+    renewalDate: {
+      type: Date,
+    },
+    billingCycle: {
+      type: String,
+      default: 'monthly',
+    },
+    setupWizardCompleted: {
+      type: Boolean,
+      default: true,
+    },
+    paymentHistory: [
+      {
+        date: { type: Date, default: Date.now },
+        amount: { type: Number, default: 9999 },
+        orderId: { type: String, default: '' },
+        paymentId: { type: String, default: '' },
+        planName: { type: String, default: 'GrownX Enterprise Plan' },
+        status: { type: String, default: 'captured' },
+      },
+    ],
     trialStartDate: {
       type: Date,
     },

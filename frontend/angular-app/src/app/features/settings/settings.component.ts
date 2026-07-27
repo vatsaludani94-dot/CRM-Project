@@ -37,6 +37,16 @@ import { WorkspaceContextService } from '../../core/services/workspace-context.s
             </button>
 
             <button 
+              (click)="activeTab = 'billing'" 
+              [class.bg-indigo-50]="activeTab === 'billing'"
+              [class.text-indigo-600]="activeTab === 'billing'"
+              [class.border-indigo-200]="activeTab === 'billing'"
+              class="w-full text-left p-3 rounded-xl border border-transparent text-slate-700 font-bold text-xs flex items-center gap-2.5 transition-all">
+              <span class="material-icons text-sm">credit_card</span>
+              <span>Subscription & Billing</span>
+            </button>
+
+            <button 
               (click)="activeTab = 'security'" 
               [class.bg-indigo-50]="activeTab === 'security'"
               [class.text-indigo-600]="activeTab === 'security'"
@@ -139,7 +149,147 @@ import { WorkspaceContextService } from '../../core/services/workspace-context.s
             </form>
           </div>
 
-          <!-- TAB 2: PASSKEYS & 2FA SECURITY -->
+          <!-- TAB 2: SUBSCRIPTION & BILLING MANAGEMENT -->
+          <div *ngIf="activeTab === 'billing'" class="space-y-6">
+            <!-- Subscription Overview Card -->
+            <div class="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 space-y-6">
+              <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="text-sm font-black text-slate-900 flex items-center gap-2">
+                  <span class="material-icons text-slate-500 text-sm">credit_card</span>
+                  <span>Subscription & Workspace Plan</span>
+                </h3>
+                <span 
+                  [class.bg-emerald-100]="subscriptionStatus() === 'active'"
+                  [class.text-emerald-800]="subscriptionStatus() === 'active'"
+                  [class.bg-amber-100]="subscriptionStatus() === 'trial_active'"
+                  [class.text-amber-800]="subscriptionStatus() === 'trial_active'"
+                  [class.bg-rose-100]="subscriptionStatus() === 'trial_expired' || subscriptionStatus() === 'pending_payment'"
+                  [class.text-rose-800]="subscriptionStatus() === 'trial_expired' || subscriptionStatus() === 'pending_payment'"
+                  class="text-[10px] font-bold uppercase px-3 py-1 rounded-full border border-slate-200">
+                  {{ subscriptionStatus() }}
+                </span>
+              </div>
+
+              <!-- Trial Countdown Banner if Trial -->
+              <div *ngIf="subscriptionStatus() === 'trial_active'" class="p-4 bg-gradient-to-r from-amber-600 via-amber-700 to-stone-900 text-white rounded-xl space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-black uppercase tracking-wider text-amber-300">14-Day Free Trial Active</span>
+                  <span class="text-xs font-bold bg-amber-400/20 px-2.5 py-0.5 rounded-full border border-amber-300/30 text-amber-200">{{ trialDaysRemaining() }} Days Remaining</span>
+                </div>
+                <p class="text-xs text-amber-100/90 leading-relaxed font-medium">Explore all premium GrownX CRM features. Upgrade anytime to continue without disruption.</p>
+              </div>
+
+              <!-- Expired Trial Banner -->
+              <div *ngIf="subscriptionStatus() === 'trial_expired'" class="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl space-y-2">
+                <div class="flex items-center gap-2 font-extrabold text-xs">
+                  <span class="material-icons text-rose-600">lock</span>
+                  <span>Your 14-day trial has ended</span>
+                </div>
+                <p class="text-xs text-rose-700 leading-relaxed">All your CRM data is safely preserved. Upgrade now to continue working exactly where you left off.</p>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div class="p-4 bg-slate-50 border border-slate-100 rounded-xl space-y-1">
+                  <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Current Plan</span>
+                  <p class="text-base font-black text-slate-900">{{ subscriptionPlan() }}</p>
+                  <p class="text-[11px] text-slate-500 font-medium">₹9,999/month (Billed Monthly)</p>
+                </div>
+
+                <div class="p-4 bg-slate-50 border border-slate-100 rounded-xl space-y-1">
+                  <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ subscriptionStatus() === 'trial_active' ? 'Trial Expiry Date' : 'Renewal Date' }}</span>
+                  <p class="text-base font-black text-slate-900">{{ renewalDate() ? (renewalDate() | date:'mediumDate') : 'N/A' }}</p>
+                  <p class="text-[11px] text-slate-500 font-medium">{{ subscriptionStatus() === 'trial_active' ? trialDaysRemaining() + ' days remaining in trial' : 'Auto-renews monthly via Razorpay' }}</p>
+                </div>
+              </div>
+
+              <!-- Upgrade CTA Button -->
+              <div class="pt-2">
+                <button 
+                  (click)="triggerRazorpayUpgrade()" 
+                  [disabled]="subscriptionStatus() === 'active'"
+                  class="w-full bg-amber-700 hover:bg-amber-800 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold text-sm py-3.5 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer">
+                  <span class="material-icons text-base">star</span>
+                  <span>{{ subscriptionStatus() === 'active' ? 'Subscription Active — ₹9,999/mo' : 'Upgrade to Enterprise Plan — ₹9,999/mo' }}</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Usage Insights (Value Demonstration) -->
+            <div class="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 space-y-4">
+              <div class="border-b border-slate-100 pb-3">
+                <h3 class="text-sm font-black text-slate-900 flex items-center gap-2">
+                  <span class="material-icons text-indigo-600 text-sm">insights</span>
+                  <span>Workspace Usage & Accomplishments</span>
+                </h3>
+                <p class="text-xs text-slate-500">Value generated in your workspace during your subscription/trial period.</p>
+              </div>
+
+              <div class="grid grid-cols-2 md:grid-cols-5 gap-3 text-center">
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                  <span class="text-lg font-black text-slate-900">{{ usageMetrics().customersAdded || 0 }}</span>
+                  <p class="text-[10px] font-bold text-slate-500 uppercase">Customers</p>
+                </div>
+
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                  <span class="text-lg font-black text-slate-900">{{ usageMetrics().leadsCreated || 0 }}</span>
+                  <p class="text-[10px] font-bold text-slate-500 uppercase">Leads</p>
+                </div>
+
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                  <span class="text-lg font-black text-slate-900">{{ usageMetrics().ticketsManaged || 0 }}</span>
+                  <p class="text-[10px] font-bold text-slate-500 uppercase">Tickets</p>
+                </div>
+
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                  <span class="text-lg font-black text-slate-900">{{ usageMetrics().workflowsBuilt || 0 }}</span>
+                  <p class="text-[10px] font-bold text-slate-500 uppercase">Workflows</p>
+                </div>
+
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                  <span class="text-lg font-black text-slate-900">{{ usageMetrics().campaignsRun || 0 }}</span>
+                  <p class="text-[10px] font-bold text-slate-500 uppercase">Campaigns</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Payment History & Invoices -->
+            <div class="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 space-y-4">
+              <div class="border-b border-slate-100 pb-3">
+                <h3 class="text-sm font-black text-slate-900 flex items-center gap-2">
+                  <span class="material-icons text-slate-500 text-sm">history</span>
+                  <span>Payment History & Invoice Records</span>
+                </h3>
+              </div>
+
+              <div *ngIf="paymentHistory().length > 0; else noPayments" class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                  <thead>
+                    <tr class="border-b border-slate-100 text-slate-400 font-bold uppercase text-[10px]">
+                      <th class="py-2.5 px-3">Date</th>
+                      <th class="py-2.5 px-3">Plan</th>
+                      <th class="py-2.5 px-3">Amount</th>
+                      <th class="py-2.5 px-3">Order ID</th>
+                      <th class="py-2.5 px-3">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let p of paymentHistory()" class="border-b border-slate-50 hover:bg-slate-50">
+                      <td class="py-3 px-3 font-medium">{{ p.date | date:'shortDate' }}</td>
+                      <td class="py-3 px-3 font-bold text-slate-900">{{ p.planName || 'GrownX Enterprise Plan' }}</td>
+                      <td class="py-3 px-3 font-bold text-slate-900">₹{{ p.amount }}</td>
+                      <td class="py-3 px-3 font-mono text-slate-500 text-[11px]">{{ p.orderId || 'order_dev' }}</td>
+                      <td class="py-3 px-3"><span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full font-bold text-[10px] uppercase">Paid</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <ng-template #noPayments>
+                <p class="text-xs text-slate-500 italic py-2">No payment transactions recorded yet.</p>
+              </ng-template>
+            </div>
+          </div>
+
+          <!-- TAB 3: ACCOUNT & 2FA SECURITY CONTROL PANEL -->
           <div *ngIf="activeTab === 'security'" class="space-y-6">
             
             <!-- Section 1: Biometric & Security Key Passkeys -->
@@ -336,6 +486,13 @@ export class SettingsComponent implements OnInit {
     });
   }
 
+  subscriptionStatus = signal<string>('active');
+  subscriptionPlan = signal<string>('₹9,999 / Month');
+  renewalDate = signal<any>(null);
+  trialDaysRemaining = signal<number>(0);
+  usageMetrics = signal<any>({});
+  paymentHistory = signal<any[]>([]);
+
   loadWorkspaceSettings() {
     this.apiService.getWorkspaceSettings().subscribe({
       next: (res: any) => {
@@ -350,9 +507,83 @@ export class SettingsComponent implements OnInit {
             primaryColor: d.whiteLabelSettings?.primaryColor || '#6366f1',
             secondaryColor: d.whiteLabelSettings?.secondaryColor || '#0f172a'
           };
+          this.subscriptionStatus.set(d.subscriptionStatus || 'active');
+          this.subscriptionPlan.set(d.subscriptionPlan || '₹9,999 / Month');
+          this.renewalDate.set(d.renewalDate || d.trialEndDate || d.paidAt);
+          this.trialDaysRemaining.set(d.trialDaysRemaining || 0);
+          this.usageMetrics.set(d.usageMetrics || {});
+          this.paymentHistory.set(d.paymentHistory || []);
         }
       }
     });
+  }
+
+  triggerRazorpayUpgrade() {
+    this.isLoading.set(true);
+    this.apiService.createRazorpayOrder({ planName: 'GrownX Enterprise Plan', amount: 9999 }).subscribe({
+      next: (orderRes) => {
+        this.isLoading.set(false);
+        if (orderRes && orderRes.success) {
+          this.openRazorpayCheckout(orderRes.orderId, orderRes.key || 'rzp_test', orderRes.amount, orderRes.currency);
+        }
+      },
+      error: (err) => {
+        this.isLoading.set(false);
+        this.errorMessage.set(err.error?.error || 'Failed to initialize Razorpay checkout session.');
+      }
+    });
+  }
+
+  private openRazorpayCheckout(orderId: string, key: string, amount: number, currency: string) {
+    const user = this.authService.currentUserValue;
+    if (typeof (window as any).Razorpay !== 'undefined') {
+      const options = {
+        key,
+        amount,
+        currency: currency || 'INR',
+        name: 'GrownX Technologies',
+        description: 'Upgrade Subscription: GrownX Enterprise Plan',
+        order_id: orderId,
+        handler: (response: any) => {
+          this.apiService.verifyRazorpayPayment({
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+            planName: 'GrownX Enterprise Plan',
+            amount: 9999
+          }).subscribe({
+            next: (vRes) => {
+              if (vRes.success) {
+                this.message.set('🎉 Payment successful! Workspace subscription upgraded to Enterprise Plan.');
+                this.loadWorkspaceSettings();
+              }
+            }
+          });
+        },
+        prefill: {
+          name: user?.name,
+          email: user?.email,
+        },
+        theme: { color: '#d97706' }
+      };
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
+    } else {
+      this.apiService.verifyRazorpayPayment({
+        razorpay_order_id: orderId,
+        razorpay_payment_id: `pay_dev_${Date.now()}`,
+        razorpay_signature: 'dev_signature',
+        planName: 'GrownX Enterprise Plan',
+        amount: 9999
+      }).subscribe({
+        next: (vRes) => {
+          if (vRes.success) {
+            this.message.set('🎉 Payment successful! Workspace subscription upgraded to Enterprise Plan.');
+            this.loadWorkspaceSettings();
+          }
+        }
+      });
+    }
   }
 
   private workspaceContext = inject(WorkspaceContextService);

@@ -94,6 +94,21 @@ const getWorkspaceIdentity = async (tenantId, userReq) => {
       }
     }
 
+    // Compute usage metrics for value-demonstration insights
+    const Customer = require('../models/Customer');
+    const Lead = require('../models/Lead');
+    const Ticket = require('../models/Ticket');
+    const Workflow = require('../models/Workflow');
+    const MarketingCampaign = require('../models/MarketingCampaign');
+
+    const [customersCount, leadsCount, ticketsCount, workflowsCount, campaignsCount] = await Promise.all([
+      Customer.countDocuments({ tenant: tenant._id }),
+      Lead.countDocuments({ tenant: tenant._id }),
+      Ticket.countDocuments({ tenant: tenant._id }),
+      Workflow.countDocuments({ tenant: tenant._id }),
+      MarketingCampaign.countDocuments({ tenant: tenant._id }),
+    ]);
+
     return {
       tenantId: tenant._id,
       workspaceName,
@@ -110,9 +125,20 @@ const getWorkspaceIdentity = async (tenantId, userReq) => {
       subscriptionPlan: tenant.subscriptionPlan || '₹9,999 / Month',
       subscriptionAmount: tenant.subscriptionAmount || 9999,
       paidAt: tenant.paidAt,
+      renewalDate: tenant.renewalDate || (tenant.paidAt ? new Date(new Date(tenant.paidAt).setMonth(new Date(tenant.paidAt).getMonth() + 1)) : null),
+      billingCycle: tenant.billingCycle || 'monthly',
+      setupWizardCompleted: tenant.setupWizardCompleted !== false,
+      paymentHistory: tenant.paymentHistory || [],
       trialStartDate: tenant.trialStartDate,
       trialEndDate: trialExpires,
       trialDaysRemaining,
+      usageMetrics: {
+        customersAdded: customersCount,
+        leadsCreated: leadsCount,
+        ticketsManaged: ticketsCount,
+        workflowsBuilt: workflowsCount,
+        campaignsRun: campaignsCount,
+      },
     };
   } catch (err) {
     return {

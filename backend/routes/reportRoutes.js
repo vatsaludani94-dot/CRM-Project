@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { exportCustomerReport, exportLeadReport, exportTicketReport } = require('../controllers/reportController');
+const { exportCustomerReport, exportLeadReport, exportTicketReport, getAdminSubscriptionMetrics } = require('../controllers/reportController');
 const { protect } = require('../middleware/authMiddleware');
 const { authorize } = require('../middleware/roleMiddleware');
 
@@ -10,5 +10,6 @@ router.use(authorize('super_admin', 'manager')); // Restricted to Admin/Manager 
 router.get('/customers', exportCustomerReport);
 router.get('/leads', exportLeadReport);
 router.get('/tickets', exportTicketReport);
+router.get('/subscription-metrics', getAdminSubscriptionMetrics);
 
 module.exports = router;

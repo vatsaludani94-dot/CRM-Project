@@ -113,8 +113,17 @@ router.post('/verify', protect, async (req, res) => {
         tenant.subscriptionPlan = planName || '₹9,999 / Month';
         tenant.subscriptionAmount = amount || 9999;
         tenant.paidAt = new Date();
+        tenant.renewalDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
         tenant.razorpayOrderId = razorpay_order_id || 'order_dev';
         tenant.razorpayPaymentId = paymentId;
+        tenant.paymentHistory.push({
+          date: new Date(),
+          amount: amount || 9999,
+          orderId: razorpay_order_id || 'order_dev',
+          paymentId: paymentId,
+          planName: planName || 'GrownX Enterprise Plan',
+          status: 'captured',
+        });
         await tenant.save();
         workspaceIdentity = await getWorkspaceIdentity(tenant._id, user);
       }

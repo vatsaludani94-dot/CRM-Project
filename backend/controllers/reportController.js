@@ -270,8 +270,44 @@ const exportTicketReport = async (req, res) => {
   }
 };
 
+const getAdminSubscriptionMetrics = async (req, res) => {
+  try {
+    if (req.user.role !== 'super_admin') {
+      return res.status(403).json({ success: false, error: 'Super Admin access required for global subscription metrics' });
+    }
+
+    const Tenant = require('../models/Tenant');
+    const [totalTrialUsers, activeSubscribers, expiredTrials, cancelledSubscribers] = await Promise.all([
+      Tenant.countDocuments({ subscriptionStatus: 'trial_active' }),
+      Tenant.countDocuments({ subscriptionStatus: 'active' }),
+      Tenant.countDocuments({ subscriptionStatus: 'trial_expired' }),
+      Tenant.countDocuments({ subscriptionStatus: 'cancelled' }),
+    ]);
+
+    const totalTrialsHistorical = totalTrialUsers + activeSubscribers + expiredTrials;
+    const trialConversionRate = totalTrialsHistorical > 0 ? Number(((activeSubscribers / totalTrialsHistorical) * 100).toFixed(1)) : 0;
+    const mrr = activeSubscribers * 9999;
+
+    res.json({
+      success: true,
+      data: {
+        totalTrialUsers,
+        activeSubscribers,
+        expiredTrials,
+        cancelledSubscribers,
+        trialConversionRate,
+        mrr,
+        currency: 'INR',
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 module.exports = {
   exportCustomerReport,
   exportLeadReport,
   exportTicketReport,
+  getAdminSubscriptionMetrics,
 };
