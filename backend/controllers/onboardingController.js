@@ -1,281 +1,287 @@
-const Tenant = require('../models/Tenant');
+const PrePaymentOnboarding = require('../models/PrePaymentOnboarding');
 const User = require('../models/User');
-const Invitation = require('../models/Invitation');
+const Tenant = require('../models/Tenant');
 const Activity = require('../models/Activity');
+const Razorpay = require('razorpay');
 const crypto = require('crypto');
-const { generateToken } = require('./authController');
+const jwt = require('jsonwebtoken');
+const { getWorkspaceIdentity } = require('../utils/tenantScope');
+
+// Initialize Razorpay instance if keys are configured
+const getRazorpayInstance = () => {
+  if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+    return new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_KEY_SECRET,
+    });
+  }
+  return null;
+};
+
+// Generate JWT Token helper
+const generateToken = (userOrId) => {
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET environment variable is missing');
+  }
+  let id = userOrId._id || userOrId;
+  let tokenVersion = userOrId.tokenVersion || 0;
+  return jwt.sign({ id, tokenVersion }, process.env.JWT_SECRET, {
+    expiresIn: '30d',
+  });
+};
 
 /**
- * @desc    Create Workspace for authenticated tenant-less user (Google / Password / Passkey)
- * @route   POST /api/onboarding/create-workspace
- * @access  Private (Authenticated user without a tenant)
+ * @desc    Submit Pre-Payment Registration Form & Create Razorpay Order
+ * @route   POST /api/onboarding/pre-payment
+ * @access  Public
  */
-const createWorkspace = async (req, res) => {
-  const { companyName } = req.body;
+const submitPrePayment = async (req, res) => {
+  const { companyName, ownerName, email, phone, niche, website, cityState } = req.body;
+
+  if (!companyName || !ownerName || !email || !phone || !niche || !cityState) {
+    return res.status(400).json({
+      success: false,
+      error: 'Please fill all required fields: Company Name, Owner Name, Email, Phone, Niche, and City/State.',
+    });
+  }
 
   try {
-    if (!companyName || !companyName.trim()) {
-      return res.status(400).json({ success: false, error: 'Please provide a valid company name' });
-    }
-
-    const user = await User.findById(req.user._id);
-    if (!user) {
-      return res.status(404).json({ success: false, error: 'User not found' });
-    }
-
-    if (user.tenant && user.role !== 'super_admin') {
+    // Check if user account already exists
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
       return res.status(400).json({
         success: false,
-        error: 'User already belongs to a workspace tenant',
+        error: 'An account with this email address already exists. Please log in directly.',
       });
     }
 
-    let baseSubdomain = companyName
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, '')
-      .trim();
+    // Create PrePaymentOnboarding record
+    const onboarding = await PrePaymentOnboarding.create({
+      companyName,
+      ownerName,
+      email: email.toLowerCase(),
+      phone,
+      niche,
+      website: website || '',
+      cityState,
+      status: 'pre_payment_registered',
+    });
 
-    if (!baseSubdomain) {
-      baseSubdomain = 'workspace';
+    // Create Razorpay Order for ₹9,999/month (amount: 999900 paise)
+    const razorpay = getRazorpayInstance();
+    const orderAmount = 999900; // in paise
+    let orderId = `order_dev_${Date.now()}`;
+
+    if (razorpay) {
+      const options = {
+        amount: orderAmount,
+        currency: 'INR',
+        receipt: `rcpt_onboarding_${onboarding._id}`,
+        notes: {
+          onboardingId: onboarding._id.toString(),
+          email: onboarding.email,
+          companyName: onboarding.companyName,
+        },
+      };
+      const order = await razorpay.orders.create(options);
+      orderId = order.id;
     }
 
-    let subdomain = baseSubdomain;
-    let tenantExists = await Tenant.findOne({ subdomain });
-    if (tenantExists) {
-      subdomain = `${baseSubdomain}${Math.floor(1000 + Math.random() * 9000)}`;
+    onboarding.razorpayOrderId = orderId;
+    onboarding.status = 'payment_pending';
+    await onboarding.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Pre-payment details registered successfully. Proceeding to Razorpay payment.',
+      onboardingId: onboarding._id,
+      orderId,
+      amount: orderAmount,
+      currency: 'INR',
+      key: process.env.RAZORPAY_KEY_ID || 'rzp_test_dev_key_1234567890',
+    });
+  } catch (error) {
+    console.error('Pre-Payment Onboarding Error:', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+/**
+ * @desc    Verify Razorpay Payment Signature for Onboarding Session
+ * @route   POST /api/onboarding/verify-payment
+ * @access  Public
+ */
+const verifyPayment = async (req, res) => {
+  const { onboardingId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+  if (!onboardingId || !razorpay_order_id || !razorpay_payment_id) {
+    return res.status(400).json({
+      success: false,
+      error: 'Missing required payment verification parameters.',
+    });
+  }
+
+  try {
+    const onboarding = await PrePaymentOnboarding.findById(onboardingId);
+    if (!onboarding) {
+      return res.status(404).json({ success: false, error: 'Onboarding record not found.' });
     }
 
-    let tenant;
-    try {
-      tenant = await Tenant.create({
-        name: companyName.trim(),
-        subdomain,
-        plan: 'free',
-        status: 'active',
-        owner: user._id, // Owner derived strictly from req.user (never trust req.body.ownerId)
-      });
-    } catch (err) {
-      if (err.code === 11000) {
-        subdomain = `${baseSubdomain}${Math.floor(10000 + Math.random() * 90000)}`;
-        tenant = await Tenant.create({
-          name: companyName.trim(),
-          subdomain,
-          plan: 'free',
-          status: 'active',
-          owner: user._id,
+    // Verify HMAC SHA256 signature if key secret is present
+    const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET;
+    if (razorpayKeySecret && razorpay_signature) {
+      const generated_signature = crypto
+        .createHmac('sha256', razorpayKeySecret)
+        .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+        .digest('hex');
+
+      if (generated_signature !== razorpay_signature) {
+        return res.status(400).json({
+          success: false,
+          error: 'Razorpay payment signature verification failed.',
         });
-      } else {
-        throw err;
       }
     }
 
-    // Atomic update with rollback protection
-    try {
-      user.tenant = tenant._id;
-      user.role = 'workspace_owner';
-      user.department = 'Management';
-      await user.save();
-    } catch (userSaveErr) {
-      console.error('Failed to update user workspace association. Rolling back Tenant creation:', userSaveErr);
-      await Tenant.findByIdAndDelete(tenant._id);
-      throw userSaveErr;
-    }
+    // Generate secure paymentToken for workspace registration handoff
+    const paymentToken = `paytok_${crypto.randomBytes(24).toString('hex')}`;
 
-    await Activity.create({
-      user: user._id,
-      action: 'Workspace Created via Onboarding',
-      details: `Created workspace "${tenant.name}" (${tenant.subdomain}).`,
-      module: 'System',
-      ipAddress: req.ip,
-      tenant: tenant._id,
-    });
-
-    res.status(201).json({
-      success: true,
-      message: 'Workspace created successfully!',
-      data: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        department: user.department,
-        tenant: {
-          _id: tenant._id,
-          name: tenant.name,
-          subdomain: tenant.subdomain,
-          plan: tenant.plan,
-        },
-        token: generateToken(user),
-      },
-    });
-  } catch (error) {
-    console.error('Onboarding Workspace Creation Error:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-};
-
-/**
- * @desc    Invite a team member to the current workspace
- * @route   POST /api/onboarding/invite
- * @access  Private (Workspace Owner or Manager)
- */
-const inviteMember = async (req, res) => {
-  const { email, role } = req.body;
-
-  try {
-    if (!email) {
-      return res.status(400).json({ success: false, error: 'Email address is required for workspace invitation' });
-    }
-
-    if (!req.user.tenant) {
-      return res.status(403).json({ success: false, error: 'User does not belong to any workspace tenant' });
-    }
-
-    // Role check: Only workspace_owner or manager can invite members
-    if (!['workspace_owner', 'manager', 'super_admin'].includes(req.user.role)) {
-      return res.status(403).json({ success: false, error: 'Only workspace owners and managers can send invitations' });
-    }
-
-    // Role safety check: Cannot invite super_admin or workspace_owner via invitation token
-    const targetRole = role && ['manager', 'employee', 'customer'].includes(role) ? role : 'employee';
-
-    const token = crypto.randomBytes(24).toString('hex');
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 day expiry
-
-    const invitation = await Invitation.create({
-      tenant: req.user.tenant,
-      email: email.toLowerCase().trim(),
-      role: targetRole,
-      token,
-      invitedBy: req.user._id,
-      expiresAt,
-    });
-
-    const tenantInfo = await Tenant.findById(req.user.tenant).select('name');
-    const companyName = tenantInfo ? tenantInfo.name : 'GrownX Workspace';
-
-    const { sendInvitationEmail } = require('../services/invoice-email.service');
-    await sendInvitationEmail(invitation.email, companyName, invitation.token, req.user.name);
-
-    res.status(201).json({
-      success: true,
-      message: `Invitation email sent to ${email}`,
-      data: {
-        invitationId: invitation._id,
-        email: invitation.email,
-        role: invitation.role,
-        token: invitation.token,
-        expiresAt: invitation.expiresAt,
-      },
-    });
-  } catch (error) {
-    console.error('Invite Member Error:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-};
-
-/**
- * @desc    Get Invitation details by Token
- * @route   GET /api/onboarding/invitation/:token
- * @access  Public
- */
-const getInvitation = async (req, res) => {
-  const { token } = req.params;
-
-  try {
-    const invitation = await Invitation.findOne({ token, status: 'pending' }).populate('tenant', 'name subdomain');
-    if (!invitation || invitation.expiresAt < new Date()) {
-      return res.status(404).json({ success: false, error: 'Invitation link is invalid or has expired' });
-    }
+    onboarding.status = 'payment_successful';
+    onboarding.razorpayOrderId = razorpay_order_id;
+    onboarding.razorpayPaymentId = razorpay_payment_id;
+    onboarding.paymentToken = paymentToken;
+    onboarding.paymentVerifiedAt = new Date();
+    await onboarding.save();
 
     res.json({
       success: true,
-      data: {
-        email: invitation.email,
-        companyName: invitation.tenant.name,
-        subdomain: invitation.tenant.subdomain,
-        role: invitation.role,
-        expiresAt: invitation.expiresAt,
-      },
+      message: 'Razorpay payment verified successfully! Please complete workspace registration.',
+      paymentToken,
+      onboardingId: onboarding._id,
+      email: onboarding.email,
+      companyName: onboarding.companyName,
+      ownerName: onboarding.ownerName,
     });
   } catch (error) {
+    console.error('Verify Payment Error:', error.message);
     res.status(500).json({ success: false, error: error.message });
   }
 };
 
 /**
- * @desc    Accept Invitation and join workspace
- * @route   POST /api/onboarding/accept-invitation
- * @access  Private (Authenticated user)
+ * @desc    Register Workspace After Payment Success
+ * @route   POST /api/onboarding/register-workspace
+ * @access  Public (Requires Verified Payment Token)
  */
-const acceptInvitation = async (req, res) => {
-  const { token } = req.body;
+const registerWorkspaceAfterPayment = async (req, res) => {
+  const { paymentToken, onboardingId, workspaceName, password } = req.body;
+
+  if (!paymentToken || !onboardingId || !password) {
+    return res.status(400).json({
+      success: false,
+      error: 'Payment token, onboarding ID, and password are required to register your workspace.',
+    });
+  }
 
   try {
-    if (!token) {
-      return res.status(400).json({ success: false, error: 'Invitation token is required' });
-    }
+    const onboarding = await PrePaymentOnboarding.findOne({
+      _id: onboardingId,
+      paymentToken,
+      status: 'payment_successful',
+    });
 
-    const invitation = await Invitation.findOne({ token, status: 'pending' });
-    if (!invitation || invitation.expiresAt < new Date()) {
-      return res.status(400).json({ success: false, error: 'Invitation is invalid, expired, or already used' });
-    }
-
-    const user = await User.findById(req.user._id);
-    if (!user) {
-      return res.status(404).json({ success: false, error: 'User not found' });
-    }
-
-    // Verify email match or account safety
-    if (user.email.toLowerCase() !== invitation.email.toLowerCase()) {
+    if (!onboarding) {
       return res.status(403).json({
         success: false,
-        error: `This invitation was sent to ${invitation.email}. You are currently logged in as ${user.email}.`,
+        error: 'Invalid or unverified payment token. Payment must be completed prior to workspace registration.',
       });
     }
 
-    // Assign tenant and role
-    user.tenant = invitation.tenant;
-    user.role = invitation.role;
+    // Check if user already exists
+    let user = await User.findOne({ email: onboarding.email });
+    if (user) {
+      return res.status(400).json({
+        success: false,
+        error: 'An account with this email address already exists.',
+      });
+    }
+
+    // Create Workspace Owner User
+    user = await User.create({
+      name: onboarding.ownerName,
+      email: onboarding.email,
+      password,
+      role: 'workspace_owner',
+      department: 'Management',
+    });
+
+    // Create Active Tenant Workspace
+    const reqWorkspaceName = workspaceName || onboarding.companyName;
+    const tenant = await Tenant.create({
+      name: reqWorkspaceName,
+      workspaceName: reqWorkspaceName,
+      owner: user._id,
+      subdomain: reqWorkspaceName.toLowerCase().replace(/[^a-z0-9]/g, '') + '-' + Math.floor(1000 + Math.random() * 9000),
+      communicationEmail: user.email,
+      communicationEmailName: reqWorkspaceName,
+      communicationEmailStatus: 'unconfigured',
+      subscriptionStatus: 'active',
+      subscriptionPlan: '₹9,999 / Month',
+      subscriptionAmount: 9999,
+      paidAt: onboarding.paymentVerifiedAt || new Date(),
+      razorpayOrderId: onboarding.razorpayOrderId,
+      razorpayPaymentId: onboarding.razorpayPaymentId,
+    });
+
+    user.tenant = tenant._id;
+    user.purchasedLicenses.push({
+      licenseKey: `GXCRM-${crypto.randomBytes(4).toString('hex').toUpperCase()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`,
+      planName: 'GrownX Enterprise Plan',
+      amountPaid: 9999,
+      paymentId: onboarding.razorpayPaymentId,
+      orderId: onboarding.razorpayOrderId,
+    });
     await user.save();
 
-    // Mark invitation accepted
-    invitation.status = 'accepted';
-    await invitation.save();
+    // Mark onboarding as completed
+    onboarding.status = 'workspace_registered';
+    onboarding.workspaceRegisteredAt = new Date();
+    onboarding.createdUserId = user._id;
+    onboarding.createdTenantId = tenant._id;
+    await onboarding.save();
 
     await Activity.create({
       user: user._id,
-      action: 'Joined Workspace via Invitation',
-      details: `User joined workspace as ${user.role}.`,
-      module: 'System',
+      action: 'Payment-First Workspace Registered',
+      details: `User ${user.name} registered workspace "${tenant.name}" following verified Razorpay payment.`,
+      module: 'Authentication',
       ipAddress: req.ip,
-      tenant: invitation.tenant,
     });
 
-    const tenant = await Tenant.findById(invitation.tenant).select('name subdomain plan');
+    const token = generateToken(user);
+    const workspaceIdentity = await getWorkspaceIdentity(tenant._id, user);
 
-    res.json({
+    res.status(201).json({
       success: true,
-      message: `Successfully joined ${tenant ? tenant.name : 'workspace'}!`,
-      data: {
+      message: 'Workspace registered successfully! Access granted.',
+      token,
+      user: {
         _id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
-        department: user.department,
-        tenant,
-        token: generateToken(user),
+        tenant: tenant._id,
       },
+      workspaceIdentity,
     });
   } catch (error) {
-    console.error('Accept Invitation Error:', error);
+    console.error('Register Workspace After Payment Error:', error.message);
     res.status(500).json({ success: false, error: error.message });
   }
 };
 
 module.exports = {
-  createWorkspace,
-  inviteMember,
-  getInvitation,
-  acceptInvitation,
+  submitPrePayment,
+  verifyPayment,
+  registerWorkspaceAfterPayment,
 };

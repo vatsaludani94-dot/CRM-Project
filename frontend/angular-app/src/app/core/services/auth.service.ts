@@ -60,6 +60,15 @@ export class AuthService {
     return this.currentUserValue?.token || null;
   }
 
+  setSession(userData: any, token: string) {
+    const user = { ...userData, token };
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('nexus_user', JSON.stringify(user));
+    }
+    this.currentUserSubject.next(user);
+    this.userSignal.set(user);
+  }
+
   login(email: string, password: string): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/login`, { email, password }).pipe(
       map(response => {

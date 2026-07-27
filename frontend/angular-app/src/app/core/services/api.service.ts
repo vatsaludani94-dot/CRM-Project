@@ -640,5 +640,16 @@ export class ApiService {
   verifyRazorpayPayment(payload: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string; planName: string; amount: number }): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/payments/verify`, payload);
   }
+
+  // 24. Payment-First Onboarding Flow
+  submitPrePaymentOnboarding(payload: { companyName: string; ownerName: string; email: string; phone: string; niche: string; website?: string; cityState: string }): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/onboarding/pre-payment`, payload);
+  }
+  verifyPrePayment(payload: { onboardingId: string; razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/onboarding/verify-payment`, payload);
+  }
+  registerWorkspaceAfterPayment(payload: { paymentToken: string; onboardingId: string; workspaceName: string; password: string }): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/onboarding/register-workspace`, payload);
+  }
 }
 

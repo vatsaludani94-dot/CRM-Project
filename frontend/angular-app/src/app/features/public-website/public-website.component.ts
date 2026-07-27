@@ -49,11 +49,8 @@ interface ChatMessage {
             </nav>
           </div>
 
-          <div class="flex items-center gap-3">
-            <a routerLink="/login" class="text-sm font-bold text-[#1c1917] bg-white border border-[#e7e5e4] hover:bg-slate-100 hover:border-slate-300 px-4 py-2 rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer">
-              <span class="material-icons text-base text-amber-700">login</span>
-              <span>Login</span>
-            </a>
+          <div class="flex items-center gap-4">
+            <a routerLink="/login" class="text-sm font-bold text-[#44403c] hover:text-[#1c1917] transition-colors px-4 py-2">Sign In</a>
             <a (click)="setTab('register')" class="text-sm font-bold bg-[#1c1917] hover:bg-[#292524] text-white px-5 py-2.5 rounded-xl shadow-lg shadow-slate-900/10 transition-all hover:-translate-y-0.5 cursor-pointer">
               Get Started
             </a>
@@ -505,7 +502,7 @@ interface ChatMessage {
                 </div>
 
                 <button 
-                  (click)="triggerBuyPlan('GrownX Enterprise SaaS Plan', 9999)" 
+                  (click)="openPaymentOnboardingModal()" 
                   [disabled]="isProcessingPayment()"
                   class="w-full bg-amber-700 hover:bg-amber-800 disabled:opacity-50 py-4 rounded-xl font-bold text-sm text-white shadow-xl transition-all cursor-pointer flex items-center justify-center gap-2">
                   <span *ngIf="isProcessingPayment()" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
@@ -513,6 +510,153 @@ interface ChatMessage {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Payment-First Onboarding Flow Modal -->
+        <div *ngIf="showPaymentOnboardingModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn">
+          <div class="bg-white border border-[#e7e5e4] shadow-2xl rounded-3xl max-w-xl w-full p-6 md:p-8 space-y-6 relative overflow-hidden text-left">
+            
+            <!-- Close Button -->
+            <button (click)="closePaymentOnboardingModal()" class="absolute top-5 right-5 text-stone-400 hover:text-stone-700 transition-colors">
+              <span class="material-icons">close</span>
+            </button>
+
+            <!-- Multi-Step Progress Header -->
+            <div class="space-y-3 border-b border-stone-100 pb-4">
+              <div class="flex items-center justify-between text-xs font-bold">
+                <span class="text-amber-800 uppercase tracking-wider">Payment-First Onboarding</span>
+                <span class="text-stone-500">Step {{ paymentOnboardingStep() }} of 3</span>
+              </div>
+
+              <!-- Progress Bar Indicators -->
+              <div class="grid grid-cols-3 gap-2">
+                <div class="h-1.5 rounded-full transition-all" [class.bg-amber-600]="paymentOnboardingStep() >= 1" [class.bg-stone-200]="paymentOnboardingStep() < 1"></div>
+                <div class="h-1.5 rounded-full transition-all" [class.bg-amber-600]="paymentOnboardingStep() >= 2" [class.bg-stone-200]="paymentOnboardingStep() < 2"></div>
+                <div class="h-1.5 rounded-full transition-all" [class.bg-amber-600]="paymentOnboardingStep() >= 3" [class.bg-stone-200]="paymentOnboardingStep() < 3"></div>
+              </div>
+            </div>
+
+            <!-- STEP 1: Pre-Payment Registration Form (Tell Us About Your Business) -->
+            <div *ngIf="paymentOnboardingStep() === 1" class="space-y-4">
+              <div class="space-y-1">
+                <h3 class="text-xl font-extrabold text-[#1c1917]">1. Tell Us About Your Business</h3>
+                <p class="text-xs text-[#44403c]">Fill in your company details to prepare your subscription invoice prior to Razorpay payment.</p>
+              </div>
+
+              <div *ngIf="onboardingError()" class="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-bold">
+                {{ onboardingError() }}
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5 text-xs">
+                <div class="space-y-1">
+                  <label class="font-bold text-[#1c1917]">Company Name *</label>
+                  <input type="text" [(ngModel)]="onboardingForm.companyName" placeholder="Acme Technologies Ltd" class="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl font-medium focus:outline-none focus:border-amber-600" />
+                </div>
+
+                <div class="space-y-1">
+                  <label class="font-bold text-[#1c1917]">Owner Name *</label>
+                  <input type="text" [(ngModel)]="onboardingForm.ownerName" placeholder="John Doe" class="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl font-medium focus:outline-none focus:border-amber-600" />
+                </div>
+
+                <div class="space-y-1">
+                  <label class="font-bold text-[#1c1917]">Email Address *</label>
+                  <input type="email" [(ngModel)]="onboardingForm.email" placeholder="john@acme.com" class="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl font-medium focus:outline-none focus:border-amber-600" />
+                </div>
+
+                <div class="space-y-1">
+                  <label class="font-bold text-[#1c1917]">Phone Number *</label>
+                  <input type="text" [(ngModel)]="onboardingForm.phone" placeholder="+91 9876543210" class="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl font-medium focus:outline-none focus:border-amber-600" />
+                </div>
+
+                <div class="space-y-1">
+                  <label class="font-bold text-[#1c1917]">Industry / Niche *</label>
+                  <select [(ngModel)]="onboardingForm.niche" class="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl font-medium focus:outline-none focus:border-amber-600">
+                    <option value="Software / SaaS">Software / SaaS</option>
+                    <option value="Legal & Law Firm">Legal & Law Firm</option>
+                    <option value="Healthcare & Clinic">Healthcare & Clinic</option>
+                    <option value="Marketing Agency">Marketing Agency</option>
+                    <option value="E-Commerce & Retail">E-Commerce & Retail</option>
+                    <option value="Financial Services">Financial Services</option>
+                    <option value="Consulting & Corporate">Consulting & Corporate</option>
+                  </select>
+                </div>
+
+                <div class="space-y-1">
+                  <label class="font-bold text-[#1c1917]">City or State *</label>
+                  <input type="text" [(ngModel)]="onboardingForm.cityState" placeholder="Mumbai, Maharashtra" class="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl font-medium focus:outline-none focus:border-amber-600" />
+                </div>
+
+                <div class="space-y-1 md:col-span-2">
+                  <label class="font-bold text-[#1c1917]">Business Website (Optional)</label>
+                  <input type="url" [(ngModel)]="onboardingForm.website" placeholder="https://www.acme.com" class="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl font-medium focus:outline-none focus:border-amber-600" />
+                </div>
+              </div>
+
+              <button 
+                (click)="submitPrePaymentForm()" 
+                [disabled]="isProcessingPayment()"
+                class="w-full bg-amber-700 hover:bg-amber-800 disabled:opacity-50 py-3.5 rounded-xl font-bold text-sm text-white shadow-xl transition-all cursor-pointer flex items-center justify-center gap-2 mt-4">
+                <span *ngIf="isProcessingPayment()" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                <span>Proceed to Pay — ₹9,999/mo <span class="material-icons text-sm">arrow_forward</span></span>
+              </button>
+            </div>
+
+            <!-- STEP 2: Razorpay Pay Now -->
+            <div *ngIf="paymentOnboardingStep() === 2" class="space-y-6 text-center py-6">
+              <div class="h-16 w-16 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mx-auto animate-pulse">
+                <span class="material-icons text-3xl">payment</span>
+              </div>
+              <div class="space-y-2">
+                <h3 class="text-xl font-extrabold text-[#1c1917]">2. Complete Razorpay Payment</h3>
+                <p class="text-xs text-[#44403c]">Opening Razorpay Checkout modal... Complete payment of ₹9,999/month to verify your subscription.</p>
+              </div>
+
+              <div *ngIf="onboardingError()" class="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-bold">
+                {{ onboardingError() }}
+              </div>
+            </div>
+
+            <!-- STEP 3: Workspace Registration After Payment -->
+            <div *ngIf="paymentOnboardingStep() === 3" class="space-y-4">
+              <div class="space-y-1">
+                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 font-extrabold text-[10px] uppercase">
+                  <span class="material-icons text-xs">check_circle</span> Payment Signature Verified
+                </div>
+                <h3 class="text-xl font-extrabold text-[#1c1917]">3. Register Your Workspace</h3>
+                <p class="text-xs text-[#44403c]">Payment verified! Create your workspace credentials to activate instant CRM access.</p>
+              </div>
+
+              <div *ngIf="onboardingError()" class="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-bold">
+                {{ onboardingError() }}
+              </div>
+
+              <div class="space-y-3 text-xs">
+                <div class="space-y-1">
+                  <label class="font-bold text-[#1c1917]">Workspace Name *</label>
+                  <input type="text" [(ngModel)]="workspaceForm.workspaceName" placeholder="Acme Workspace" class="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl font-medium focus:outline-none focus:border-amber-600" />
+                </div>
+
+                <div class="space-y-1">
+                  <label class="font-bold text-[#1c1917]">Account Email</label>
+                  <input type="email" [value]="onboardingForm.email" disabled class="w-full p-3 bg-stone-100 border border-stone-200 text-stone-600 rounded-xl font-bold" />
+                </div>
+
+                <div class="space-y-1">
+                  <label class="font-bold text-[#1c1917]">Create Password *</label>
+                  <input type="password" [(ngModel)]="workspaceForm.password" placeholder="••••••••••••" class="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl font-medium focus:outline-none focus:border-amber-600" />
+                </div>
+              </div>
+
+              <button 
+                (click)="submitWorkspaceRegistration()" 
+                [disabled]="isProcessingPayment()"
+                class="w-full bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 py-3.5 rounded-xl font-bold text-sm text-white shadow-xl transition-all cursor-pointer flex items-center justify-center gap-2 mt-4">
+                <span *ngIf="isProcessingPayment()" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                <span>Activate Workspace & Launch CRM <span class="material-icons text-sm">rocket_launch</span></span>
+              </button>
+            </div>
+
           </div>
         </div>
 
@@ -878,6 +1022,160 @@ export class PublicWebsiteComponent implements OnInit {
   // 54 generated funnel templates registry
   mockFunnelsList: any[] = [];
 
+  // Payment-First Onboarding State Signals & Data
+  showPaymentOnboardingModal = signal<boolean>(false);
+  paymentOnboardingStep = signal<number>(1);
+  onboardingId = signal<string>('');
+  paymentToken = signal<string>('');
+  onboardingError = signal<string | null>(null);
+
+  onboardingForm = {
+    companyName: '',
+    ownerName: '',
+    email: '',
+    phone: '',
+    niche: 'Software / SaaS',
+    website: '',
+    cityState: ''
+  };
+
+  workspaceForm = {
+    workspaceName: '',
+    password: ''
+  };
+
+  openPaymentOnboardingModal() {
+    this.showPaymentOnboardingModal.set(true);
+    this.paymentOnboardingStep.set(1);
+    this.onboardingError.set(null);
+    this.isProcessingPayment.set(false);
+  }
+
+  closePaymentOnboardingModal() {
+    this.showPaymentOnboardingModal.set(false);
+    this.isProcessingPayment.set(false);
+  }
+
+  submitPrePaymentForm() {
+    const { companyName, ownerName, email, phone, niche, cityState } = this.onboardingForm;
+    if (!companyName || !ownerName || !email || !phone || !niche || !cityState) {
+      this.onboardingError.set('Please fill all required fields: Company Name, Owner Name, Email, Phone, Niche, and City/State.');
+      return;
+    }
+
+    this.isProcessingPayment.set(true);
+    this.onboardingError.set(null);
+
+    this.apiService.submitPrePaymentOnboarding(this.onboardingForm).subscribe({
+      next: (res) => {
+        if (res && res.success) {
+          this.onboardingId.set(res.onboardingId);
+          this.workspaceForm.workspaceName = this.onboardingForm.companyName;
+          this.paymentOnboardingStep.set(2);
+          this.triggerRazorpayCheckoutForOnboarding(res.orderId, res.key, res.amount, res.currency);
+        } else {
+          this.isProcessingPayment.set(false);
+          this.onboardingError.set(res.error || 'Failed to submit pre-payment details.');
+        }
+      },
+      error: (err) => {
+        this.isProcessingPayment.set(false);
+        this.onboardingError.set(err.error?.error || 'Failed to submit pre-payment form. Please try again.');
+      }
+    });
+  }
+
+  triggerRazorpayCheckoutForOnboarding(orderId: string, key: string, amount: number, currency: string) {
+    if (typeof (window as any).Razorpay !== 'undefined') {
+      const options = {
+        key: key,
+        amount: amount,
+        currency: currency || 'INR',
+        name: 'GrownX Technologies',
+        description: 'Workspace Subscription: GrownX Enterprise Plan',
+        order_id: orderId,
+        handler: (response: any) => {
+          this.verifyPaymentFirstStep({
+            onboardingId: this.onboardingId(),
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature
+          });
+        },
+        prefill: {
+          name: this.onboardingForm.ownerName,
+          email: this.onboardingForm.email,
+          contact: this.onboardingForm.phone
+        },
+        theme: {
+          color: '#d97706'
+        }
+      };
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
+      this.isProcessingPayment.set(false);
+    } else {
+      // Dev / Fallback verification
+      this.verifyPaymentFirstStep({
+        onboardingId: this.onboardingId(),
+        razorpay_order_id: orderId,
+        razorpay_payment_id: `pay_dev_${Date.now()}`,
+        razorpay_signature: 'dev_signature'
+      });
+    }
+  }
+
+  verifyPaymentFirstStep(payload: any) {
+    this.isProcessingPayment.set(true);
+    this.apiService.verifyPrePayment(payload).subscribe({
+      next: (res) => {
+        this.isProcessingPayment.set(false);
+        if (res && res.success) {
+          this.paymentToken.set(res.paymentToken);
+          this.paymentOnboardingStep.set(3); // Step 3: Register Workspace After Payment
+        } else {
+          this.onboardingError.set(res.error || 'Razorpay payment signature verification failed.');
+        }
+      },
+      error: (err) => {
+        this.isProcessingPayment.set(false);
+        this.onboardingError.set(err.error?.error || 'Server error verifying Razorpay payment signature.');
+      }
+    });
+  }
+
+  submitWorkspaceRegistration() {
+    if (!this.workspaceForm.workspaceName || !this.workspaceForm.password) {
+      this.onboardingError.set('Please enter a Workspace Name and Password.');
+      return;
+    }
+
+    this.isProcessingPayment.set(true);
+    this.onboardingError.set(null);
+
+    this.apiService.registerWorkspaceAfterPayment({
+      paymentToken: this.paymentToken(),
+      onboardingId: this.onboardingId(),
+      workspaceName: this.workspaceForm.workspaceName,
+      password: this.workspaceForm.password
+    }).subscribe({
+      next: (res) => {
+        this.isProcessingPayment.set(false);
+        if (res && res.success) {
+          this.authService.setSession(res.user, res.token);
+          this.closePaymentOnboardingModal();
+          this.router.navigate(['/dashboard']);
+        } else {
+          this.onboardingError.set(res.error || 'Failed to complete workspace registration.');
+        }
+      },
+      error: (err) => {
+        this.isProcessingPayment.set(false);
+        this.onboardingError.set(err.error?.error || 'Failed to complete workspace registration.');
+      }
+    });
+  }
+
   ngOnInit() {
     this.startStatsCounters();
     this.websiteTemplates = this.generateWebTemplatesRegistry();
@@ -1141,11 +1439,7 @@ export class PublicWebsiteComponent implements OnInit {
   triggerBuyPlan(planName: string = 'GrownX Enterprise SaaS Plan', amount: number = 9999) {
     const user = this.authService.currentUserValue;
     if (!user) {
-      this.paymentSuccess.set(false);
-      this.paymentStatusMessage.set('Registration Required: Please register your workspace account first before completing payment.');
-      setTimeout(() => {
-        this.setTab('register');
-      }, 1500);
+      this.router.navigate(['/register']);
       return;
     }
 

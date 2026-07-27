@@ -32,6 +32,7 @@ const connectDB = require('./config/db');
 
 // Route files
 const authRoutes = require('./routes/authRoutes');
+const onboardingRoutes = require('./routes/onboardingRoutes');
 const customerRoutes = require('./routes/customerRoutes');
 const leadRoutes = require('./routes/leadRoutes');
 const ticketRoutes = require('./routes/ticketRoutes');
@@ -53,7 +54,6 @@ const documentRoutes = require('./routes/documentRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const updateRoutes = require('./routes/updateRoutes');
-const onboardingRoutes = require('./routes/onboardingRoutes');
 const pipelineRoutes = require('./routes/pipelineRoutes');
 const retentionRoutes = require('./routes/retentionRoutes');
 
