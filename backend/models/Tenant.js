@@ -47,6 +47,28 @@ const TenantSchema = new mongoose.Schema(
       enum: ['active', 'suspended'],
       default: 'active',
     },
+    subscriptionStatus: {
+      type: String,
+      enum: ['active', 'pending_payment', 'cancelled'],
+      default: 'active',
+    },
+    subscriptionPlan: {
+      type: String,
+      default: '₹9,999 / Month',
+    },
+    subscriptionAmount: {
+      type: Number,
+      default: 9999,
+    },
+    paidAt: {
+      type: Date,
+    },
+    razorpayOrderId: {
+      type: String,
+    },
+    razorpayPaymentId: {
+      type: String,
+    },
     trialExpiresAt: {
       type: Date,
       default: () => new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),

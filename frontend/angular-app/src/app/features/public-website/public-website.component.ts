@@ -1,6 +1,6 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { FormsModule } from '@angular/forms';
@@ -459,60 +459,56 @@ interface ChatMessage {
 
         <!-- Tab: Pricing -->
         <div *ngIf="activeTab() === 'pricing'" class="space-y-12 animate-fadeIn">
-          <div class="text-center max-w-2xl mx-auto space-y-4">
-            <span class="text-xs font-bold uppercase tracking-wider text-amber-700 bg-amber-500/10 px-4 py-1.5 rounded-full">Commercial Licenses & Standalone Suites</span>
-            <h2 class="text-3xl font-black text-[#1c1917]">Commercial Software Tiers</h2>
-            <p class="text-[#44403c] text-sm">Purchase a lifetime software license to instantly receive your license key, downloadable installer package (.ZIP), and official tax invoice.</p>
+          
+          <!-- Notice banner if redirected from pending payment -->
+          <div *ngIf="pendingPaymentNotice()" class="max-w-2xl mx-auto p-4 bg-amber-500/10 border-2 border-amber-600/30 text-amber-900 rounded-2xl text-center space-y-1">
+            <div class="flex items-center justify-center gap-2 font-black text-sm">
+              <span class="material-icons text-amber-600">lock</span>
+              <span>Workspace Subscription Required</span>
+            </div>
+            <p class="text-xs font-medium text-[#44403c]">
+              Your workspace account has been created! Please complete your subscription payment of <strong>₹9,999/month</strong> to activate full CRM access.
+            </p>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <!-- Starter License Card -->
-            <div class="border border-[#e7e5e4] bg-white p-8 rounded-3xl space-y-6 flex flex-col justify-between shadow-lg">
-              <div class="space-y-4">
-                <span class="text-xs font-bold text-[#1c1917] bg-stone-100 border border-[#e7e5e4] px-3 py-1 rounded-full uppercase">Starter Edition</span>
-                <h3 class="text-3.5xl font-black text-[#1c1917]">₹4,999 <span class="text-xs font-semibold text-[#44403c]">/ one-time</span></h3>
-                <p class="text-xs text-[#44403c]">Essential standalone software suite for small business teams.</p>
-                <ul class="space-y-2.5 text-xs text-[#292524] pt-4">
-                  <li class="flex items-center gap-2"><span class="material-icons text-amber-700 text-sm">check_circle</span> 1 Standalone Server License</li>
-                  <li class="flex items-center gap-2"><span class="material-icons text-amber-700 text-sm">check_circle</span> Kanban pipeline & Customer 360</li>
-                  <li class="flex items-center gap-2"><span class="material-icons text-amber-700 text-sm">check_circle</span> Standalone ZIP Installer Package</li>
-                  <li class="flex items-center gap-2"><span class="material-icons text-amber-700 text-sm">check_circle</span> Official Tax Invoice Email</li>
-                </ul>
-              </div>
-              <button (click)="triggerBuyPlan('Starter License', 4999)" class="w-full bg-[#1c1917] hover:bg-[#292524] py-3.5 rounded-xl font-bold text-sm text-white shadow-lg transition-all mt-6 cursor-pointer">Buy Starter License</button>
-            </div>
+          <div class="text-center max-w-2xl mx-auto space-y-4">
+            <span class="text-xs font-bold uppercase tracking-wider text-amber-700 bg-amber-500/10 px-4 py-1.5 rounded-full">Multi-Tenant Cloud SaaS Pricing</span>
+            <h2 class="text-3xl font-black text-[#1c1917]">Workspace Subscription</h2>
+            <p class="text-[#44403c] text-sm">Unlock the full GrownX CRM Enterprise Operating System for your entire team. Pay securely via Razorpay to activate instant CRM access.</p>
+          </div>
 
-            <!-- Growth Edition Card -->
+          <div class="max-w-md mx-auto">
+            <!-- Single ₹9,999 / Month Plan Card -->
             <div class="border-2 border-amber-600 bg-white p-8 rounded-3xl space-y-6 flex flex-col justify-between relative shadow-2xl">
-              <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-amber-600 text-white text-[9px] font-black tracking-wider px-4 py-1 rounded-full uppercase shadow-md">Best Value</div>
+              <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-amber-600 text-white text-[9px] font-black tracking-wider px-4 py-1 rounded-full uppercase shadow-md">Complete SaaS Suite</div>
               <div class="space-y-4">
-                <span class="text-xs font-bold text-amber-900 bg-amber-100 border border-amber-300 px-3 py-1 rounded-full uppercase">Growth Edition</span>
-                <h3 class="text-3.5xl font-black text-[#1c1917]">₹9,999 <span class="text-xs font-semibold text-[#44403c]">/ one-time</span></h3>
-                <p class="text-xs text-[#44403c]">Full commercial suite with Gmail OAuth & Visual Workflows.</p>
-                <ul class="space-y-2.5 text-xs text-[#292524] pt-4">
-                  <li class="flex items-center gap-2"><span class="material-icons text-amber-700 text-sm">check_circle</span> Unlimited User Licenses</li>
-                  <li class="flex items-center gap-2"><span class="material-icons text-amber-700 text-sm">check_circle</span> Gmail OAuth & Gmail Center</li>
-                  <li class="flex items-center gap-2"><span class="material-icons text-amber-700 text-sm">check_circle</span> Visual Automation Workflows</li>
-                  <li class="flex items-center gap-2"><span class="material-icons text-amber-700 text-sm">check_circle</span> Instant ZIP Package & License Key</li>
-                  <li class="flex items-center gap-2"><span class="material-icons text-amber-700 text-sm">check_circle</span> Automated Dual Invoice Emails</li>
+                <span class="text-xs font-bold text-amber-900 bg-amber-100 border border-amber-300 px-3 py-1 rounded-full uppercase">Enterprise Plan</span>
+                <h3 class="text-4xl font-black text-[#1c1917]">₹9,999 <span class="text-xs font-semibold text-[#44403c]">/ Month</span></h3>
+                <p class="text-xs text-[#44403c]">All-inclusive CRM operating system with visual automations & omnichannel support.</p>
+                <ul class="space-y-3 text-xs text-[#292524] pt-4">
+                  <li class="flex items-center gap-2.5"><span class="material-icons text-amber-700 text-sm">check_circle</span> <strong>Unlimited User Licenses & Team Members</strong></li>
+                  <li class="flex items-center gap-2.5"><span class="material-icons text-amber-700 text-sm">check_circle</span> <strong>Visual Workflow Automation Engine</strong></li>
+                  <li class="flex items-center gap-2.5"><span class="material-icons text-amber-700 text-sm">check_circle</span> <strong>Email-First Support & Unified Inbox</strong></li>
+                  <li class="flex items-center gap-2.5"><span class="material-icons text-amber-700 text-sm">check_circle</span> <strong>Visual Kanban Pipelines & Customer 360</strong></li>
+                  <li class="flex items-center gap-2.5"><span class="material-icons text-amber-700 text-sm">check_circle</span> <strong>Marketing Campaigns & Automated Scheduler</strong></li>
+                  <li class="flex items-center gap-2.5"><span class="material-icons text-amber-700 text-sm">check_circle</span> <strong>Google Drive Sync & Dedicated Support Care Mailbox</strong></li>
+                  <li class="flex items-center gap-2.5"><span class="material-icons text-amber-700 text-sm">check_circle</span> <strong>High-Security Multi-Tenant SaaS Architecture</strong></li>
                 </ul>
               </div>
-              <button (click)="triggerBuyPlan('Growth Edition', 9999)" class="w-full bg-amber-700 hover:bg-amber-800 py-3.5 rounded-xl font-bold text-sm text-white shadow-lg transition-all mt-6 cursor-pointer">Buy Growth Suite</button>
-            </div>
 
-            <!-- Enterprise Edition Card -->
-            <div class="border border-[#e7e5e4] bg-white p-8 rounded-3xl space-y-6 flex flex-col justify-between shadow-lg">
-              <div class="space-y-4">
-                <span class="text-xs font-bold text-[#1c1917] bg-stone-100 border border-[#e7e5e4] px-3 py-1 rounded-full uppercase">Enterprise Edition</span>
-                <h3 class="text-3.5xl font-black text-[#1c1917]">₹19,999 <span class="text-xs font-semibold text-[#44403c]">/ one-time</span></h3>
-                <p class="text-xs text-[#44403c]">Complete source package, dedicated support, and custom domain setup.</p>
-                <ul class="space-y-2.5 text-xs text-[#292524] pt-4">
-                  <li class="flex items-center gap-2"><span class="material-icons text-amber-700 text-sm">check_circle</span> Full Standalone Source Code Package</li>
-                  <li class="flex items-center gap-2"><span class="material-icons text-amber-700 text-sm">check_circle</span> Dedicated Founder Setup Support</li>
-                  <li class="flex items-center gap-2"><span class="material-icons text-amber-700 text-sm">check_circle</span> Priority WhatsApp & Email SLA</li>
-                </ul>
+              <div class="space-y-3 pt-4">
+                <div *ngIf="paymentStatusMessage()" [class.text-emerald-700]="paymentSuccess()" [class.text-rose-700]="!paymentSuccess()" class="p-3 bg-stone-50 border border-stone-200 rounded-xl text-xs font-bold text-center">
+                  {{ paymentStatusMessage() }}
+                </div>
+
+                <button 
+                  (click)="triggerBuyPlan('GrownX Enterprise SaaS Plan', 9999)" 
+                  [disabled]="isProcessingPayment()"
+                  class="w-full bg-amber-700 hover:bg-amber-800 disabled:opacity-50 py-4 rounded-xl font-bold text-sm text-white shadow-xl transition-all cursor-pointer flex items-center justify-center gap-2">
+                  <span *ngIf="isProcessingPayment()" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                  <span>Buy / Subscribe — ₹9,999/mo</span>
+                </button>
               </div>
-              <button (click)="triggerBuyPlan('Enterprise Suite', 19999)" class="w-full bg-[#1c1917] hover:bg-[#292524] py-3.5 rounded-xl font-bold text-sm text-white shadow-lg transition-all mt-6 cursor-pointer">Buy Enterprise Suite</button>
             </div>
           </div>
         </div>
@@ -867,6 +863,13 @@ export class PublicWebsiteComponent implements OnInit {
     { icon: 'monetization_on', title: 'Invoicing System', desc: 'Quotation estimates, computed discounts/taxes rates, and paid status tracking.' }
   ];
 
+  private route = inject(ActivatedRoute);
+
+  pendingPaymentNotice = signal<boolean>(false);
+  isProcessingPayment = signal<boolean>(false);
+  paymentStatusMessage = signal<string | null>(null);
+  paymentSuccess = signal<boolean>(false);
+
   // 108 generated website templates registry
   websiteTemplates: any[] = [];
   // 54 generated funnel templates registry
@@ -876,6 +879,17 @@ export class PublicWebsiteComponent implements OnInit {
     this.startStatsCounters();
     this.websiteTemplates = this.generateWebTemplatesRegistry();
     this.mockFunnelsList = this.generateFunnelTemplatesRegistry();
+
+    this.route.queryParams.subscribe(params => {
+      if (params['pendingPayment'] === 'true') {
+        this.activeTab.set('pricing');
+        this.pendingPaymentNotice.set(true);
+      }
+    });
+
+    if (this.router.url.includes('/pricing')) {
+      this.activeTab.set('pricing');
+    }
   }
 
   setTab(tab: string) {
@@ -1121,13 +1135,101 @@ export class PublicWebsiteComponent implements OnInit {
     this.router.navigate(['/login']);
   }
 
-  triggerBuyPlan(planName: string, amount: number) {
+  triggerBuyPlan(planName: string = 'GrownX Enterprise SaaS Plan', amount: number = 9999) {
     const user = this.authService.currentUserValue;
     if (!user) {
       this.router.navigate(['/register']);
       return;
     }
-    this.router.navigate(['/downloads']);
+
+    this.isProcessingPayment.set(true);
+    this.paymentStatusMessage.set(null);
+    this.paymentSuccess.set(false);
+
+    this.apiService.createRazorpayOrder({ planName, amount }).subscribe({
+      next: (res) => {
+        if (res && res.success) {
+          const orderId = res.orderId;
+          const key = res.key;
+
+          if (typeof (window as any).Razorpay !== 'undefined') {
+            const options = {
+              key: key,
+              amount: res.amount,
+              currency: res.currency || 'INR',
+              name: 'GrownX Technologies',
+              description: `Workspace Subscription: ${planName}`,
+              order_id: orderId,
+              handler: (response: any) => {
+                this.verifyPayment({
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                  planName,
+                  amount
+                });
+              },
+              prefill: {
+                name: user.name,
+                email: user.email
+              },
+              theme: {
+                color: '#d97706'
+              }
+            };
+            const rzp = new (window as any).Razorpay(options);
+            rzp.open();
+            this.isProcessingPayment.set(false);
+          } else {
+            // Dev/Environment fallback verification without CDN script
+            this.verifyPayment({
+              razorpay_order_id: orderId,
+              razorpay_payment_id: `pay_dev_${Date.now()}`,
+              razorpay_signature: 'dev_signature',
+              planName,
+              amount
+            });
+          }
+        }
+      },
+      error: (err) => {
+        this.isProcessingPayment.set(false);
+        this.paymentSuccess.set(false);
+        this.paymentStatusMessage.set('Failed to initialize payment gateway. Please try again.');
+      }
+    });
+  }
+
+  verifyPayment(payload: any) {
+    this.isProcessingPayment.set(true);
+    this.apiService.verifyRazorpayPayment(payload).subscribe({
+      next: (res) => {
+        this.isProcessingPayment.set(false);
+        if (res && res.success) {
+          this.paymentSuccess.set(true);
+          this.paymentStatusMessage.set('Payment verified! Workspace subscription activated.');
+          this.pendingPaymentNotice.set(false);
+
+          // Update current user signal & localStorage
+          const user = this.authService.currentUserValue;
+          if (user) {
+            user.workspaceIdentity = user.workspaceIdentity || {};
+            user.workspaceIdentity.subscriptionStatus = 'active';
+            localStorage.setItem('nexus_user', JSON.stringify(user));
+            this.authService.userSignal.set({ ...user });
+          }
+
+          setTimeout(() => {
+            this.router.navigate(['/home/command-center']);
+          }, 1200);
+        }
+      },
+      error: (err) => {
+        this.isProcessingPayment.set(false);
+        this.paymentSuccess.set(false);
+        this.paymentStatusMessage.set(err.error?.error || 'Payment verification failed. Subscription remains unpaid.');
+      }
+    });
   }
 
   // Generates 108 website templates across categories (Enhancement 8)

@@ -90,22 +90,41 @@ router.post('/verify', protect, async (req, res) => {
     const licenseKey = `GXCRM-${crypto.randomBytes(4).toString('hex').toUpperCase()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
     const paymentId = razorpay_payment_id || `pay_dev_${Date.now()}`;
 
-    // Add license record to user account
+    // Add license record to user account & activate workspace subscription
+    const Tenant = require('../models/Tenant');
+    const { getWorkspaceIdentity } = require('../utils/tenantScope');
+
     const user = await User.findById(req.user._id);
     user.purchasedLicenses.push({
       licenseKey,
       planName: planName || 'GrownX Enterprise Plan',
-      amountPaid: amount || 49,
+      amountPaid: amount || 9999,
       paymentId,
       orderId: razorpay_order_id || 'order_dev',
     });
     await user.save();
 
+    let workspaceIdentity = null;
+    if (user.tenant) {
+      const tenantId = user.tenant._id || user.tenant;
+      const tenant = await Tenant.findById(tenantId);
+      if (tenant) {
+        tenant.subscriptionStatus = 'active';
+        tenant.subscriptionPlan = planName || '₹9,999 / Month';
+        tenant.subscriptionAmount = amount || 9999;
+        tenant.paidAt = new Date();
+        tenant.razorpayOrderId = razorpay_order_id || 'order_dev';
+        tenant.razorpayPaymentId = paymentId;
+        await tenant.save();
+        workspaceIdentity = await getWorkspaceIdentity(tenant._id, user);
+      }
+    }
+
     // Log Activity
     await Activity.create({
       user: user._id,
-      action: 'Software License Purchased',
-      details: `Purchased ${planName} for ₹${amount}. License Key: ${licenseKey}`,
+      action: 'Software Subscription Activated',
+      details: `Purchased ${planName || 'GrownX Enterprise Plan'} for ₹${amount || 9999}/mo. License Key: ${licenseKey}`,
       module: 'Billing',
       ipAddress: req.ip,
     });
@@ -115,7 +134,7 @@ router.post('/verify', protect, async (req, res) => {
       email: user.email,
       name: user.name,
       planName: planName || 'GrownX Enterprise Plan',
-      amount: amount || 49,
+      amount: amount || 9999,
       currency: 'INR',
       paymentId,
       licenseKey,
@@ -126,7 +145,7 @@ router.post('/verify', protect, async (req, res) => {
       buyerName: user.name,
       buyerEmail: user.email,
       planName: planName || 'GrownX Enterprise Plan',
-      amount: amount || 49,
+      amount: amount || 9999,
       currency: 'INR',
       paymentId,
       licenseKey,
@@ -134,10 +153,12 @@ router.post('/verify', protect, async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Payment verified successfully! Your purchase invoice and license key have been emailed to you.',
+      message: 'Payment verified successfully! Workspace subscription activated.',
       data: {
         licenseKey,
         paymentId,
+        subscriptionStatus: 'active',
+        workspaceIdentity,
         downloadUrl: '/api/payments/download-installer',
       },
     });

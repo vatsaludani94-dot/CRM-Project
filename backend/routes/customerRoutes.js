@@ -11,11 +11,12 @@ const {
   addCustomerNote,
   logCustomerActivity
 } = require('../controllers/customerController');
-const { protect, requireTenant } = require('../middleware/authMiddleware');
+const { protect, requireTenant, requireActiveSubscription } = require('../middleware/authMiddleware');
 const { authorize } = require('../middleware/roleMiddleware');
 
 router.use(protect);
 router.use(requireTenant);
+router.use(requireActiveSubscription);
 
 // Directory CRUD
 router.route('/')

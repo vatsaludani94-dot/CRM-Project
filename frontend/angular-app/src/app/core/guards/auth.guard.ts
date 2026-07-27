@@ -9,6 +9,13 @@ export const authGuard: CanActivateFn = (route, state) => {
   const currentUser = authService.currentUserValue;
 
   if (currentUser) {
+    // Check workspace subscription payment status
+    const subStatus = currentUser.workspaceIdentity?.subscriptionStatus || currentUser.tenant?.subscriptionStatus || 'active';
+    if (subStatus === 'pending_payment' && currentUser.role !== 'super_admin') {
+      router.navigate(['/pricing'], { queryParams: { pendingPayment: 'true' } });
+      return false;
+    }
+
     // Check if route has role restrictions
     const requiredRoles = route.data['roles'] as Array<string>;
     if (requiredRoles) {

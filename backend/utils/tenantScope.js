@@ -54,6 +54,9 @@ const getWorkspaceIdentity = async (tenantId, userReq) => {
       communicationEmailName: userReq?.name || 'GrownX Support',
       communicationEmailStatus: 'unconfigured',
       theme: 'light',
+      subscriptionStatus: 'active',
+      subscriptionPlan: '₹9,999 / Month',
+      subscriptionAmount: 9999,
     };
   }
 
@@ -87,6 +90,10 @@ const getWorkspaceIdentity = async (tenantId, userReq) => {
       secondaryColor: tenant.whiteLabelSettings?.secondaryColor || '#0f172a',
       whiteLabelSettings: tenant.whiteLabelSettings || {},
       smtpConfigured: !!(tenant.smtpSettings && tenant.smtpSettings.host),
+      subscriptionStatus: tenant.subscriptionStatus || 'active',
+      subscriptionPlan: tenant.subscriptionPlan || '₹9,999 / Month',
+      subscriptionAmount: tenant.subscriptionAmount || 9999,
+      paidAt: tenant.paidAt,
     };
   } catch (err) {
     return {

@@ -126,8 +126,8 @@ const CustomerSchema = new mongoose.Schema(
 // Auto-generate customerCode if not provided
 CustomerSchema.pre('validate', function (next) {
   if (!this.customerCode) {
-    const random = Math.floor(1000 + Math.random() * 9000);
-    this.customerCode = `CUST-${random}`;
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    this.customerCode = `CUST-${Date.now().toString().slice(-4)}${randomSuffix}`;
   }
   next();
 });

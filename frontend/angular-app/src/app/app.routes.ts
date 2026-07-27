@@ -28,6 +28,10 @@ export const routes: Routes = [
     path: 'reset-password',
     loadComponent: () => import('./features/auth/reset-password.component').then(m => m.ResetPasswordComponent)
   },
+  {
+    path: 'pricing',
+    loadComponent: () => import('./features/public-website/public-website.component').then(m => m.PublicWebsiteComponent)
+  },
 
   // Private Routes wrapped in Layout
   {

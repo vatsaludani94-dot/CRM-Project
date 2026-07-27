@@ -218,7 +218,7 @@ export class RegisterComponent {
     this.authService.verifyWorkspaceRegistration(email, code).subscribe({
       next: () => {
         this.isLoading.set(false);
-        this.router.navigate(['/dashboard']);
+        this.router.navigate(['/pricing'], { queryParams: { pendingPayment: 'true' } });
       },
       error: (err) => {
         this.isLoading.set(false);

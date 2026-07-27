@@ -632,5 +632,13 @@ export class ApiService {
   delete(endpoint: string, options?: any): Observable<any> {
     return this.http.delete<any>(`${this.baseUrl}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`, options);
   }
+
+  // 23. Razorpay Subscription Services
+  createRazorpayOrder(payload: { planName: string; amount: number }): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/payments/create-order`, payload);
+  }
+  verifyRazorpayPayment(payload: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string; planName: string; amount: number }): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/payments/verify`, payload);
+  }
 }
 

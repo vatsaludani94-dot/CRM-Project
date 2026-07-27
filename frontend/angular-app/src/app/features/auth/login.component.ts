@@ -228,6 +228,15 @@ export class LoginComponent implements OnInit, AfterViewInit {
     }
   }
 
+  private redirectUserAfterLogin(user: any) {
+    const subStatus = user?.workspaceIdentity?.subscriptionStatus || user?.tenant?.subscriptionStatus || 'active';
+    if (subStatus === 'pending_payment' && user?.role !== 'super_admin') {
+      this.router.navigate(['/pricing'], { queryParams: { pendingPayment: 'true' } });
+    } else {
+      this.router.navigate(['/dashboard']);
+    }
+  }
+
   private handleGoogleCredential(response: any) {
     if (response && response.credential) {
       this.isLoading.set(true);
@@ -240,7 +249,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
             this.temp2faToken = res.tempToken;
             this.show2faChallenge.set(true);
           } else {
-            this.router.navigate(['/dashboard']);
+            this.redirectUserAfterLogin(res);
           }
         },
         error: (err) => {
@@ -266,7 +275,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
           this.temp2faToken = (res as any).tempToken;
           this.show2faChallenge.set(true);
         } else {
-          this.router.navigate(['/dashboard']);
+          this.redirectUserAfterLogin(res);
         }
       },
       error: (err) => {
@@ -296,7 +305,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
                 this.temp2faToken = res.tempToken;
                 this.show2faChallenge.set(true);
               } else {
-                this.router.navigate(['/dashboard']);
+                this.redirectUserAfterLogin(res);
               }
             },
             error: (err) => {
@@ -327,7 +336,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
         this.isLoading.set(false);
         this.show2faChallenge.set(false);
         this.totpCode = '';
-        this.router.navigate(['/dashboard']);
+        this.redirectUserAfterLogin(this.authService.currentUserValue);
       },
       error: (err) => {
         this.isLoading.set(false);
