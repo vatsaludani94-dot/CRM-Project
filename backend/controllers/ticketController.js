@@ -1,10 +1,15 @@
 const Ticket = require('../models/Ticket');
 const Customer = require('../models/Customer');
+const Lead = require('../models/Lead');
 const Activity = require('../models/Activity');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
+const Conversation = require('../models/Conversation');
+const ConversationMessage = require('../models/ConversationMessage');
 const AIService = require('../services/aiService');
 const { getTenantFilter, getTenantId } = require('../utils/tenantScope');
+const { evaluateTicketPriority } = require('../services/ticketPriorityService');
+const { calculateInitialSla, evaluateSlaStatus } = require('../services/ticketSlaService');
 
 /**
  * @desc    Get all tickets
@@ -30,16 +35,26 @@ const getTickets = async (req, res) => {
       }
     }
 
-    // Filter by status/priority
+    // Filter by status/priority/channel
     if (req.query.status) query.status = req.query.status;
     if (req.query.priority) query.priority = req.query.priority;
+    if (req.query.channel) query.channel = req.query.channel;
 
     const tickets = await Ticket.find(query)
       .populate('customer', 'companyName contactPerson email customerCode')
+      .populate('lead', 'contactName company email phone stage')
       .populate('assignedEmployee', 'name email role department')
+      .populate('conversation', 'conversationKey channel status')
       .sort({ updatedAt: -1 });
 
-    res.json({ success: true, count: tickets.length, data: tickets });
+    // Evaluate dynamic SLA status for active tickets
+    const evaluatedTickets = tickets.map((t) => {
+      const doc = t.toObject();
+      doc.slaStatus = evaluateSlaStatus(t);
+      return doc;
+    });
+
+    res.json({ success: true, count: evaluatedTickets.length, data: evaluatedTickets });
   } catch (error) {
     res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
@@ -54,9 +69,11 @@ const getTicketById = async (req, res) => {
   try {
     const tenantFilter = getTenantFilter(req);
     const ticket = await Ticket.findOne({ _id: req.params.id, ...tenantFilter })
-      .populate('customer', 'companyName contactPerson email phone customerCode status')
+      .populate('customer', 'companyName contactPerson email phone customerCode status revenueGenerated')
+      .populate('lead', 'contactName company email phone stage')
       .populate('assignedEmployee', 'name email role department')
-      .populate('comments.commentedBy', 'name email role');
+      .populate('comments.commentedBy', 'name email role')
+      .populate('conversation');
 
     if (!ticket) {
       return res.status(404).json({ success: false, error: 'Ticket not found' });
@@ -65,12 +82,17 @@ const getTicketById = async (req, res) => {
     // RBAC check
     if (req.user.role === 'customer') {
       const customer = await Customer.findOne({ email: req.user.email, ...tenantFilter });
-      if (!customer || ticket.customer._id.toString() !== customer._id.toString()) {
+      if (!customer || (ticket.customer && ticket.customer._id.toString() !== customer._id.toString())) {
         return res.status(403).json({ success: false, error: 'Unauthorized to view this ticket' });
       }
+      // Hide internal notes from customer role
+      ticket.comments = ticket.comments.filter((c) => !c.isInternal);
     }
 
-    res.json({ success: true, data: ticket });
+    const doc = ticket.toObject();
+    doc.slaStatus = evaluateSlaStatus(ticket);
+
+    res.json({ success: true, data: doc });
   } catch (error) {
     res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
@@ -85,8 +107,9 @@ const createTicket = async (req, res) => {
   try {
     const tenantFilter = getTenantFilter(req);
     const tenantId = getTenantId(req);
-    const { title, description, category, priority, customerId, assignedEmployee } = req.body;
+    const { title, description, category, priority, customerId, leadId, channel, assignedEmployee } = req.body;
     let targetCustomerId = customerId;
+    let targetLeadId = leadId;
 
     if (req.user.role === 'customer') {
       const customer = await Customer.findOne({ email: req.user.email, ...tenantFilter });
@@ -96,14 +119,26 @@ const createTicket = async (req, res) => {
       targetCustomerId = customer._id;
     }
 
-    if (!targetCustomerId) {
-      return res.status(400).json({ success: false, error: 'Customer ID is required' });
+    // Validate Customer belongs to workspace if provided
+    let targetCustomer = null;
+    if (targetCustomerId) {
+      targetCustomer = await Customer.findOne({ _id: targetCustomerId, ...tenantFilter });
+      if (!targetCustomer) {
+        return res.status(400).json({ success: false, error: 'Customer does not belong to your workspace' });
+      }
     }
 
-    // Validate Customer belongs to workspace
-    const targetCustomer = await Customer.findOne({ _id: targetCustomerId, ...tenantFilter });
-    if (!targetCustomer) {
-      return res.status(400).json({ success: false, error: 'Customer does not belong to your workspace' });
+    // Validate Lead belongs to workspace if provided
+    let targetLead = null;
+    if (targetLeadId) {
+      targetLead = await Lead.findOne({ _id: targetLeadId, ...tenantFilter });
+      if (!targetLead) {
+        return res.status(400).json({ success: false, error: 'Lead does not belong to your workspace' });
+      }
+    }
+
+    if (!targetCustomerId && !targetLeadId && req.user.role !== 'admin' && req.user.role !== 'workspace_owner' && req.user.role !== 'manager' && req.user.role !== 'employee') {
+      return res.status(400).json({ success: false, error: 'Customer ID or Lead ID is required' });
     }
 
     // Validate assignedEmployee belongs to workspace
@@ -114,11 +149,47 @@ const createTicket = async (req, res) => {
       }
     }
 
+    // 1. Evaluate Priority via Priority & Criticality Engine
+    const priorityResult = await evaluateTicketPriority({
+      title,
+      description,
+      customerId: targetCustomerId,
+      tenantId,
+      requestedPriority: priority,
+    });
+
+    // 2. Calculate SLA Due Dates
+    const slaDates = calculateInitialSla(priorityResult.priority);
+
+    // 3. Create or Link Conversation
+    const convKey = `CONV-${Math.floor(100000 + Math.random() * 900000)}`;
+    const conversation = await Conversation.create({
+      tenant: tenantId,
+      conversationKey: convKey,
+      channel: channel || 'email',
+      status: 'open',
+      subject: title,
+      customer: targetCustomerId || null,
+      lead: targetLeadId || null,
+      assignedTo: assignedEmployee || null,
+      lastMessageAt: new Date(),
+      lastMessagePreview: description.slice(0, 120),
+    });
+
     const ticket = new Ticket({
       title,
       description,
-      customer: targetCustomerId,
-      assignedEmployee,
+      channel: channel || 'email',
+      customer: targetCustomerId || null,
+      lead: targetLeadId || null,
+      conversation: conversation._id,
+      assignedEmployee: assignedEmployee || null,
+      priority: priorityResult.priority,
+      priorityExplanation: priorityResult.priorityExplanation,
+      priorityDrivers: priorityResult.priorityDrivers,
+      firstResponseDueAt: slaDates.firstResponseDueAt,
+      resolutionDueAt: slaDates.resolutionDueAt,
+      slaStatus: slaDates.slaStatus,
       tenant: tenantId,
     });
 
@@ -128,34 +199,71 @@ const createTicket = async (req, res) => {
       ticket.category = category;
     }
 
-    if (!priority) {
-      ticket.priority = await AIService.detectPriority(title, description);
-    } else {
-      ticket.priority = priority;
-    }
-
     ticket.status = assignedEmployee ? 'Assigned' : 'Open';
 
     await ticket.save();
 
+    // Link Ticket back to Conversation
+    conversation.ticket = ticket._id;
+    await conversation.save();
+
+    // Create initial message in ConversationMessage
+    await ConversationMessage.create({
+      tenant: tenantId,
+      conversation: conversation._id,
+      ticket: ticket._id,
+      senderType: req.user.role === 'customer' ? 'customer' : 'agent',
+      senderUser: req.user._id,
+      senderEmail: req.user.email,
+      senderName: req.user.name,
+      channel: channel || 'email',
+      direction: req.user.role === 'customer' ? 'inbound' : 'outbound',
+      subject: title,
+      body: description,
+      isInternal: false,
+    });
+
     await ticket.populate([
       { path: 'customer', select: 'companyName contactPerson email customerCode' },
-      { path: 'assignedEmployee', select: 'name email role department' }
+      { path: 'lead', select: 'contactName company email phone stage' },
+      { path: 'assignedEmployee', select: 'name email role department' },
+      { path: 'conversation' },
     ]);
 
     const io = req.app.get('io');
     if (io) {
       io.emit('ticket_created', ticket);
+      io.emit('conversation_updated', conversation);
     }
 
     await Activity.create({
       user: req.user._id,
       action: 'Ticket Created',
-      details: `Ticket ${ticket.ticketCode} (${ticket.title}) created. AI Category: ${ticket.category}. AI Priority: ${ticket.priority}`,
+      details: `Ticket ${ticket.ticketCode} ("${ticket.title}") created via ${ticket.channel}. Priority: ${ticket.priority} (${ticket.priorityExplanation})`,
       module: 'Ticket',
       ipAddress: req.ip,
       tenant: tenantId,
     });
+
+    // Record activity on Customer 360 or Lead timeline
+    if (targetCustomer) {
+      targetCustomer.activities = targetCustomer.activities || [];
+      targetCustomer.activities.push({
+        type: 'System',
+        description: `Support Ticket ${ticket.ticketCode} created ("${ticket.title}"). Priority: ${ticket.priority}`,
+        date: new Date(),
+      });
+      await targetCustomer.save();
+    }
+    if (targetLead) {
+      targetLead.activityLog = targetLead.activityLog || [];
+      targetLead.activityLog.push({
+        type: 'System',
+        description: `Support Ticket ${ticket.ticketCode} created ("${ticket.title}"). Priority: ${ticket.priority}`,
+        createdAt: new Date(),
+      });
+      await targetLead.save();
+    }
 
     if (assignedEmployee) {
       const notification = await Notification.create({
@@ -175,10 +283,15 @@ const createTicket = async (req, res) => {
 
     // Recalculate Customer Health
     try {
-      const { calculateCustomerHealth } = require('../services/customerHealthService');
-      await calculateCustomerHealth(targetCustomerId, tenantId);
+      if (targetCustomerId) {
+        const { calculateCustomerHealth } = require('../services/customerHealthService');
+        await calculateCustomerHealth(targetCustomerId, tenantId);
+      }
       const { triggerWorkflowEvents } = require('./workflowController');
       await triggerWorkflowEvents('ticket.created', 'Ticket', ticket._id, tenantId);
+      if (ticket.priority === 'Urgent') {
+        await triggerWorkflowEvents('ticket.urgent_created', 'Ticket', ticket._id, tenantId);
+      }
     } catch (hErr) {}
 
     res.status(201).json({ success: true, data: ticket });
@@ -203,8 +316,10 @@ const updateTicket = async (req, res) => {
 
     const { status, priority, assignedEmployee, category } = req.body;
     let statusChanged = false;
+    let priorityChanged = false;
     let assignmentChanged = false;
     const oldStatus = ticket.status;
+    const oldPriority = ticket.priority;
 
     if (assignedEmployee) {
       const emp = await User.findOne({ _id: assignedEmployee, ...tenantFilter });
@@ -214,28 +329,44 @@ const updateTicket = async (req, res) => {
     }
 
     if (category) ticket.category = category;
-    if (priority) ticket.priority = priority;
 
+    // Manual Priority Override
+    if (priority && priority !== ticket.priority) {
+      ticket.priority = priority;
+      ticket.priorityExplanation = `Priority manually updated to ${priority} by ${req.user.name}.`;
+      ticket.priorityDrivers = [`Manual override by ${req.user.name}`];
+      priorityChanged = true;
+    }
+
+    // Controlled Status Transition Validation
     if (status && ticket.status !== status) {
+      const normalizedStatus = status === 'In_Progress' ? 'In Progress' : status;
+      const normalizedOld = ticket.status === 'In_Progress' ? 'In Progress' : ticket.status;
+
       const validTransitions = {
-        'Open': ['Assigned', 'In Progress', 'Closed'],
-        'Assigned': ['Open', 'In Progress', 'Closed'],
-        'In Progress': ['Waiting for Customer', 'Resolved', 'Open'],
-        'Waiting for Customer': ['In Progress', 'Resolved', 'Closed'],
-        'Resolved': ['Closed', 'In Progress'],
-        'Closed': ['In Progress', 'Open']
+        'Open': ['Assigned', 'In Progress', 'In_Progress', 'Waiting for Customer', 'Closed'],
+        'Assigned': ['Open', 'In Progress', 'In_Progress', 'Waiting for Customer', 'Closed'],
+        'In Progress': ['Waiting for Customer', 'Resolved', 'Open', 'Closed'],
+        'In_Progress': ['Waiting for Customer', 'Resolved', 'Open', 'Closed'],
+        'Waiting for Customer': ['In Progress', 'In_Progress', 'Resolved', 'Closed'],
+        'Resolved': ['Closed', 'In Progress', 'In_Progress', 'Open'],
+        'Closed': ['In Progress', 'In_Progress', 'Open'],
       };
 
-      const allowed = validTransitions[ticket.status] || [];
-      if (!allowed.includes(status)) {
+      const allowed = validTransitions[normalizedOld] || [];
+      if (!allowed.includes(normalizedStatus) && !allowed.includes(status)) {
         return res.status(400).json({
           success: false,
-          error: `Invalid ticket status transition from "${ticket.status}" to "${status}"`
+          error: `Invalid ticket status transition from "${ticket.status}" to "${status}"`,
         });
       }
 
-      ticket.status = status;
+      ticket.status = normalizedStatus;
       statusChanged = true;
+
+      if (['Resolved', 'Closed'].includes(normalizedStatus)) {
+        ticket.resolvedAt = ticket.resolvedAt || new Date();
+      }
     }
 
     if (assignedEmployee !== undefined && String(ticket.assignedEmployee) !== String(assignedEmployee)) {
@@ -247,11 +378,13 @@ const updateTicket = async (req, res) => {
       }
     }
 
+    ticket.slaStatus = evaluateSlaStatus(ticket);
     await ticket.save();
 
     await ticket.populate([
       { path: 'customer', select: 'companyName contactPerson email customerCode' },
-      { path: 'assignedEmployee', select: 'name email role department' }
+      { path: 'lead', select: 'contactName company email phone stage' },
+      { path: 'assignedEmployee', select: 'name email role department' },
     ]);
 
     const io = req.app.get('io');
@@ -262,7 +395,7 @@ const updateTicket = async (req, res) => {
     await Activity.create({
       user: req.user._id,
       action: 'Ticket Updated',
-      details: `Ticket ${ticket.ticketCode} status updated from ${oldStatus} to ${ticket.status} by ${req.user.name}.`,
+      details: `Ticket ${ticket.ticketCode} updated. Status: ${oldStatus} -> ${ticket.status}. Priority: ${oldPriority} -> ${ticket.priority} by ${req.user.name}.`,
       module: 'Ticket',
       ipAddress: req.ip,
       tenant: ticket.tenant,
@@ -278,11 +411,12 @@ const updateTicket = async (req, res) => {
       const { triggerWorkflowEvents } = require('./workflowController');
       if (statusChanged) {
         await triggerWorkflowEvents('ticket.status_changed', 'Ticket', ticket._id, ticket.tenant);
-        if (ticket.status === 'Resolved') {
+        if (['Resolved', 'Closed'].includes(ticket.status)) {
           await triggerWorkflowEvents('ticket.resolved', 'Ticket', ticket._id, ticket.tenant);
-        } else if (ticket.status === 'Closed') {
-          await triggerWorkflowEvents('ticket.closed', 'Ticket', ticket._id, ticket.tenant);
         }
+      }
+      if (priorityChanged) {
+        await triggerWorkflowEvents('ticket.priority_changed', 'Ticket', ticket._id, ticket.tenant);
       }
     } catch (hErr) {}
 
@@ -309,7 +443,7 @@ const updateTicket = async (req, res) => {
 };
 
 /**
- * @desc    Add comment to ticket
+ * @desc    Add comment / reply to ticket (Supports Customer Reply vs Internal Note)
  * @route   POST /api/tickets/:id/comments
  * @access  Private
  */
@@ -321,22 +455,59 @@ const addTicketComment = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Ticket not found' });
     }
 
-    const { comment } = req.body;
+    const { comment, isInternal } = req.body;
     if (!comment) {
       return res.status(400).json({ success: false, error: 'Comment content is required' });
     }
 
+    const internalFlag = isInternal === true || isInternal === 'true';
+
     const newComment = {
       comment,
       commentedBy: req.user._id,
+      isInternal: internalFlag,
+      createdAt: new Date(),
     };
 
     ticket.comments.push(newComment);
+
+    // If agent posts customer-visible reply for the first time, record firstRespondedAt
+    if (!internalFlag && req.user.role !== 'customer' && !ticket.firstRespondedAt) {
+      ticket.firstRespondedAt = new Date();
+    }
+
+    ticket.slaStatus = evaluateSlaStatus(ticket);
     await ticket.save();
+
+    // Sync to Conversation & ConversationMessage
+    if (ticket.conversation) {
+      const conv = await Conversation.findOne({ _id: ticket.conversation, ...tenantFilter });
+      if (conv) {
+        conv.lastMessageAt = new Date();
+        conv.lastMessagePreview = comment.slice(0, 120);
+        await conv.save();
+
+        await ConversationMessage.create({
+          tenant: ticket.tenant,
+          conversation: conv._id,
+          ticket: ticket._id,
+          senderType: req.user.role === 'customer' ? 'customer' : 'agent',
+          senderUser: req.user._id,
+          senderEmail: req.user.email,
+          senderName: req.user.name,
+          channel: ticket.channel || 'email',
+          direction: internalFlag ? 'internal' : (req.user.role === 'customer' ? 'inbound' : 'outbound'),
+          subject: `Re: ${ticket.title}`,
+          body: comment,
+          isInternal: internalFlag,
+        });
+      }
+    }
 
     const updatedTicket = await Ticket.findOne({ _id: req.params.id, ...tenantFilter })
       .populate('comments.commentedBy', 'name email role profilePicture')
       .populate('customer', 'companyName contactPerson email customerCode')
+      .populate('lead', 'contactName company email phone stage')
       .populate('assignedEmployee', 'name email role department');
 
     const addedComment = updatedTicket.comments[updatedTicket.comments.length - 1];
@@ -346,38 +517,18 @@ const addTicketComment = async (req, res) => {
       io.emit('comment_added', {
         ticketId: ticket._id,
         ticketCode: ticket.ticketCode,
-        comment: addedComment
+        comment: addedComment,
       });
     }
 
     await Activity.create({
       user: req.user._id,
-      action: 'Ticket Comment Added',
-      details: `Comment added to Ticket ${ticket.ticketCode} by ${req.user.name}.`,
+      action: internalFlag ? 'Ticket Internal Note Added' : 'Ticket Customer Reply Added',
+      details: `${internalFlag ? 'Internal note' : 'Customer reply'} added to Ticket ${ticket.ticketCode} by ${req.user.name}.`,
       module: 'Ticket',
       ipAddress: req.ip,
       tenant: ticket.tenant,
     });
-
-    const recipientId = (req.user.role === 'customer') 
-      ? ticket.assignedEmployee 
-      : null;
-    
-    if (recipientId && String(recipientId) !== String(req.user._id)) {
-      const notification = await Notification.create({
-        recipient: recipientId,
-        sender: req.user._id,
-        title: 'New Ticket Comment',
-        message: `${req.user.name} commented on Ticket ${ticket.ticketCode}.`,
-        type: 'Ticket',
-        link: `/tickets`,
-        tenant: ticket.tenant,
-      });
-
-      if (io) {
-        io.to(recipientId.toString()).emit('notification_received', notification);
-      }
-    }
 
     res.status(201).json({ success: true, data: addedComment });
   } catch (error) {

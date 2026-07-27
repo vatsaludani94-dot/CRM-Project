@@ -22,7 +22,7 @@ const calculateCustomerHealth = async (customerId, tenantId) => {
     const tasks = await Task.find({ customer: customerId, ...tenantFilter });
 
     const openTicketsList = tickets.filter(t => ['Open', 'Assigned', 'In Progress', 'Waiting for Customer'].includes(t.status));
-    const urgentOpenTickets = openTicketsList.filter(t => ['Critical', 'High'].includes(t.priority));
+    const urgentOpenTickets = openTicketsList.filter(t => ['Critical', 'High', 'Urgent'].includes(t.priority));
     const resolvedTickets = tickets.filter(t => ['Resolved', 'Closed'].includes(t.status));
 
     // Overdue invoices calculation (invoices with amountDue > 0 and createdAt older than 30 days)

@@ -141,6 +141,10 @@ export class ApiService {
     return this.http.get<any>(`${this.baseUrl}/tickets/${id}`);
   }
 
+  getTicketById(id: string): Observable<any> {
+    return this.getTicket(id);
+  }
+
   createTicket(data: any): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/tickets`, data);
   }
@@ -149,8 +153,9 @@ export class ApiService {
     return this.http.put<any>(`${this.baseUrl}/tickets/${id}`, data);
   }
 
-  addTicketComment(ticketId: string, comment: string): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/tickets/${ticketId}/comments`, { comment });
+  addTicketComment(ticketId: string, commentData: any): Observable<any> {
+    const payload = typeof commentData === 'string' ? { comment: commentData } : commentData;
+    return this.http.post<any>(`${this.baseUrl}/tickets/${ticketId}/comments`, payload);
   }
 
   getTicketAISuggestions(ticketId: string): Observable<any> {
@@ -225,7 +230,42 @@ export class ApiService {
     return `${this.baseUrl}/reports/${module}?format=${format}`;
   }
 
-  // 9. Raw AI Tools
+  // 9. Omnichannel Support Operating System
+  getConversations(params?: any): Observable<any> {
+    let httpParams = new HttpParams();
+    if (params) {
+      Object.keys(params).forEach(key => {
+        if (params[key]) httpParams = httpParams.set(key, params[key]);
+      });
+    }
+    return this.http.get<any>(`${this.baseUrl}/support/conversations`, { params: httpParams });
+  }
+
+  getConversationById(id: string): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/support/conversations/${id}`);
+  }
+
+  postConversationMessage(id: string, data: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/support/conversations/${id}/messages`, data);
+  }
+
+  convertConversationToTicket(id: string, data?: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/support/conversations/${id}/convert-to-ticket`, data || {});
+  }
+
+  logCall(data: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/support/calls`, data);
+  }
+
+  getSupportAnalytics(): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/support/analytics`);
+  }
+
+  getSlaAndPriorityConfig(): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/support/sla-priority`);
+  }
+
+  // 10. Raw AI Tools
   classifyTicketAI(title: string, description: string): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/ai/classify`, { title, description });
   }

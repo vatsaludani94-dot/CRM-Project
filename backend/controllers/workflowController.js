@@ -128,11 +128,64 @@ const executeWorkflowStep = async (step, entityType, entityId, tenantId) => {
           await Ticket.create({
             title: config.ticketTitle || 'Automated Support Ticket',
             description: `Generated automatically via workflow rule. Entity: ${entityType} (${entityId})`,
-            priority: 'Medium',
+            priority: config.priority || 'Medium',
             status: 'Open',
             customer: entityType === 'Customer' ? entityId : undefined,
+            lead: entityType === 'Lead' ? entityId : undefined,
             tenant: tenantId,
           });
+          break;
+
+        case 'Assign Ticket':
+          if (entityType === 'Ticket') {
+            const ticket = await Ticket.findOne({ _id: entityId, tenant: tenantId });
+            if (ticket && config.assignedEmployee) {
+              ticket.assignedEmployee = config.assignedEmployee;
+              if (ticket.status === 'Open') ticket.status = 'Assigned';
+              await ticket.save();
+            }
+          }
+          break;
+
+        case 'Change Priority':
+          if (entityType === 'Ticket') {
+            const ticket = await Ticket.findOne({ _id: entityId, tenant: tenantId });
+            if (ticket && config.priority) {
+              ticket.priority = config.priority;
+              ticket.priorityExplanation = `Priority changed to ${config.priority} via automated workflow rule.`;
+              ticket.priorityDrivers = [`Automated workflow action`];
+              await ticket.save();
+            }
+          }
+          break;
+
+        case 'Change Ticket Status':
+          if (entityType === 'Ticket') {
+            const ticket = await Ticket.findOne({ _id: entityId, tenant: tenantId });
+            if (ticket && config.ticketStatus) {
+              ticket.status = config.ticketStatus;
+              await ticket.save();
+            }
+          }
+          break;
+
+        case 'Add Internal Note':
+          if (entityType === 'Ticket') {
+            const ticket = await Ticket.findOne({ _id: entityId, tenant: tenantId });
+            if (ticket && config.noteContent) {
+              ticket.comments.push({
+                comment: config.noteContent,
+                commentedBy: config.user || ticket.tenant,
+                isInternal: true,
+                createdAt: new Date(),
+              });
+              await ticket.save();
+            }
+          }
+          break;
+
+        case 'Notify Workspace User':
+          console.log(`[Workflow Notification] Notifying workspace user for ${entityType}: ${entityId}`);
           break;
 
         default:
@@ -268,7 +321,13 @@ const CAPABILITY_REGISTRY = {
     { key: 'Customer Becomes At Risk', label: 'Customer Becomes At Risk', entityType: 'Customer', category: 'Retention' },
     { key: 'Customer Becomes Critical', label: 'Customer Health Critical', entityType: 'Customer', category: 'Retention' },
     { key: 'Ticket Created', label: 'Ticket Created', entityType: 'Ticket', category: 'Support' },
+    { key: 'Ticket Priority Changed', label: 'Ticket Priority Changed', entityType: 'Ticket', category: 'Support' },
+    { key: 'Ticket Assigned', label: 'Ticket Assigned', entityType: 'Ticket', category: 'Support' },
+    { key: 'Ticket SLA At Risk', label: 'Ticket SLA At Risk', entityType: 'Ticket', category: 'Support' },
+    { key: 'Ticket SLA Breached', label: 'Ticket SLA Breached', entityType: 'Ticket', category: 'Support' },
     { key: 'Ticket Resolved', label: 'Ticket Resolved', entityType: 'Ticket', category: 'Support' },
+    { key: 'Ticket Closed', label: 'Ticket Closed', entityType: 'Ticket', category: 'Support' },
+    { key: 'Customer Replied', label: 'Customer Replied to Ticket', entityType: 'Ticket', category: 'Support' },
     { key: 'Proposal Sent', label: 'Proposal Sent', entityType: 'Document', category: 'Sales' },
     { key: 'Customer Payment Received', label: 'Customer Payment Received', entityType: 'Document', category: 'Finance' },
   ],
@@ -278,6 +337,11 @@ const CAPABILITY_REGISTRY = {
     { key: 'Create Task', label: 'Create Follow-Up Task', category: 'Tasks', available: true },
     { key: 'Create Retention Task', label: 'Create Retention Task', category: 'Tasks', available: true },
     { key: 'Create Ticket', label: 'Create Support Ticket', category: 'Support', available: true },
+    { key: 'Assign Ticket', label: 'Assign Ticket', category: 'Support', available: true },
+    { key: 'Change Priority', label: 'Change Priority', category: 'Support', available: true },
+    { key: 'Change Ticket Status', label: 'Change Ticket Status', category: 'Support', available: true },
+    { key: 'Add Internal Note', label: 'Add Internal Note', category: 'Support', available: true },
+    { key: 'Notify Workspace User', label: 'Notify Workspace User', category: 'Notifications', available: true },
     { key: 'Notify Account Owner', label: 'Notify Account Owner', category: 'Notifications', available: true },
     { key: 'Notify Manager', label: 'Notify Manager', category: 'Notifications', available: true },
   ],
@@ -285,6 +349,7 @@ const CAPABILITY_REGISTRY = {
     { name: 'Email Engine', status: 'Available', details: 'Workspace identity configured' },
     { name: 'Google Drive', status: 'Available', details: 'Connected & active' },
     { name: 'Marketing Engine', status: 'Available', details: 'Active campaign engine' },
+    { name: 'Support Desk & Omnichannel Engine', status: 'Available', details: 'Unified Support Operating System active' },
     { name: 'WhatsApp', status: 'Unavailable', details: 'WhatsApp API integration is not connected to this workspace.' },
     { name: 'SMS Gateway', status: 'Unavailable', details: 'No SMS provider gateway configured for this workspace.' },
   ],

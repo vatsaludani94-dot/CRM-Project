@@ -71,10 +71,34 @@ export const routes: Routes = [
         loadComponent: () => import('./features/retention/retention.component').then(m => m.RetentionComponent)
       },
 
-      // COMMUNICATIONS
+      // SUPPORT & COMMUNICATIONS
       {
         path: 'communications/inbox',
-        loadComponent: () => import('./features/email-center/email-center.component').then(m => m.EmailCenterComponent)
+        loadComponent: () => import('./features/tickets/tickets.component').then(m => m.TicketsComponent)
+      },
+      {
+        path: 'support/inbox',
+        loadComponent: () => import('./features/tickets/tickets.component').then(m => m.TicketsComponent)
+      },
+      {
+        path: 'support/tickets',
+        loadComponent: () => import('./features/tickets/tickets.component').then(m => m.TicketsComponent)
+      },
+      {
+        path: 'support/tickets/:id',
+        loadComponent: () => import('./features/tickets/tickets.component').then(m => m.TicketsComponent)
+      },
+      {
+        path: 'support/conversations/:id',
+        loadComponent: () => import('./features/tickets/tickets.component').then(m => m.TicketsComponent)
+      },
+      {
+        path: 'support/sla-priority',
+        loadComponent: () => import('./features/tickets/tickets.component').then(m => m.TicketsComponent)
+      },
+      {
+        path: 'support/analytics',
+        loadComponent: () => import('./features/tickets/tickets.component').then(m => m.TicketsComponent)
       },
 
       // OPERATIONS

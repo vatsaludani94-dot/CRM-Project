@@ -119,16 +119,24 @@ export interface SearchResultItem {
             </a>
           </div>
 
-          <!-- Group 3: COMMUNICATIONS -->
+          <!-- Group 3: SUPPORT & COMMUNICATIONS -->
           <div class="space-y-1">
-            <span class="text-[9px] font-black uppercase tracking-widest text-stone-500 px-3 block">COMMUNICATIONS</span>
-            <a routerLink="/communications/inbox" routerLinkActive="active-link" class="nav-item">
+            <span class="text-[9px] font-black uppercase tracking-widest text-stone-500 px-3 block">SUPPORT & COMMUNICATIONS</span>
+            <a routerLink="/support/inbox" routerLinkActive="active-link" class="nav-item">
               <span class="material-icons">forum</span>
               <span>Unified Inbox</span>
             </a>
-            <a routerLink="/tickets" routerLinkActive="active-link" class="nav-item">
+            <a routerLink="/support/tickets" routerLinkActive="active-link" class="nav-item">
               <span class="material-icons">confirmation_number</span>
               <span>Support Desk</span>
+            </a>
+            <a routerLink="/support/sla-priority" routerLinkActive="active-link" class="nav-item">
+              <span class="material-icons">timer</span>
+              <span>SLA & Priority</span>
+            </a>
+            <a routerLink="/support/analytics" routerLinkActive="active-link" class="nav-item">
+              <span class="material-icons">insights</span>
+              <span>Support Analytics</span>
             </a>
           </div>
 
