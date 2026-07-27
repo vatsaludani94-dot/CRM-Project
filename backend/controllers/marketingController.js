@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const MarketingCampaign = require('../models/MarketingCampaign');
 const CampaignRecipient = require('../models/CampaignRecipient');
@@ -96,8 +97,14 @@ const renderPersonalizedText = (template, recipientData = {}, workspaceIdentity 
 /**
  * Generate signed unsubscribe token for recipient
  */
+const getJwtSecret = () => process.env.JWT_SECRET || 'grownxcrm_jwt_secret_key_2026';
+
+/**
+ * Generate signed unsubscribe token for recipient
+ */
 const generateUnsubscribeToken = (tenantId, email) => {
-  return jwt.sign({ tenantId, email: email.toLowerCase() }, JWT_SECRET, { expiresIn: '365d' });
+  const tid = typeof tenantId === 'object' && tenantId?._id ? tenantId._id.toString() : String(tenantId);
+  return jwt.sign({ tenantId: tid, email: email.toLowerCase().trim() }, getJwtSecret(), { expiresIn: '365d' });
 };
 
 /**
@@ -126,8 +133,9 @@ const previewAudience = async (req, res) => {
     const totalMatched = rawLeads.length + rawCustomers.length;
 
     // Fetch unsubscribed contacts for this tenant
+    const tenantObjId = mongoose.Types.ObjectId.isValid(tenantId) ? new mongoose.Types.ObjectId(tenantId) : tenantId;
     const unsubscribedRecords = await MarketingSubscription.find({
-      tenant: tenantId,
+      tenant: { $in: [tenantId, tenantObjId] },
       status: 'unsubscribed',
     }).select('email');
     const unsubscribedSet = new Set(unsubscribedRecords.map((u) => u.email.toLowerCase()));
@@ -385,6 +393,23 @@ const sendTestEmail = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Valid test email address is required' });
     }
 
+    const normalizedTestEmail = testEmail.trim().toLowerCase();
+    const tenantObjId = mongoose.Types.ObjectId.isValid(tenantId) ? new mongoose.Types.ObjectId(tenantId) : tenantId;
+
+    // Check if test recipient is unsubscribed
+    const unsubscribedCheck = await MarketingSubscription.findOne({
+      tenant: { $in: [tenantId, tenantObjId] },
+      email: normalizedTestEmail,
+      status: 'unsubscribed',
+    });
+
+    if (unsubscribedCheck) {
+      return res.status(400).json({
+        success: false,
+        error: `Cannot send test email: "${normalizedTestEmail}" has unsubscribed from marketing communications in this workspace.`,
+      });
+    }
+
     const workspaceIdentity = await getWorkspaceIdentity(tenantId, req.user);
 
     if (!workspaceIdentity.communicationEmail || workspaceIdentity.communicationEmailStatus === 'unconfigured') {
@@ -397,14 +422,14 @@ const sendTestEmail = async (req, res) => {
     const sampleRecipient = {
       contactName: req.user.name || 'Sample Recipient',
       company: workspaceIdentity.name || 'GrownX CRM',
-      email: testEmail.trim(),
+      email: normalizedTestEmail,
     };
 
     const personalizedSubject = `[TEST MODE] ${renderPersonalizedText(campaign.emailContent.subject, sampleRecipient, workspaceIdentity)}`;
     const rawBody = renderPersonalizedText(campaign.emailContent.body, sampleRecipient, workspaceIdentity);
 
-    const unsubscribeToken = generateUnsubscribeToken(tenantId, testEmail.trim());
-    const baseUrl = req.protocol + '://' + req.get('host');
+    const unsubscribeToken = generateUnsubscribeToken(tenantObjId, normalizedTestEmail);
+    const baseUrl = process.env.BASE_URL || (req.protocol + '://' + req.get('host'));
     const unsubscribeUrl = `${baseUrl}/api/marketing/unsubscribe/${unsubscribeToken}`;
 
     const testHtml = `
@@ -420,7 +445,7 @@ const sendTestEmail = async (req, res) => {
     `;
 
     await sendOutboundEmail({
-      to: testEmail.trim(),
+      to: normalizedTestEmail,
       subject: personalizedSubject,
       html: testHtml,
       fromName: workspaceIdentity.communicationEmailName,
@@ -430,7 +455,7 @@ const sendTestEmail = async (req, res) => {
 
     res.json({
       success: true,
-      message: `Test email sent successfully to ${testEmail.trim()}`,
+      message: `Test email sent successfully to ${normalizedTestEmail}`,
     });
   } catch (error) {
     res.status(error.statusCode || 500).json({ success: false, error: error.message });
@@ -496,7 +521,11 @@ const executeCampaignDelivery = async (campaignId, tenantId, userId = null) => {
     }
 
     // Fetch Unsubscribed Emails for Suppression
-    const unsubscribedRecords = await MarketingSubscription.find({ tenant: tenantId, status: 'unsubscribed' });
+    const tenantObjId = mongoose.Types.ObjectId.isValid(tenantId) ? new mongoose.Types.ObjectId(tenantId) : tenantId;
+    const unsubscribedRecords = await MarketingSubscription.find({
+      tenant: { $in: [tenantId, tenantObjId] },
+      status: 'unsubscribed',
+    });
     const unsubscribedSet = new Set(unsubscribedRecords.map((u) => u.email.toLowerCase()));
 
     const seenEmails = new Set();
@@ -561,7 +590,7 @@ const executeCampaignDelivery = async (campaignId, tenantId, userId = null) => {
       const personalizedSubject = renderPersonalizedText(campaign.emailContent.subject, item, workspaceIdentity);
       const rawBody = renderPersonalizedText(campaign.emailContent.body, item, workspaceIdentity);
 
-      const unsubscribeToken = generateUnsubscribeToken(tenantId, normalizedEmail);
+      const unsubscribeToken = generateUnsubscribeToken(tenantObjId, normalizedEmail);
       const unsubscribeUrl = `${baseUrl}/api/marketing/unsubscribe/${unsubscribeToken}`;
 
       const finalHtml = `
@@ -575,7 +604,7 @@ const executeCampaignDelivery = async (campaignId, tenantId, userId = null) => {
 
       // FINAL REAL-TIME SUPPRESSION CHECK
       const isStillUnsubscribed = await MarketingSubscription.findOne({
-        tenant: tenantId,
+        tenant: { $in: [tenantId, tenantObjId] },
         email: normalizedEmail,
         status: 'unsubscribed',
       });
@@ -804,22 +833,52 @@ const cancelCampaign = async (req, res) => {
 const unsubscribeRecipientToken = async (req, res) => {
   try {
     const { token } = req.params;
-    const decoded = jwt.verify(token, JWT_SECRET);
-    const { tenantId, email } = decoded;
-
-    if (!tenantId || !email) {
+    const decoded = jwt.verify(token, getJwtSecret());
+    let rawTenantId = decoded.tenantId;
+    if (typeof rawTenantId === 'object' && rawTenantId?._id) {
+      rawTenantId = rawTenantId._id;
+    }
+    const tenantStr = String(rawTenantId);
+    const tenantObjId = mongoose.Types.ObjectId.isValid(tenantStr) ? new mongoose.Types.ObjectId(tenantStr) : tenantStr;
+    const { email } = decoded;
+    if (!email) {
       return res.status(400).send('<h3>Invalid Unsubscribe Token</h3>');
     }
+    const normalizedEmail = email.trim().toLowerCase();
 
     await MarketingSubscription.findOneAndUpdate(
-      { tenant: tenantId, email: email.toLowerCase() },
+      { tenant: { $in: [tenantStr, tenantObjId] }, email: normalizedEmail },
       {
+        tenant: tenantObjId,
+        email: normalizedEmail,
         status: 'unsubscribed',
         unsubscribedAt: new Date(),
         unsubscribeReason: 'Recipient clicked unsubscribe link in email footer',
       },
       { upsert: true, new: true }
     );
+
+    // Also append activity log to matching Lead or Customer if present
+    try {
+      const targetLead = await Lead.findOne({ tenant: tenantObjId, email: normalizedEmail });
+      if (targetLead) {
+        targetLead.activityLog.push({
+          type: 'System',
+          description: `Recipient unsubscribed from marketing communications via email footer link.`,
+        });
+        await targetLead.save();
+      }
+      const targetCustomer = await Customer.findOne({ tenant: tenantObjId, email: normalizedEmail });
+      if (targetCustomer) {
+        targetCustomer.activities.push({
+          type: 'Email',
+          description: `Recipient unsubscribed from marketing communications via email footer link.`,
+        });
+        await targetCustomer.save();
+      }
+    } catch (e) {
+      console.error('[UNSUBSCRIBE ACTIVITY LOG ERROR]', e.message);
+    }
 
     res.send(`
       <!Token HTML>
@@ -843,6 +902,7 @@ const unsubscribeRecipientToken = async (req, res) => {
       </html>
     `);
   } catch (err) {
+    console.error('[UNSUBSCRIBE ERR]', err);
     res.status(400).send('<h3>Invalid or expired unsubscribe link</h3>');
   }
 };

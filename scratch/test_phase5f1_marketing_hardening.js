@@ -108,6 +108,22 @@ async function runPhase5F1HardeningTest() {
     assert(suppRec.suppressionReason === 'marketing_unsubscribed', 'Suppression reason recorded as marketing_unsubscribed');
     assert(getCamp1.data.data.campaign.metrics.sentCount === 0, 'Zero outbound email delivered to unsubscribed recipient');
 
+    // Verify sendTestEmail blocked for unsubscribed test recipient
+    try {
+      await axios.post(
+        `${API_URL}/marketing/campaigns/${camp1Id}/test`,
+        { testEmail: `charlie.${timestamp}@suppressed.com` },
+        authAlpha
+      );
+      assert(false, 'Sending test email to unsubscribed recipient should be blocked');
+    } catch (err) {
+      assert(err.response?.status === 400, 'Sending test email to unsubscribed recipient returns HTTP 400');
+      assert(
+        err.response?.data?.error?.includes('unsubscribed'),
+        'Test email endpoint clearly warns recipient is unsubscribed in workspace'
+      );
+    }
+
     // 3. PART 2: REAL CAMPAIGN SCHEDULING & SCHEDULER ISOLATION
     console.log('\n📅 STEP 3: Testing Real Campaign Scheduling & Scheduler Engine...');
 
