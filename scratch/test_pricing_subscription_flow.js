@@ -3,6 +3,7 @@ require('dotenv').config({ path: path.join(__dirname, '../backend/.env') });
 const express = require('express');
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
 // Load Models & DB
 const connectDB = require('../backend/config/db');
@@ -127,12 +128,18 @@ async function runTests() {
     const orderId = orderRes.data.orderId;
 
     console.log('\n🔄 STEP 5: Testing Payment Verification & Subscription Activation...');
+    const paymentId = `pay_test_${Date.now()}`;
+    const secret = process.env.RAZORPAY_KEY_SECRET;
+    const signature = secret 
+      ? crypto.createHmac('sha256', secret).update(`${orderId}|${paymentId}`).digest('hex')
+      : 'dev_signature';
+
     const verifyRes = await axios.post(
       `${API_URL}/payments/verify`,
       {
         razorpay_order_id: orderId,
-        razorpay_payment_id: `pay_test_${Date.now()}`,
-        razorpay_signature: 'dev_signature',
+        razorpay_payment_id: paymentId,
+        razorpay_signature: signature,
         planName: 'GrownX Enterprise SaaS Plan',
         amount: 9999
       },
