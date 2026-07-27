@@ -1182,9 +1182,13 @@ export class PublicWebsiteComponent implements OnInit {
     this.mockFunnelsList = this.generateFunnelTemplatesRegistry();
 
     this.route.queryParams.subscribe(params => {
-      if (params['pendingPayment'] === 'true') {
+      if (params['pendingPayment'] === 'true' || params['email']) {
         this.activeTab.set('pricing');
         this.pendingPaymentNotice.set(true);
+        if (params['email']) {
+          this.onboardingForm.email = params['email'];
+        }
+        this.openPaymentOnboardingModal();
       }
     });
 

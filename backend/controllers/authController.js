@@ -29,9 +29,18 @@ const registerUser = async (req, res) => {
   const { name, email, password, role, department } = req.body;
 
   try {
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({ email }).populate('tenant');
 
     if (userExists) {
+      if (userExists.tenant && userExists.tenant.subscriptionStatus === 'pending_payment') {
+        return res.status(200).json({
+          success: false,
+          requirePayment: true,
+          nextStep: 'payment_registration',
+          email: email.toLowerCase(),
+          error: 'Your workspace account is pending subscription payment. Redirecting to payment onboarding...',
+        });
+      }
       return res.status(400).json({ success: false, error: 'User already exists with this email' });
     }
 
@@ -117,6 +126,16 @@ const loginUser = async (req, res) => {
         module: 'Authentication',
         ipAddress: req.ip,
       });
+
+      if (user.tenant && user.tenant.subscriptionStatus === 'pending_payment' && user.role !== 'super_admin') {
+        return res.status(402).json({
+          success: false,
+          requirePayment: true,
+          nextStep: 'payment_registration',
+          email: user.email,
+          error: 'Workspace subscription payment is required to activate your account. Redirecting to payment onboarding...',
+        });
+      }
 
       if (user.twoFactorEnabled) {
         const tempToken = jwt.sign({ id: user._id, is2faPending: true }, process.env.JWT_SECRET, { expiresIn: '5m' });
@@ -511,8 +530,17 @@ const registerWorkspace = async (req, res) => {
     }
 
     const cleanEmail = email.toLowerCase().trim();
-    const userExists = await User.findOne({ email: cleanEmail });
+    const userExists = await User.findOne({ email: cleanEmail }).populate('tenant');
     if (userExists) {
+      if (userExists.tenant && userExists.tenant.subscriptionStatus === 'pending_payment') {
+        return res.status(200).json({
+          success: false,
+          requirePayment: true,
+          nextStep: 'payment_registration',
+          email: cleanEmail,
+          error: 'Your workspace account is pending subscription payment. Redirecting to payment onboarding...',
+        });
+      }
       return res.status(400).json({
         success: false,
         error: 'User already exists with this email address',

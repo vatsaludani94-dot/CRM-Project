@@ -47,12 +47,15 @@ const submitPrePayment = async (req, res) => {
 
   try {
     // Check if user account already exists
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const existingUser = await User.findOne({ email: email.toLowerCase() }).populate('tenant');
     if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        error: 'An account with this email address already exists. Please log in directly.',
-      });
+      const isPending = existingUser.tenant && existingUser.tenant.subscriptionStatus === 'pending_payment';
+      if (!isPending) {
+        return res.status(400).json({
+          success: false,
+          error: 'An active account with this email address already exists. Please log in directly.',
+        });
+      }
     }
 
     // Create PrePaymentOnboarding record
@@ -198,42 +201,66 @@ const registerWorkspaceAfterPayment = async (req, res) => {
     }
 
     // Check if user already exists
-    let user = await User.findOne({ email: onboarding.email });
-    if (user) {
-      return res.status(400).json({
-        success: false,
-        error: 'An account with this email address already exists.',
-      });
-    }
-
-    // Create Workspace Owner User
-    user = await User.create({
-      name: onboarding.ownerName,
-      email: onboarding.email,
-      password,
-      role: 'workspace_owner',
-      department: 'Management',
-    });
-
-    // Create Active Tenant Workspace
+    let user = await User.findOne({ email: onboarding.email }).populate('tenant');
+    let tenant;
     const reqWorkspaceName = workspaceName || onboarding.companyName;
-    const tenant = await Tenant.create({
-      name: reqWorkspaceName,
-      workspaceName: reqWorkspaceName,
-      owner: user._id,
-      subdomain: reqWorkspaceName.toLowerCase().replace(/[^a-z0-9]/g, '') + '-' + Math.floor(1000 + Math.random() * 9000),
-      communicationEmail: user.email,
-      communicationEmailName: reqWorkspaceName,
-      communicationEmailStatus: 'unconfigured',
-      subscriptionStatus: 'active',
-      subscriptionPlan: '₹9,999 / Month',
-      subscriptionAmount: 9999,
-      paidAt: onboarding.paymentVerifiedAt || new Date(),
-      razorpayOrderId: onboarding.razorpayOrderId,
-      razorpayPaymentId: onboarding.razorpayPaymentId,
-    });
 
-    user.tenant = tenant._id;
+    if (user) {
+      user.password = password;
+      if (user.tenant) {
+        tenant = user.tenant;
+        tenant.subscriptionStatus = 'active';
+        tenant.paidAt = onboarding.paymentVerifiedAt || new Date();
+        tenant.razorpayOrderId = onboarding.razorpayOrderId;
+        tenant.razorpayPaymentId = onboarding.razorpayPaymentId;
+        if (workspaceName) {
+          tenant.name = workspaceName;
+          tenant.workspaceName = workspaceName;
+        }
+        await tenant.save();
+      } else {
+        tenant = await Tenant.create({
+          name: reqWorkspaceName,
+          workspaceName: reqWorkspaceName,
+          owner: user._id,
+          subdomain: reqWorkspaceName.toLowerCase().replace(/[^a-z0-9]/g, '') + '-' + Math.floor(1000 + Math.random() * 9000),
+          communicationEmail: user.email,
+          communicationEmailName: reqWorkspaceName,
+          subscriptionStatus: 'active',
+          subscriptionPlan: '₹9,999 / Month',
+          subscriptionAmount: 9999,
+          paidAt: onboarding.paymentVerifiedAt || new Date(),
+          razorpayOrderId: onboarding.razorpayOrderId,
+          razorpayPaymentId: onboarding.razorpayPaymentId,
+        });
+        user.tenant = tenant._id;
+      }
+    } else {
+      user = await User.create({
+        name: onboarding.ownerName,
+        email: onboarding.email,
+        password,
+        role: 'workspace_owner',
+        department: 'Management',
+      });
+
+      tenant = await Tenant.create({
+        name: reqWorkspaceName,
+        workspaceName: reqWorkspaceName,
+        owner: user._id,
+        subdomain: reqWorkspaceName.toLowerCase().replace(/[^a-z0-9]/g, '') + '-' + Math.floor(1000 + Math.random() * 9000),
+        communicationEmail: user.email,
+        communicationEmailName: reqWorkspaceName,
+        communicationEmailStatus: 'unconfigured',
+        subscriptionStatus: 'active',
+        subscriptionPlan: '₹9,999 / Month',
+        subscriptionAmount: 9999,
+        paidAt: onboarding.paymentVerifiedAt || new Date(),
+        razorpayOrderId: onboarding.razorpayOrderId,
+        razorpayPaymentId: onboarding.razorpayPaymentId,
+      });
+      user.tenant = tenant._id;
+    }
     user.purchasedLicenses.push({
       licenseKey: `GXCRM-${crypto.randomBytes(4).toString('hex').toUpperCase()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`,
       planName: 'GrownX Enterprise Plan',

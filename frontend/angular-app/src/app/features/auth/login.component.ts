@@ -280,7 +280,13 @@ export class LoginComponent implements OnInit, AfterViewInit {
       },
       error: (err) => {
         this.isLoading.set(false);
-        this.errorMessage.set(err.error?.error || err.message || 'Invalid email or password');
+        const errBody = err.error || {};
+        if (errBody.requirePayment || errBody.nextStep === 'payment_registration' || err.status === 402) {
+          const userEmail = email || errBody.email || '';
+          this.router.navigate(['/pricing'], { queryParams: { pendingPayment: 'true', email: userEmail } });
+        } else {
+          this.errorMessage.set(errBody.error || err.message || 'Invalid email or password');
+        }
       }
     });
   }

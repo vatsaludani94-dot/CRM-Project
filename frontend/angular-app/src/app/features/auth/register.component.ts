@@ -191,7 +191,9 @@ export class RegisterComponent {
     this.authService.registerWorkspace(this.registerForm.value).subscribe({
       next: (res) => {
         this.isLoading.set(false);
-        if (res && res.requireEmailVerification) {
+        if (res && (res.requirePayment || res.nextStep === 'payment_registration')) {
+          this.router.navigate(['/pricing'], { queryParams: { pendingPayment: 'true', email: email } });
+        } else if (res && res.requireEmailVerification) {
           this.successMessage.set(res.message || 'Verification code sent to your email.');
           this.step.set(2);
         } else if (res && res._id) {
@@ -200,7 +202,12 @@ export class RegisterComponent {
       },
       error: (err) => {
         this.isLoading.set(false);
-        this.errorMessage.set(err.error?.error || err.message || 'Workspace registration failed');
+        const errBody = err.error || {};
+        if (errBody.requirePayment || errBody.nextStep === 'payment_registration') {
+          this.router.navigate(['/pricing'], { queryParams: { pendingPayment: 'true', email: email } });
+        } else {
+          this.errorMessage.set(errBody.error || err.message || 'Workspace registration failed');
+        }
       }
     });
   }
